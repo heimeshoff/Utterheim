@@ -5,11 +5,30 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 13:00 -- Task completed: main-007 - Queue mechanism
+
+**Type:** Work / Task completion
+**Task:** main-007 - Speak queue lives in the C# host as a Channel<T>
+**Summary:** Wrote ADR 0007 locking the speak queue placement: C# host owns the FIFO Channel<SpeakRequest> while the Python sidecar remains stateless per-utterance. Stop-and-drain semantics map cleanly onto CancellationToken plumbing, unblocking main-009.
+**Files changed:** 1
+**ADRs written:** 0007-queue-channel-in-host.md
+
+---
+
+## 2026-05-01 12:58 -- Batch started: [main-007]
+
+**Type:** Work / Batch start
+**Tasks:** main-007 - Speak queue as Channel<T> in C# host
+**Parallel:** no (1 worker, deps just satisfied)
+
+---
+
 ## 2026-05-01 12:58 -- Task completed: main-008 - Cross-cutting concerns
 
 **Type:** Work / Task completion
 **Task:** main-008 - Cross-cutting (Serilog, fail-loud, model bootstrap, distribution)
 **Summary:** Wrote ADR 0008 capturing four cross-cutting decisions (Serilog logging with sidecar redirect sink, fail-loud-to-tray error philosophy, WhisperHeim-style model + runtime bootstrap dialog, self-contained zip distribution).
+**Commit:** e4a6797
 **Files changed:** 1
 **ADRs written:** 0008-cross-cutting-concerns.md
 
