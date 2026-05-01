@@ -5,11 +5,22 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 12:52 -- Task completed: main-002 - Pocket-tts sidecar
+
+**Type:** Work / Task completion
+**Task:** main-002 - Run pocket-tts as a managed Python sidecar over loopback HTTP
+**Summary:** Recorded ADR 0002 selecting a managed Python sidecar (loopback HTTP) as the pocket-tts integration shape, with sherpa-onnx ONNX kept as a documented fallback behind an ITtsEngine seam. No code changes; bootstrap deferred to main-009.
+**Files changed:** 1
+**ADRs written:** 0002-pocket-tts-python-sidecar.md
+
+---
+
 ## 2026-05-01 12:51 -- Task completed: main-001 - Confirm stack
 
 **Type:** Work / Task completion
 **Task:** main-001 - Confirm and document the .NET 9 / WPF / WPF-UI / Win x64 stack
 **Summary:** Recorded the .NET 9 / WPF / WPF-UI / Windows x64 stack as ADR 0001 (scope global, status accepted), mirroring WhisperHeim's foundation. No code changes; only the ADR and task move.
+**Commit:** 9232a48
 **Files changed:** 1
 **ADRs written:** 0001-stack-net9-wpf-x64.md
 
