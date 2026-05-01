@@ -5,11 +5,30 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 12:55 -- Task completed: main-004 - Stop signal semantics
+
+**Type:** Work / Task completion
+**Task:** main-004 - Stop signal drains the queue by default (configurable)
+**Summary:** Recorded ADR 0004 establishing that the stop signal cancels current utterance and drains the pending speak queue by default, with a tray-UI toggle for "stop current only". Unblocks queue mechanism (main-007) and HTTP /stop endpoint implementation.
+**Files changed:** 1
+**ADRs written:** 0004-stop-drains-queue.md
+
+---
+
+## 2026-05-01 12:53 -- Batch started: [main-004, main-005, main-006]
+
+**Type:** Work / Batch start
+**Tasks:** main-004 - Stop signal semantics, main-005 - Voice persistence layout, main-006 - WhisperHeim reuse form
+**Parallel:** yes (3 workers)
+
+---
+
 ## 2026-05-01 12:53 -- Task completed: main-003 - Claude transport HTTP
 
 **Type:** Work / Task completion
 **Task:** main-003 - Expose the speak endpoint over loopback HTTP (JSON)
 **Summary:** Recorded ADR 0003 selecting loopback HTTP/JSON on 127.0.0.1:7223 as the speak endpoint transport, with a mockingbird-speak CLI wrapper for hook ergonomics. No code written; main-009 is now unblocked on this dimension.
+**Commit:** b8d1fcc
 **Files changed:** 1
 **ADRs written:** 0003-claude-transport-http.md
 
