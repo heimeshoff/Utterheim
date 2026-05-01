@@ -5,11 +5,30 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 12:58 -- Task completed: main-008 - Cross-cutting concerns
+
+**Type:** Work / Task completion
+**Task:** main-008 - Cross-cutting (Serilog, fail-loud, model bootstrap, distribution)
+**Summary:** Wrote ADR 0008 capturing four cross-cutting decisions (Serilog logging with sidecar redirect sink, fail-loud-to-tray error philosophy, WhisperHeim-style model + runtime bootstrap dialog, self-contained zip distribution).
+**Files changed:** 1
+**ADRs written:** 0008-cross-cutting-concerns.md
+
+---
+
+## 2026-05-01 12:57 -- Batch started: [main-008]
+
+**Type:** Work / Batch start
+**Tasks:** main-008 - Cross-cutting (Serilog, fail-loud, model bootstrap, distribution)
+**Parallel:** no (1 worker, solo dispatch)
+
+---
+
 ## 2026-05-01 12:57 -- Task completed: main-006 - WhisperHeim reuse form
 
 **Type:** Work / Task completion
 **Task:** main-006 - Reuse WhisperHeim infrastructure via copy-and-modify in v1
 **Summary:** Recorded ADR 0006 documenting the decision to reuse WhisperHeim infrastructure via copy-and-modify in v1 (with provenance headers and CHANGELOG entries), deferring shared-library extraction until both apps ship v1.
+**Commit:** d3137e3
 **Files changed:** 1
 **ADRs written:** 0006-whisperheim-reuse-copy-and-modify.md
 
