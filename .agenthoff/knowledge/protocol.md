@@ -5,11 +5,22 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 12:57 -- Task completed: main-006 - WhisperHeim reuse form
+
+**Type:** Work / Task completion
+**Task:** main-006 - Reuse WhisperHeim infrastructure via copy-and-modify in v1
+**Summary:** Recorded ADR 0006 documenting the decision to reuse WhisperHeim infrastructure via copy-and-modify in v1 (with provenance headers and CHANGELOG entries), deferring shared-library extraction until both apps ship v1.
+**Files changed:** 1
+**ADRs written:** 0006-whisperheim-reuse-copy-and-modify.md
+
+---
+
 ## 2026-05-01 12:56 -- Task completed: main-005 - Voice persistence layout
 
 **Type:** Work / Task completion
 **Task:** main-005 - Voice profiles as folder-per-voice + library.json index
 **Summary:** Recorded ADR 0005 codifying voice profile persistence as folder-per-voice under `<dataPath>\voices\<voice-id>\` plus a single library.json master index, with WhisperHeim-style path layering and a fixed meta.json schema.
+**Commit:** e169347
 **Files changed:** 1
 **ADRs written:** 0005-voice-persistence-layout.md
 
