@@ -1,7 +1,7 @@
 ---
 id: main-012
 title: Rasterise the speaking-person logo to PNG sizes + .ico for tray
-status: backlog
+status: todo
 type: chore
 context: main
 created: 2026-05-01

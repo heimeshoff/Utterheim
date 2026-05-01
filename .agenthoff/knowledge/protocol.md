@@ -5,6 +5,13 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 14:19 -- Sign-off + promote: main-011, main-012
+
+**Type:** Model / Promote (post sign-off)
+**Summary:** User confirmed the walking skeleton works (440 Hz tone played end-to-end via /speak, /stop, double-tap LCtrl) and approved the styleguide. docs/styleguide.md sign-off line replaced with `signed-off-by: Marco Heimeshoff on 2026-05-01`. BC README updated to reflect the OPEN gate state. Both backlog items (main-011 real engine, main-012 logo raster) promoted from backlog/ to todo/, frontmatter `status: todo`. Next: dispatch work waves for both.
+
+---
+
 ## 2026-05-01 13:20 -- Work session ended
 
 **Type:** Work / Session end

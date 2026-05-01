@@ -54,9 +54,9 @@ This BC is the only domain BC. External relationships:
 
 This BC has substantial frontend surface (tray icon + tray window with voice library, capture flow, voice-test playback, settings — modeled on WhisperHeim's design.md). 
 
-**Rule:** every frontend-bearing task in this BC `depends_on` the styleguide task **`main-010`** (`done/main-010-styleguide.md`, artefact at [`docs/styleguide.md`](../../../docs/styleguide.md)). The styleguide artefact **now exists** but **requires user sign-off** before frontend feature tasks may be promoted from `backlog/` to `todo/`. The sign-off mechanism is the placeholder line at the bottom of `docs/styleguide.md`: until it is replaced with a `signed-off-by:` entry, the gate remains closed. This protects the "feels like a first-party Windows app — Mica backdrop, Fluent controls, Segoe UI Variable, the WhisperHeim aesthetic" success criterion in the vision.
+**Rule:** every frontend-bearing task in this BC `depends_on` the styleguide task **`main-010`** (`done/main-010-styleguide.md`, artefact at [`docs/styleguide.md`](../../../docs/styleguide.md)). The gate is **OPEN** as of 2026-05-01 — Marco Heimeshoff signed off on the styleguide. Frontend feature tasks may now be promoted from `backlog/` to `todo/`. This protects the "feels like a first-party Windows app — Mica backdrop, Fluent controls, Segoe UI Variable, the WhisperHeim aesthetic" success criterion in the vision.
 
-Note: the walking skeleton (`main-009`) is exempt — its UI is a placeholder shell whose purpose is foundation, not presentation. Real frontend feature work waits for `main-010` sign-off.
+Note: the walking skeleton (`main-009`) was always exempt — its UI is a placeholder shell whose purpose is foundation, not presentation.
 
 ## Code structure
 

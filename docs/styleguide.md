@@ -4,9 +4,9 @@ This is the single source of truth for mockingbird's frontend look and feel. It 
 satisfy the styleguide gate captured in `main-010` and referenced by every frontend feature
 task in `.agenthoff/contexts/main/`.
 
-> **Status:** AWAITING USER SIGN-OFF. The artefacts below are produced; the placeholder
-> logo is in place. No frontend feature task may be promoted to `todo/` until the user
-> ticks the sign-off section at the bottom.
+> **Status:** Signed off by Marco Heimeshoff on 2026-05-01. Frontend feature tasks may
+> now be promoted from `backlog/` to `todo/`. The placeholder logo was approved in place;
+> rasterisation is tracked as `main-012`.
 
 ---
 
@@ -163,8 +163,9 @@ Notes:
 
 ## Sign-off
 
-<!-- User signs off here by replacing this comment with: signed-off-by: <name> on <date> -->
+**signed-off-by: Marco Heimeshoff on 2026-05-01**
 
-Until the line above is replaced with a `signed-off-by:` entry, **no frontend feature
-task in `.agenthoff/contexts/main/` may be promoted from `backlog/` to `todo/`**. This is
-the gate referenced from `.agenthoff/contexts/main/README.md`.
+The placeholder speaking-person silhouette is approved as the working brand mark for v1.
+The proposed tagline ("Local voices for Claude Code") is accepted. The page set, hotkey
+gesture, tray menu, and reusable component map are accepted. Frontend feature tasks may
+now be promoted from `backlog/` to `todo/`.

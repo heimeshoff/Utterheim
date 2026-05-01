@@ -1,7 +1,7 @@
 ---
 id: main-011
 title: Real pocket-tts engine — Python sidecar bootstrap and PocketTtsEngine
-status: backlog
+status: todo
 type: feature
 context: main
 created: 2026-05-01
