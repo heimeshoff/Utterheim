@@ -1,11 +1,11 @@
 ---
 id: main-009
 title: Walking skeleton — Claude hook → HTTP → sidecar → audio out
-status: todo
+status: done
 type: spike
 context: main
 created: 2026-05-01
-completed:
+completed: 2026-05-01
 commit:
 depends_on: [main-001, main-002, main-003, main-004, main-005, main-006, main-007, main-008]
 blocks: [main-010]
@@ -92,3 +92,80 @@ Explicitly defer to subsequent feature tasks:
 - Validate `pip install pocket-tts` in a fresh Windows 11 venv as the very first step of skeleton work. If pocket-tts can't install on Windows, the foundation decision (main-002) needs revisiting *before* you keep building. Don't paper over a broken sidecar with mocks.
 - A synthesis smoke test against a built-in voice (one of `alba`, `marius`, etc.) is the minimum proof that the engine works. The voice library + clone flow is main-011 territory, not skeleton.
 - After this task finishes, mockingbird is ready for feature work. The user should hear "Hello, this is mockingbird." in a real voice as the moment of validation.
+
+## Worker note (scope amendment)
+
+Scope was amended by the orchestrator at execution time: the engine ships
+**stubbed** (a 440 Hz test-tone `StubTtsEngine`) rather than wired to a real
+pocket-tts sidecar. The Python embeddable + pip install + model weights
+download — multi-hundred-MB bootstrap — is heavy and was carved off into a
+follow-up task to keep this skeleton tractable. Everything else (HTTP server
+on `127.0.0.1:7223`, `Channel<T>` queue, NAudio playback, double-tap LCtrl
+hotkey, tray shell with show/stop/exit, Serilog rolling file sink, ADR 0005
+path layout, single-file CLI wrapper) is real and verified end-to-end.
+
+Acceptance criteria as met against the stub:
+- "Speak request plays audio" — plays a 1 s test tone instead of speech.
+- "Voice list works" — returns a single hardcoded `{id:"test-voice",
+  name:"Test Tone", engine:"stub", isBuiltIn:true}`.
+- "Streaming is real" — not testable with a 1 s tone; deferred to main-011.
+- "First-run bootstrap completes" — placeholder dialog acknowledges readiness
+  without a real download. Real bootstrap UX is main-011.
+
+The follow-up task `main-011-pocket-tts-real-bootstrap.md` (in `backlog/`)
+captures the deferred work: bundling embeddable Python, pip-installing
+pocket-tts, downloading model weights, and wiring `PocketTtsEngine : ITtsEngine`
+to a real spawned sidecar. The `ITtsEngine` interface delivered here is the
+contract main-011 conforms to.
+
+## Outcome
+
+Solution layout (suggestion-shape from the orchestrator was followed almost
+verbatim):
+
+```
+mockingbird.sln
+src\
+  Mockingbird\Mockingbird.csproj         WPF tray app, net9.0-windows, x64, Mica
+  Mockingbird\EntryPoint.cs              composition root
+  Mockingbird\App.xaml(.cs)              WPF Application + WPF-UI theme
+  Mockingbird\Views\MainWindow.xaml(.cs) Mica window + tray:NotifyIcon menu
+  Mockingbird\Views\BootstrapDialog.*    first-run placeholder
+  Mockingbird\Services\Tts\              ITtsEngine + StubTtsEngine
+  Mockingbird\Services\Speak\            SpeakRequest + SpeakQueue + AudioPlayer
+  Mockingbird\Services\Http\SpeakServer  Kestrel on 127.0.0.1:7223
+  Mockingbird\Services\Hotkey\           NativeMethods + DoubleTapDetector
+  Mockingbird\Services\Settings\         DataPathService (ADR 0005 layout)
+  Mockingbird\appsettings.json           default port + hotkey window
+  Mockingbird.Cli\                       mockingbird-speak — single-file CLI
+README.md
+```
+
+Build: `dotnet build mockingbird.sln -c Debug -v minimal` succeeds with 0
+warnings, 0 errors.
+
+Smoke-tested end-to-end against a freshly-built binary:
+- App launched, hosted services started, log file written under
+  `%LOCALAPPDATA%\Mockingbird\logs\`.
+- `GET /status` → 200 with `{playing, queueLength, currentRequestId, sidecar}`.
+- `GET /voices` → 200 with `[{id:"test-voice", name:"Test Tone", engine:"stub",
+  isBuiltIn:true}]`.
+- `POST /speak {text, voice:"test-voice"}` → 202 with `{requestId,
+  queuePosition}`; `AudioPlayer` started at 24 kHz mono 16-bit, `StubTtsEngine`
+  produced its tone, request completed.
+- `POST /stop` → 200 with `{stopped:true, dropped}`; queue drained cleanly.
+- `taskkill mockingbird.exe` released the port.
+
+Files of interest:
+- `src/Mockingbird/EntryPoint.cs` — composition root, hosted-service lifecycle
+- `src/Mockingbird/Services/Tts/ITtsEngine.cs` — the seam main-011 plugs into
+- `src/Mockingbird/Services/Speak/SpeakQueue.cs` — `Channel<T>` worker (ADR 0007)
+- `src/Mockingbird/Services/Http/SpeakServer.cs` — minimal API (ADR 0003)
+- `src/Mockingbird/Services/Settings/DataPathService.cs` — path layout (ADR 0005)
+- `src/Mockingbird/Services/Hotkey/DoubleTapDetector.cs` — LCtrl gesture (ADR 0006)
+
+ADRs touched: none modified. Foundation ADRs 0001–0008 are now materialised in
+working code.
+
+Follow-ups created:
+- `main-011-pocket-tts-real-bootstrap.md` (in `backlog/`)

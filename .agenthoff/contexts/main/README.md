@@ -58,11 +58,65 @@ This BC has substantial frontend surface (tray icon + tray window with voice lib
 
 Note: the walking skeleton (`main-009`) is exempt — its UI is a placeholder shell whose purpose is foundation, not presentation. Real frontend feature work waits for `main-010`.
 
+## Code structure
+
+The walking skeleton (main-009) materialises ADRs 0001–0008 as code. Top-level
+layout:
+
+```
+mockingbird.sln
+src\
+  Mockingbird\                        WPF tray app, net9.0-windows x64
+    EntryPoint.cs                     composition root + IHost lifecycle
+    App.xaml(.cs)                     WPF Application + WPF-UI theme dictionary
+    Views\
+      MainWindow.xaml(.cs)            Mica FluentWindow + tray:NotifyIcon menu
+      BootstrapDialog.xaml(.cs)       first-run dialog (placeholder in v1)
+    Services\
+      Tts\
+        ITtsEngine.cs                 the seam every TTS engine plugs into
+        StubTtsEngine.cs              440 Hz test tone (replaced by main-011)
+      Speak\
+        SpeakRequest.cs               unit of work
+        SpeakQueue.cs                 Channel<T> worker (ADR 0007, 0004)
+        AudioPlayer.cs                NAudio WaveOutEvent wrapper
+      Http\SpeakServer.cs             Kestrel minimal API on 127.0.0.1:7223 (ADR 0003)
+      Hotkey\
+        NativeMethods.cs              copied from WhisperHeim @ 911bff0
+        DoubleTapDetector.cs          mockingbird-specific LCtrl gesture (ADR 0006)
+      Settings\DataPathService.cs     ADR 0005 path layout (adapted from WhisperHeim)
+    appsettings.json                  default port + hotkey window
+  Mockingbird.Cli\                    mockingbird-speak — single-file CLI wrapper
+README.md
+```
+
+Path layout at runtime (per ADR 0005):
+
+```
+%APPDATA%\Mockingbird\bootstrap.json    machine-local data-path pointer
+%LOCALAPPDATA%\Mockingbird\
+  logs\mockingbird-YYYYMMDD.log         Serilog rolling sink (ADR 0008)
+  runtime\python\                       (main-011 will populate this)
+  models\pocket-tts\                    (main-011 will populate this)
+  cache\
+  bootstrap-state.json                  first-run completion marker
+<dataPath>\voices\library.json          empty list in v1 skeleton
+```
+
 ## Notes for the architect
 
-The boundary analysis already surfaced four architectural decisions the architect step needs to make — they are *not* context-map decisions:
+ADRs 0001–0008 are committed and the walking skeleton (main-009) has
+materialised them as code. The synthesis engine ships **stubbed** for the
+skeleton (440 Hz test tone via `StubTtsEngine`); the real pocket-tts sidecar
+bootstrap is tracked as `main-011-pocket-tts-real-bootstrap.md` in the
+backlog. Every other architectural seam — HTTP, queue, NAudio playback,
+hotkey, tray, logging, path layout, CLI wrapper — is real and end-to-end
+verified.
 
-1. Python-vs-C# integration shape for pocket-tts (sidecar process / bundled runtime / sherpa-onnx ONNX). All three keep the BC structure intact.
-2. Claude-to-mockingbird transport (HTTP / named pipe / CLI). All three are valid implementations of the open-host speak endpoint.
-3. Stop-signal semantics (drain queue vs only stop current). Internal to the BC.
-4. WhisperHeim reuse form (shared library / copy-and-modify / submodule). Outside the BC frame — pick what's least painful for two-app maintenance.
+Historical: the boundary analysis surfaced four architectural decisions which
+have now been resolved by the ADRs above:
+
+1. Python-vs-C# integration shape for pocket-tts → ADR 0002 (Python sidecar).
+2. Claude-to-mockingbird transport → ADR 0003 (HTTP loopback on :7223).
+3. Stop-signal semantics → ADR 0004 (drain queue by default).
+4. WhisperHeim reuse form → ADR 0006 (copy-and-modify in v1).

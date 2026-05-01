@@ -1,0 +1,88 @@
+<ui:FluentWindow x:Class="Mockingbird.Views.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:tray="clr-namespace:Wpf.Ui.Tray.Controls;assembly=Wpf.Ui.Tray"
+                 Title="Mockingbird"
+                 Width="900" Height="600"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="Mockingbird" />
+
+        <tray:NotifyIcon x:Name="TrayIcon"
+                         Grid.Row="0"
+                         FocusOnLeftClick="False"
+                         MenuOnRightClick="True"
+                         TooltipText="Mockingbird"
+                         LeftClick="TrayIcon_LeftClick">
+            <tray:NotifyIcon.Menu>
+                <ContextMenu>
+                    <ui:MenuItem Header="Show window" Click="TrayShow_Click">
+                        <ui:MenuItem.Icon>
+                            <ui:SymbolIcon Symbol="Window24" />
+                        </ui:MenuItem.Icon>
+                    </ui:MenuItem>
+                    <ui:MenuItem Header="Stop speaking" Click="TrayStop_Click">
+                        <ui:MenuItem.Icon>
+                            <ui:SymbolIcon Symbol="Stop24" />
+                        </ui:MenuItem.Icon>
+                    </ui:MenuItem>
+                    <Separator />
+                    <ui:MenuItem Header="Exit" Click="TrayExit_Click">
+                        <ui:MenuItem.Icon>
+                            <ui:SymbolIcon Symbol="ArrowExit20" />
+                        </ui:MenuItem.Icon>
+                    </ui:MenuItem>
+                </ContextMenu>
+            </tray:NotifyIcon.Menu>
+        </tray:NotifyIcon>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{DynamicResource ApplicationBackgroundBrush}">
+                <StackPanel Margin="12">
+                    <TextBlock Text="Mockingbird"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               Margin="0,8,0,16" />
+                    <ui:Button Content="Speak"
+                               Icon="{ui:SymbolIcon Mic24}"
+                               Appearance="Secondary"
+                               HorizontalAlignment="Stretch"
+                               IsEnabled="False" />
+                    <TextBlock Text="(skeleton — full UI lands in main-010)"
+                               FontSize="11"
+                               Opacity="0.6"
+                               TextWrapping="Wrap"
+                               Margin="0,16,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Padding="40">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="Mockingbird is ready"
+                               FontSize="28"
+                               FontWeight="Light"
+                               TextAlignment="Center" />
+                    <TextBlock x:Name="StatusText"
+                               Text="HTTP listening on http://127.0.0.1:7223  •  Engine: stub (test tone)"
+                               FontSize="13"
+                               Opacity="0.7"
+                               TextAlignment="Center"
+                               Margin="0,12,0,0" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

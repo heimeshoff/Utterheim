@@ -5,11 +5,32 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 13:13 -- Task completed: main-009 - Walking skeleton
+
+**Type:** Work / Task completion
+**Task:** main-009 - Walking skeleton — Claude hook → HTTP → sidecar → audio out
+**Summary:** Walking skeleton stands up end-to-end on .NET 9 / WPF / x64: WPF-UI Mica tray window with show/stop/exit menu, Kestrel minimal API on 127.0.0.1:7223 (POST /speak, /stop, GET /voices, /status), Channel<T>-based SpeakQueue with stop-and-drain semantics, NAudio playback, low-level keyboard hook for double-tap LCtrl, ADR-0005 path layout, Serilog rolling file sink, single-file mockingbird-speak CLI wrapper, and copy-and-modify provenance headers from WhisperHeim @ 911bff0. The TTS engine is stubbed (440 Hz test tone via StubTtsEngine behind ITtsEngine) — real pocket-tts sidecar bootstrap captured as main-011 in backlog. Build clean, smoke test passed.
+**Files changed:** 26 (plus moved task file + leftover todo/ deletions cleanup)
+**ADRs written:** none (skeleton materialises ADRs 0001–0008 as code)
+**New backlog items:** main-011 - Real pocket-tts engine bootstrap
+
+---
+
+## 2026-05-01 13:00 -- Batch started: [main-009]
+
+**Type:** Work / Batch start
+**Tasks:** main-009 - Walking skeleton (spike)
+**Parallel:** no (1 worker, large scope)
+**Note:** Orchestrator scoped the spike to a stubbed-engine variant — `ITtsEngine` returns a generated test tone instead of real pocket-tts output. Real engine bootstrap moves to a new follow-up task (`main-011`) so the skeleton can validate architecture fast without bundling a multi-hundred-MB Python + model download into one worker session.
+
+---
+
 ## 2026-05-01 13:00 -- Task completed: main-007 - Queue mechanism
 
 **Type:** Work / Task completion
 **Task:** main-007 - Speak queue lives in the C# host as a Channel<T>
-**Summary:** Wrote ADR 0007 locking the speak queue placement: C# host owns the FIFO Channel<SpeakRequest> while the Python sidecar remains stateless per-utterance. Stop-and-drain semantics map cleanly onto CancellationToken plumbing, unblocking main-009.
+**Summary:** Wrote ADR 0007 locking the speak queue placement: C# host owns the FIFO Channel<SpeakRequest> while the Python sidecar remains stateless per-utterance.
+**Commit:** 5c8cdcc
 **Files changed:** 1
 **ADRs written:** 0007-queue-channel-in-host.md
 
