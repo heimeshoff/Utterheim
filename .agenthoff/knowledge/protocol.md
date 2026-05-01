@@ -5,11 +5,22 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 12:56 -- Task completed: main-005 - Voice persistence layout
+
+**Type:** Work / Task completion
+**Task:** main-005 - Voice profiles as folder-per-voice + library.json index
+**Summary:** Recorded ADR 0005 codifying voice profile persistence as folder-per-voice under `<dataPath>\voices\<voice-id>\` plus a single library.json master index, with WhisperHeim-style path layering and a fixed meta.json schema.
+**Files changed:** 1
+**ADRs written:** 0005-voice-persistence-layout.md
+
+---
+
 ## 2026-05-01 12:55 -- Task completed: main-004 - Stop signal semantics
 
 **Type:** Work / Task completion
 **Task:** main-004 - Stop signal drains the queue by default (configurable)
 **Summary:** Recorded ADR 0004 establishing that the stop signal cancels current utterance and drains the pending speak queue by default, with a tray-UI toggle for "stop current only". Unblocks queue mechanism (main-007) and HTTP /stop endpoint implementation.
+**Commit:** 47230fb
 **Files changed:** 1
 **ADRs written:** 0004-stop-drains-queue.md
 
