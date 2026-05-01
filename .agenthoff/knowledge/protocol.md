@@ -5,11 +5,31 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 13:18 -- Task completed: main-010 - Styleguide
+
+**Type:** Work / Task completion
+**Task:** main-010 - Styleguide — adapt WhisperHeim's design language and the speaking-person logo
+**Summary:** Produced docs/styleguide.md (inherited-from-WhisperHeim section + explicit divergences + reusable component map + sign-off placeholder), placeholder speaking-person SVG at assets/branding/mockingbird-logo.svg (clearly marked PLACEHOLDER), MainWindow.xaml updated to render the silhouette inline + show "Local voices for Claude Code" tagline. Build remains clean. **GATE STATE: artefact ready, awaiting user sign-off before any frontend feature task can be promoted.**
+**Files changed:** 5
+**ADRs written:** none
+**New backlog items:** main-012 - Rasterise the speaking-person logo to PNG sizes + .ico
+
+---
+
+## 2026-05-01 13:15 -- Batch started: [main-010]
+
+**Type:** Work / Batch start
+**Tasks:** main-010 - Styleguide (WhisperHeim design + speaking-person logo)
+**Parallel:** no (1 worker; sign-off gate)
+
+---
+
 ## 2026-05-01 13:13 -- Task completed: main-009 - Walking skeleton
 
 **Type:** Work / Task completion
 **Task:** main-009 - Walking skeleton — Claude hook → HTTP → sidecar → audio out
 **Summary:** Walking skeleton stands up end-to-end on .NET 9 / WPF / x64: WPF-UI Mica tray window with show/stop/exit menu, Kestrel minimal API on 127.0.0.1:7223 (POST /speak, /stop, GET /voices, /status), Channel<T>-based SpeakQueue with stop-and-drain semantics, NAudio playback, low-level keyboard hook for double-tap LCtrl, ADR-0005 path layout, Serilog rolling file sink, single-file mockingbird-speak CLI wrapper, and copy-and-modify provenance headers from WhisperHeim @ 911bff0. The TTS engine is stubbed (440 Hz test tone via StubTtsEngine behind ITtsEngine) — real pocket-tts sidecar bootstrap captured as main-011 in backlog. Build clean, smoke test passed.
+**Commit:** 4becb42
 **Files changed:** 26 (plus moved task file + leftover todo/ deletions cleanup)
 **ADRs written:** none (skeleton materialises ADRs 0001–0008 as code)
 **New backlog items:** main-011 - Real pocket-tts engine bootstrap

@@ -3,11 +3,25 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:tray="clr-namespace:Wpf.Ui.Tray.Controls;assembly=Wpf.Ui.Tray"
-                 Title="Mockingbird"
+                 Title="Mockingbird — Local voices for Claude Code"
                  Width="900" Height="600"
                  ExtendsContentIntoTitleBar="True"
                  WindowBackdropType="Mica"
                  WindowStartupLocation="CenterScreen">
+    <ui:FluentWindow.Resources>
+        <!--
+            Inline brand mark mirroring assets/branding/mockingbird-logo.svg.
+            PLACEHOLDER artwork — the user is expected to replace this before
+            signing off on docs/styleguide.md. Drawn via Path geometry so it
+            renders crisp at any size and tints with currentColor (theme).
+            Reused for the title bar mini-icon and the centre splash mark.
+        -->
+        <Style x:Key="BrandMarkStyle" TargetType="Viewbox">
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="UseLayoutRounding" Value="True" />
+        </Style>
+    </ui:FluentWindow.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -20,7 +34,7 @@
                          Grid.Row="0"
                          FocusOnLeftClick="False"
                          MenuOnRightClick="True"
-                         TooltipText="Mockingbird"
+                         TooltipText="Mockingbird — Local voices for Claude Code"
                          LeftClick="TrayIcon_LeftClick">
             <tray:NotifyIcon.Menu>
                 <ContextMenu>
@@ -52,16 +66,39 @@
 
             <Border Grid.Column="0" Background="{DynamicResource ApplicationBackgroundBrush}">
                 <StackPanel Margin="12">
-                    <TextBlock Text="Mockingbird"
-                               FontSize="20"
-                               FontWeight="SemiBold"
-                               Margin="0,8,0,16" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,16">
+                        <Viewbox Width="28" Height="28" Style="{StaticResource BrandMarkStyle}">
+                            <Canvas Width="256" Height="256">
+                                <!-- Head -->
+                                <Ellipse Canvas.Left="62" Canvas.Top="46" Width="60" Height="60"
+                                         Fill="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <!-- Body -->
+                                <Path Fill="{DynamicResource TextFillColorPrimaryBrush}"
+                                      Data="M 44 196 Q 52 132 92 124 Q 132 132 140 196 Z" />
+                                <!-- Sound waves -->
+                                <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Data="M 138 76 Q 158 56 158 76 Q 158 96 138 76" />
+                                <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Data="M 168 76 Q 196 46 196 76 Q 196 106 168 76" />
+                                <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Data="M 198 76 Q 234 36 234 76 Q 234 116 198 76" />
+                            </Canvas>
+                        </Viewbox>
+                        <TextBlock Text="Mockingbird"
+                                   FontSize="20"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Margin="10,0,0,0" />
+                    </StackPanel>
                     <ui:Button Content="Speak"
                                Icon="{ui:SymbolIcon Mic24}"
                                Appearance="Secondary"
                                HorizontalAlignment="Stretch"
                                IsEnabled="False" />
-                    <TextBlock Text="(skeleton — full UI lands in main-010)"
+                    <TextBlock Text="(skeleton — full UI lands after styleguide sign-off)"
                                FontSize="11"
                                Opacity="0.6"
                                TextWrapping="Wrap"
@@ -71,16 +108,39 @@
 
             <Border Grid.Column="1" Padding="40">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="Mockingbird is ready"
-                               FontSize="28"
+                    <Viewbox Width="96" Height="96" Margin="0,0,0,16" Style="{StaticResource BrandMarkStyle}">
+                        <Canvas Width="256" Height="256">
+                            <Ellipse Canvas.Left="62" Canvas.Top="46" Width="60" Height="60"
+                                     Fill="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <Path Fill="{DynamicResource TextFillColorPrimaryBrush}"
+                                  Data="M 44 196 Q 52 132 92 124 Q 132 132 140 196 Z" />
+                            <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M 138 76 Q 158 56 158 76 Q 158 96 138 76" />
+                            <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M 168 76 Q 196 46 196 76 Q 196 106 168 76" />
+                            <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M 198 76 Q 234 36 234 76 Q 234 116 198 76" />
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="Mockingbird"
+                               FontSize="32"
                                FontWeight="Light"
                                TextAlignment="Center" />
+                    <TextBlock Text="Local voices for Claude Code"
+                               FontSize="16"
+                               FontWeight="Light"
+                               Opacity="0.85"
+                               TextAlignment="Center"
+                               Margin="0,4,0,0" />
                     <TextBlock x:Name="StatusText"
                                Text="HTTP listening on http://127.0.0.1:7223  •  Engine: stub (test tone)"
                                FontSize="13"
                                Opacity="0.7"
                                TextAlignment="Center"
-                               Margin="0,12,0,0" />
+                               Margin="0,16,0,0" />
                 </StackPanel>
             </Border>
         </Grid>

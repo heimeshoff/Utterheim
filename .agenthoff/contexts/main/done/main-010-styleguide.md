@@ -1,11 +1,11 @@
 ---
 id: main-010
 title: Styleguide — adapt WhisperHeim's design language and the speaking-person logo
-status: todo
+status: done
 type: feature
 context: main
 created: 2026-05-01
-completed:
+completed: 2026-05-01
 commit:
 depends_on: [main-009]
 blocks: []
@@ -60,3 +60,23 @@ Produce a small, concrete styleguide artefact in the project that:
 - The user will likely want to validate the speaking-person logo visually before sign-off. Plan for an iteration loop on the logo artwork, not a single-shot delivery.
 - Don't attempt to upgrade WhisperHeim's design.md from this task. If divergences accumulate that *should* go upstream (e.g., a better recording-controls component), capture them as a separate refinement task — not part of this one.
 - After sign-off, the next round of frontend tasks (Speak page, Voices page, Settings, About) can be modelled and queued. They each carry `depends_on: [main-010]`.
+
+## Worker note
+
+The artefacts required to run the styleguide review are produced:
+
+- `docs/styleguide.md` — covers Inherited from WhisperHeim, Mockingbird divergences (logo, page set, tagline, hotkey, tray menu), Reusable component map, Brand assets, and a Sign-off section with the placeholder line the user replaces to sign off.
+- `assets/branding/mockingbird-logo.svg` — placeholder speaking-person silhouette (head + body + three sound-wave arcs). Clearly marked PLACEHOLDER in metadata and in the styleguide. The user is expected to replace it with their preferred artwork before sign-off.
+- `src/Mockingbird/Views/MainWindow.xaml` — updated to render the SVG-derived geometry inline (sidebar mini-mark + centre splash mark) and to use the proposed tagline "Mockingbird — Local voices for Claude Code" as the window title. Build verified with `dotnet build mockingbird.sln -c Debug --nologo -v quiet` (0 warnings, 0 errors).
+- `.agenthoff/contexts/main/README.md` — UI / styleguide gate section now points at `docs/styleguide.md` and explains the sign-off mechanism.
+
+What this task **cannot** do:
+
+- The "User has reviewed the styleguide and signed off" acceptance criterion is not ticked. That is a downstream gate the user closes by replacing the placeholder line in `docs/styleguide.md` with `signed-off-by: <name> on <date>`.
+- The `.ico` and PNG raster sizes are not produced — they need real raster tooling and final user-approved artwork. Tracked as `main-012-logo-rasterisation` in `backlog/`, depending on this task.
+
+**Frontend feature tasks (Speak page, Voices page, Settings, About page) MUST NOT be promoted from `backlog/` to `todo/` until the user signs off on `docs/styleguide.md`.** This task being marked `done` reflects that the artefacts exist; the gate behaviour the README describes is enforced by the sign-off line, not by this task's status.
+
+## Outcome
+
+Styleguide gate artefacts produced and the WPF shell updated to use them. Source-of-truth document: `docs/styleguide.md`. Placeholder logo: `assets/branding/mockingbird-logo.svg`. Follow-up: `main-012-logo-rasterisation` (rasterise the user-finalised SVG to PNG sizes + .ico). Build clean.

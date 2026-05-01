@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mockingbird placeholder logo - speaking person silhouette.
+
+  STATUS: PLACEHOLDER. This is a stand-in produced by main-010
+  (the styleguide gate) so the WPF shell, tray, and About page
+  have something to render. The user is expected to replace this
+  artwork before signing off on docs/styleguide.md.
+
+  Design intent: a person facing right, mouth open, with three
+  concentric sound-wave arcs emanating from the mouth area. The
+  silhouette is monochrome so it tints cleanly against any Mica
+  backdrop. Stroke-based rather than filled so the same SVG works
+  on dark and light themes via currentColor.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 256 256"
+     width="256" height="256"
+     role="img"
+     aria-label="Mockingbird placeholder logo: person speaking with sound waves">
+  <metadata>
+    Mockingbird logo placeholder - main-010 styleguide gate.
+    Replace before user sign-off. Final artwork tracked under
+    .agenthoff/contexts/main/backlog/main-012-logo-rasterisation.md.
+  </metadata>
+  <g fill="none" stroke="currentColor" stroke-width="10"
+     stroke-linecap="round" stroke-linejoin="round">
+    <!-- Head -->
+    <circle cx="92" cy="76" r="30" fill="currentColor" stroke="none" />
+    <!-- Shoulders / upper body (trapezoidal silhouette) -->
+    <path d="M 44 196 Q 52 132 92 124 Q 132 132 140 196 Z"
+          fill="currentColor" stroke="none" />
+    <!-- Sound waves emanating from mouth area (right side of head) -->
+    <path d="M 138 76 Q 158 56 158 76 Q 158 96 138 76" />
+    <path d="M 168 76 Q 196 46 196 76 Q 196 106 168 76" />
+    <path d="M 198 76 Q 234 36 234 76 Q 234 116 198 76" />
+  </g>
+</svg>
