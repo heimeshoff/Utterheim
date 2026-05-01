@@ -5,11 +5,25 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 14:43 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 2 (main-011, main-012)
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 3 (sign-off+promote 5ffa4c9, main-011 061c51b, main-012 d5b683f)
+**New backlog items:** none
+
+todo/, doing/, and backlog/ are all empty. Mockingbird's foundation phase is complete: real pocket-tts engine wired (user-verifiable on next restart with ~700 MB first-run download), speaking-person logo rasterised to all required sizes + .ico (visible in tray + taskbar after restart). Next phase is feature work — Speak page, Voices page, Settings, About — driven via /agenthoff:model captures from the user.
+
+---
+
 ## 2026-05-01 14:42 -- Task completed: main-012 - Logo rasterisation
 
 **Type:** Work / Task completion
 **Task:** main-012 - Rasterise the speaking-person logo to PNG sizes + .ico for tray
 **Summary:** Generated PNG sizes 16/24/32/48/64/128/256/512 + multi-resolution mockingbird.ico (16/24/32/48/64/128/256 layers, PNG-compressed) into assets/branding/ via a one-shot SkiaSharp + Svg.Skia helper at Tools/RasteriseLogo/ (kept standalone, not in mockingbird.sln). Wired the .ico as ApplicationIcon, packaged Resource, FluentWindow Icon, and tray:NotifyIcon Icon. Build clean (0/0). User-verifiable: speaking-person silhouette now appears in the tray + Explorer + taskbar after restart.
+**Commit:** d5b683f
 **Files changed:** 14
 **ADRs written:** none
 
