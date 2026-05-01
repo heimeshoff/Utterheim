@@ -1,11 +1,11 @@
 ---
 id: main-012
 title: Rasterise the speaking-person logo to PNG sizes + .ico for tray
-status: todo
+status: done
 type: chore
 context: main
 created: 2026-05-01
-completed:
+completed: 2026-05-01
 commit:
 depends_on: [main-010]
 blocks: []
@@ -61,3 +61,42 @@ happy with it as a starting point) and produces those raster outputs.
   whatever matches the host environment at the time.
 - This task assumes `main-010`'s sign-off has happened — otherwise the SVG that gets
   rasterised is still officially a placeholder.
+
+## Outcome
+
+Rasterised the approved placeholder SVG into PNG sizes 16/24/32/48/64/128/256/512 plus
+a multi-resolution `mockingbird.ico` (16/24/32/48/64/128/256 layers, PNG-compressed).
+The build host had no ImageMagick or Inkscape available, so a one-shot helper at
+`Tools\RasteriseLogo\` (SkiaSharp + Svg.Skia) was written; it lives outside
+`mockingbird.sln` so it doesn't pollute the main build graph. The helper substitutes
+`currentColor` with white before rasterising so the silhouette reads cleanly on the
+dark Windows 11 taskbar / Mica backdrop, and the `.ico` is assembled by hand using the
+straightforward ICONDIR / ICONDIRENTRY layout with PNG-compressed frames.
+
+WPF wiring:
+
+- `<ApplicationIcon>..\..\assets\branding\mockingbird.ico</ApplicationIcon>` in
+  `Mockingbird.csproj` — the .exe now shows the silhouette in Explorer / taskbar.
+- `<Resource Include="..\..\assets\branding\mockingbird.ico" Link="Resources\mockingbird.ico" />`
+  to make it resolvable via the pack URI.
+- `tray:NotifyIcon Icon="pack://application:,,,/Resources/mockingbird.ico"` in
+  `Views\MainWindow.xaml` — replaces the WPF UI default tray icon with the silhouette.
+- Same pack URI on `ui:FluentWindow Icon="..."` so the title-bar / Alt-Tab also pick
+  up the silhouette.
+
+Build verification: `dotnet build mockingbird.sln -c Debug` reports 0 warnings,
+0 errors.
+
+The visual rendering of the tray icon and `.exe` icon is for the user to verify
+(Worker has no live tray to inspect). The PNG content was confirmed clean (white
+silhouette on transparent, no stray colour pixels) by decoding via PIL during the
+authoring loop.
+
+Key files:
+- `Tools\RasteriseLogo\RasteriseLogo.csproj`, `Program.cs`, `README.md`
+- `assets\branding\mockingbird-logo-{16,24,32,48,64,128,256,512}.png`
+- `assets\branding\mockingbird.ico`
+- `src\Mockingbird\Mockingbird.csproj`
+- `src\Mockingbird\Views\MainWindow.xaml`
+- `docs\styleguide.md`
+- `.agenthoff\contexts\main\README.md`

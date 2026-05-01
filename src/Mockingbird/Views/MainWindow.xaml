@@ -5,6 +5,7 @@
                  xmlns:tray="clr-namespace:Wpf.Ui.Tray.Controls;assembly=Wpf.Ui.Tray"
                  Title="Mockingbird — Local voices for Claude Code"
                  Width="900" Height="600"
+                 Icon="pack://application:,,,/Resources/mockingbird.ico"
                  ExtendsContentIntoTitleBar="True"
                  WindowBackdropType="Mica"
                  WindowStartupLocation="CenterScreen">
@@ -34,6 +35,7 @@
                          Grid.Row="0"
                          FocusOnLeftClick="False"
                          MenuOnRightClick="True"
+                         Icon="pack://application:,,,/Resources/mockingbird.ico"
                          TooltipText="Mockingbird — Local voices for Claude Code"
                          LeftClick="TrayIcon_LeftClick">
             <tray:NotifyIcon.Menu>

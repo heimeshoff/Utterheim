@@ -5,11 +5,30 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 14:42 -- Task completed: main-012 - Logo rasterisation
+
+**Type:** Work / Task completion
+**Task:** main-012 - Rasterise the speaking-person logo to PNG sizes + .ico for tray
+**Summary:** Generated PNG sizes 16/24/32/48/64/128/256/512 + multi-resolution mockingbird.ico (16/24/32/48/64/128/256 layers, PNG-compressed) into assets/branding/ via a one-shot SkiaSharp + Svg.Skia helper at Tools/RasteriseLogo/ (kept standalone, not in mockingbird.sln). Wired the .ico as ApplicationIcon, packaged Resource, FluentWindow Icon, and tray:NotifyIcon Icon. Build clean (0/0). User-verifiable: speaking-person silhouette now appears in the tray + Explorer + taskbar after restart.
+**Files changed:** 14
+**ADRs written:** none
+
+---
+
+## 2026-05-01 14:31 -- Batch started: [main-012]
+
+**Type:** Work / Batch start
+**Tasks:** main-012 - Rasterise the speaking-person logo to PNG sizes + .ico
+**Parallel:** no (1 worker)
+
+---
+
 ## 2026-05-01 14:30 -- Task completed: main-011 - Real pocket-tts engine
 
 **Type:** Work / Task completion
 **Task:** main-011 - Real pocket-tts engine — Python sidecar bootstrap and PocketTtsEngine
 **Summary:** Probe-installed pocket-tts==2.0.0 cleanly into a fresh Python 3.12 venv on Windows 11 — ADR 0002 path validated. Wrote PocketTtsEngine (POST /tts, strips WAV header, streams 24 kHz mono 16-bit PCM via IAsyncEnumerable<byte[]>), SidecarHost (supervises python.exe with port-banner parsing, /health polling, capped-backoff restarts, clean shutdown), PythonRuntimeBootstrapper (downloads Python 3.12.7 embeddable, enables site, bootstraps pip, installs pocket-tts>=2.0,<3, persists state across restarts), real BootstrapDialog with progress + cancel + retry, EntryPoint DI swap (StubTtsEngine gated behind MOCKINGBIRD_USE_STUB_ENGINE=1), SpeakServer /status reports sidecar state. Build clean (0/0). User-verifiable acceptance criteria pending first run with real download (~700 MB).
+**Commit:** 061c51b
 **Files changed:** 9
 **ADRs written:** none
 

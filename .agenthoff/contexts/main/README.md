@@ -87,6 +87,12 @@ src\
       Settings\DataPathService.cs     ADR 0005 path layout (adapted from WhisperHeim)
     appsettings.json                  default port + hotkey window
   Mockingbird.Cli\                    mockingbird-speak — single-file CLI wrapper
+assets\branding\                      brand mark + raster outputs
+  mockingbird-logo.svg                source artwork (placeholder, signed off)
+  mockingbird-logo-{16..512}.png      rasterised PNGs (main-012)
+  mockingbird.ico                     multi-resolution tray + taskbar icon
+Tools\RasteriseLogo\                  one-shot helper that produces the PNG/ICO
+                                      from the source SVG. Outside mockingbird.sln.
 README.md
 ```
 

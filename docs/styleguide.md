@@ -144,20 +144,28 @@ belong to WhisperHeim pages mockingbird doesn't ship.
 
 | Asset | Path | Status |
 |---|---|---|
-| Speaking-person logo (vector) | `assets/branding/mockingbird-logo.svg` | **PLACEHOLDER** — to be replaced by user-supplied artwork before sign-off. |
-| Logo PNG sizes (16, 24, 32, 48, 64, 128, 256, 512) | `assets/branding/` | **Pending user-supplied artwork.** Generation tracked as `main-012-logo-rasterisation`. |
-| Logo `.ico` (multi-resolution, for tray + taskbar) | `assets/branding/mockingbird.ico` | **Pending user-supplied artwork.** Generation tracked as `main-012-logo-rasterisation`. |
+| Speaking-person logo (vector) | `assets/branding/mockingbird-logo.svg` | **Approved placeholder** — signed off 2026-05-01 as the working brand mark for v1. |
+| Logo PNG sizes (16, 24, 32, 48, 64, 128, 256, 512) | `assets/branding/mockingbird-logo-{size}.png` | **Generated** by `main-012` from the source SVG. White silhouette on transparent. |
+| Logo `.ico` (multi-resolution, for tray + taskbar) | `assets/branding/mockingbird.ico` | **Generated** by `main-012`. Layers: 16, 24, 32, 48, 64, 128, 256 (PNG-compressed). Wired as `<ApplicationIcon>` and bound to `tray:NotifyIcon` in `Views\MainWindow.xaml`. |
 
 Notes:
 
 - The placeholder SVG is intentionally simple geometry (head circle + trapezoidal body +
   three arc waves) so it's recognisable as "person speaking" without pretending to be
   finished artwork.
-- The WPF main window currently displays the SVG-derived geometry inline so the shell has
-  *something* until the .ico exists. The system tray still uses the WPF UI default tray
-  icon until `main-012` lands a proper .ico.
-- Once the user supplies (or approves) the final SVG, `main-012` rasterises it to PNG
-  sizes + .ico and wires the result into `App.xaml` / tray binding / About page.
+- The PNG and `.ico` assets are committed alongside the SVG. They are regenerated only
+  when the source SVG changes, via the standalone helper at
+  `Tools\RasteriseLogo\RasteriseLogo.csproj` (run with
+  `dotnet run --project Tools\RasteriseLogo\RasteriseLogo.csproj`). The helper lives
+  outside `mockingbird.sln` so day-to-day builds don't pull SkiaSharp into the main
+  build graph.
+- The WPF main window also displays the SVG-derived geometry inline (in the sidebar and
+  centre splash) — that's a parallel rendering path and stays unchanged. The `.ico` is
+  what Windows uses for the tray, taskbar, and Explorer .exe icon.
+- The silhouette is rasterised in white on a transparent background so it reads cleanly
+  on a dark Windows 11 taskbar / Mica backdrop. The colour choice is mechanical, not
+  branded; if a future task introduces a coloured brand mark the rasteriser
+  (`Tools\RasteriseLogo\Program.cs`) is the single place to change.
 
 ---
 
