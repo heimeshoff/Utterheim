@@ -5,6 +5,16 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 12:51 -- Task completed: main-001 - Confirm stack
+
+**Type:** Work / Task completion
+**Task:** main-001 - Confirm and document the .NET 9 / WPF / WPF-UI / Win x64 stack
+**Summary:** Recorded the .NET 9 / WPF / WPF-UI / Windows x64 stack as ADR 0001 (scope global, status accepted), mirroring WhisperHeim's foundation. No code changes; only the ADR and task move.
+**Files changed:** 1
+**ADRs written:** 0001-stack-net9-wpf-x64.md
+
+---
+
 ## 2026-05-01 12:48 -- Batch started: [main-001, main-002, main-003]
 
 **Type:** Work / Batch start
