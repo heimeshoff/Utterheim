@@ -5,11 +5,22 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 12:53 -- Task completed: main-003 - Claude transport HTTP
+
+**Type:** Work / Task completion
+**Task:** main-003 - Expose the speak endpoint over loopback HTTP (JSON)
+**Summary:** Recorded ADR 0003 selecting loopback HTTP/JSON on 127.0.0.1:7223 as the speak endpoint transport, with a mockingbird-speak CLI wrapper for hook ergonomics. No code written; main-009 is now unblocked on this dimension.
+**Files changed:** 1
+**ADRs written:** 0003-claude-transport-http.md
+
+---
+
 ## 2026-05-01 12:52 -- Task completed: main-002 - Pocket-tts sidecar
 
 **Type:** Work / Task completion
 **Task:** main-002 - Run pocket-tts as a managed Python sidecar over loopback HTTP
 **Summary:** Recorded ADR 0002 selecting a managed Python sidecar (loopback HTTP) as the pocket-tts integration shape, with sherpa-onnx ONNX kept as a documented fallback behind an ITtsEngine seam. No code changes; bootstrap deferred to main-009.
+**Commit:** de54a8b
 **Files changed:** 1
 **ADRs written:** 0002-pocket-tts-python-sidecar.md
 
