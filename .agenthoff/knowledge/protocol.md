@@ -5,11 +5,25 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 13:20 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 10 (main-001 through main-010)
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 11 (1 bootstrap + 8 ADR commits + 1 walking-skeleton + 1 styleguide)
+**New backlog items:** main-011 (real pocket-tts engine bootstrap), main-012 (logo rasterisation)
+
+All 8 foundation ADRs committed; walking skeleton builds clean and smoke-tested live (HTTP + queue + audio + hotkey end-to-end with stubbed engine); styleguide artefact produced and awaiting user sign-off. Mockingbird is ready for the user to (a) sign off on docs/styleguide.md, (b) decide when main-011 (real engine) and main-012 (final logo raster) move from backlog to todo via /agenthoff:model.
+
+---
+
 ## 2026-05-01 13:18 -- Task completed: main-010 - Styleguide
 
 **Type:** Work / Task completion
 **Task:** main-010 - Styleguide — adapt WhisperHeim's design language and the speaking-person logo
 **Summary:** Produced docs/styleguide.md (inherited-from-WhisperHeim section + explicit divergences + reusable component map + sign-off placeholder), placeholder speaking-person SVG at assets/branding/mockingbird-logo.svg (clearly marked PLACEHOLDER), MainWindow.xaml updated to render the silhouette inline + show "Local voices for Claude Code" tagline. Build remains clean. **GATE STATE: artefact ready, awaiting user sign-off before any frontend feature task can be promoted.**
+**Commit:** 44ce127
 **Files changed:** 5
 **ADRs written:** none
 **New backlog items:** main-012 - Rasterise the speaking-person logo to PNG sizes + .ico
