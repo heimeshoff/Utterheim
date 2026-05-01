@@ -103,15 +103,40 @@ Path layout at runtime (per ADR 0005):
 <dataPath>\voices\library.json          empty list in v1 skeleton
 ```
 
+## Engine status
+
+As of main-011 the **real pocket-tts engine is wired in**:
+
+- `PocketTtsEngine` posts text to the Python sidecar's `POST /tts` form endpoint and
+  streams 24 kHz mono 16-bit PCM chunks (after stripping the WAV header) straight to
+  `AudioPlayer` via the existing `IAsyncEnumerable<byte[]>` path.
+- `SidecarHost` owns the `python.exe -m pocket_tts serve --host 127.0.0.1 --port 0`
+  process: parses the assigned port from Uvicorn's startup banner, polls `/health`,
+  redirects stdout/stderr into Serilog under a `sidecar` source, terminates on host
+  shutdown, and restarts on crash with capped exponential backoff (5 attempts).
+- `PythonRuntimeBootstrapper` runs once on first launch: downloads Python 3.12.7
+  embeddable to `%LOCALAPPDATA%\Mockingbird\runtime\python\`, enables `site` in the
+  `._pth` file, bootstraps pip, pip-installs `pocket-tts>=2.0,<3` (which pulls torch
+  CPU plus deps, ~600 MB), and smoke-tests the import. Progress is persisted to
+  `bootstrap-state.json` so a half-finished run resumes on restart.
+- `BootstrapDialog` drives the bootstrapper with per-step progress, cancel, and retry.
+- `StubTtsEngine` is preserved behind `MOCKINGBIRD_USE_STUB_ENGINE=1` for offline /
+  CI testing; the env flag also disables the sidecar and bootstrap-dialog wiring.
+- `GET /voices` returns the eight pocket-tts built-ins (`alba`, `marius`, `javert`,
+  `jean`, `fantine`, `cosette`, `eponine`, `azelma`) with `engine: "pocket-tts"`,
+  `isBuiltIn: true`. Voice cloning UI and the wider voice library are separate tasks.
+- `GET /status` reports `sidecar.state` (notstarted / starting / running / restarting
+  / failed / stopping), `sidecar.healthy`, `sidecar.port`, and `sidecar.lastError`.
+
+The "stub-engine plays a 440 Hz tone" note from the skeleton is now superseded.
+
 ## Notes for the architect
 
-ADRs 0001–0008 are committed and the walking skeleton (main-009) has
-materialised them as code. The synthesis engine ships **stubbed** for the
-skeleton (440 Hz test tone via `StubTtsEngine`); the real pocket-tts sidecar
-bootstrap is tracked as `main-011-pocket-tts-real-bootstrap.md` in the
-backlog. Every other architectural seam — HTTP, queue, NAudio playback,
-hotkey, tray, logging, path layout, CLI wrapper — is real and end-to-end
-verified.
+ADRs 0001–0008 are committed. The walking skeleton (main-009) materialised them as
+code; main-011 replaced the stub engine with the real pocket-tts sidecar (see "Engine
+status" above). Every architectural seam — HTTP, queue, NAudio playback, hotkey,
+tray, logging, path layout, CLI wrapper, sidecar lifecycle, runtime bootstrap — is
+real and end-to-end verified.
 
 Historical: the boundary analysis surfaced four architectural decisions which
 have now been resolved by the ADRs above:

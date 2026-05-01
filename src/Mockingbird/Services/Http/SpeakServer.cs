@@ -27,6 +27,7 @@ public sealed class SpeakServer : IHostedService
 {
     private readonly SpeakQueue _queue;
     private readonly ITtsEngine _engine;
+    private readonly SidecarHost? _sidecar;
     private readonly ILogger<SpeakServer> _logger;
     private readonly string _host;
     private readonly int _port;
@@ -37,11 +38,13 @@ public sealed class SpeakServer : IHostedService
         SpeakQueue queue,
         ITtsEngine engine,
         ILogger<SpeakServer> logger,
+        SidecarHost? sidecar = null,
         string host = "127.0.0.1",
         int port = 7223)
     {
         _queue = queue;
         _engine = engine;
+        _sidecar = sidecar;
         _logger = logger;
         _host = host;
         _port = port;
@@ -86,14 +89,36 @@ public sealed class SpeakServer : IHostedService
             return Results.Ok(voices);
         });
 
-        app.MapGet("/status", () => Results.Ok(new
+        app.MapGet("/status", () =>
         {
-            playing = _queue.IsPlaying,
-            queueLength = _queue.QueueLength,
-            currentRequestId = _queue.CurrentRequestId,
-            // Skeleton stub: there is no sidecar in main-009; main-011 wires the real one.
-            sidecar = new { state = "stub", healthy = true },
-        }));
+            // Sidecar status: the real one when PocketTtsEngine is wired, a synthetic
+            // "stub" reading when the stub engine is gating things behind
+            // MOCKINGBIRD_USE_STUB_ENGINE=1.
+            object sidecarPayload;
+            if (_sidecar is not null)
+            {
+                var s = _sidecar.GetStatus();
+                sidecarPayload = new
+                {
+                    state = s.State.ToString().ToLowerInvariant(),
+                    healthy = s.Healthy,
+                    port = s.Port,
+                    lastError = s.LastError,
+                };
+            }
+            else
+            {
+                sidecarPayload = new { state = "stub", healthy = true, port = 0, lastError = (string?)null };
+            }
+
+            return Results.Ok(new
+            {
+                playing = _queue.IsPlaying,
+                queueLength = _queue.QueueLength,
+                currentRequestId = _queue.CurrentRequestId,
+                sidecar = sidecarPayload,
+            });
+        });
 
         _app = app;
 

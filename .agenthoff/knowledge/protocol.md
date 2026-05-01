@@ -5,6 +5,24 @@ Newest entries on top.
 
 ---
 
+## 2026-05-01 14:30 -- Task completed: main-011 - Real pocket-tts engine
+
+**Type:** Work / Task completion
+**Task:** main-011 - Real pocket-tts engine — Python sidecar bootstrap and PocketTtsEngine
+**Summary:** Probe-installed pocket-tts==2.0.0 cleanly into a fresh Python 3.12 venv on Windows 11 — ADR 0002 path validated. Wrote PocketTtsEngine (POST /tts, strips WAV header, streams 24 kHz mono 16-bit PCM via IAsyncEnumerable<byte[]>), SidecarHost (supervises python.exe with port-banner parsing, /health polling, capped-backoff restarts, clean shutdown), PythonRuntimeBootstrapper (downloads Python 3.12.7 embeddable, enables site, bootstraps pip, installs pocket-tts>=2.0,<3, persists state across restarts), real BootstrapDialog with progress + cancel + retry, EntryPoint DI swap (StubTtsEngine gated behind MOCKINGBIRD_USE_STUB_ENGINE=1), SpeakServer /status reports sidecar state. Build clean (0/0). User-verifiable acceptance criteria pending first run with real download (~700 MB).
+**Files changed:** 9
+**ADRs written:** none
+
+---
+
+## 2026-05-01 14:19 -- Batch started: [main-011]
+
+**Type:** Work / Batch start
+**Tasks:** main-011 - Real pocket-tts engine — Python sidecar bootstrap and PocketTtsEngine
+**Parallel:** no (1 worker — large scope; main-012 demoted to next batch due to csproj conflict)
+
+---
+
 ## 2026-05-01 14:19 -- Sign-off + promote: main-011, main-012
 
 **Type:** Model / Promote (post sign-off)

@@ -89,7 +89,28 @@ public static class EntryPoint
             {
                 // Use the path service we already loaded (single instance throughout the app).
                 services.AddSingleton(pathBootstrap);
-                services.AddSingleton<ITtsEngine, StubTtsEngine>();
+
+                // Engine: real pocket-tts sidecar by default. The stub stays available behind
+                // an env flag (MOCKINGBIRD_USE_STUB_ENGINE=1) for offline/CI testing per
+                // main-011 acceptance criteria — useful when iterating UI work without
+                // booting the full Python runtime.
+                var useStub = string.Equals(
+                    Environment.GetEnvironmentVariable("MOCKINGBIRD_USE_STUB_ENGINE"),
+                    "1", StringComparison.Ordinal);
+
+                services.AddSingleton<PythonRuntimeBootstrapper>();
+                services.AddSingleton<SidecarHost>();
+
+                if (useStub)
+                {
+                    services.AddSingleton<ITtsEngine, StubTtsEngine>();
+                }
+                else
+                {
+                    services.AddSingleton<ITtsEngine, PocketTtsEngine>();
+                    services.AddHostedService(sp => sp.GetRequiredService<SidecarHost>());
+                }
+
                 services.AddSingleton<AudioPlayer>();
                 services.AddSingleton<SpeakQueue>();
                 services.AddHostedService(sp => sp.GetRequiredService<SpeakQueue>());
@@ -98,6 +119,7 @@ public static class EntryPoint
                     sp.GetRequiredService<SpeakQueue>(),
                     sp.GetRequiredService<ITtsEngine>(),
                     sp.GetRequiredService<ILogger<SpeakServer>>(),
+                    sp.GetService<SidecarHost>(),
                     httpHost,
                     httpPort));
                 services.AddHostedService(sp => sp.GetRequiredService<SpeakServer>());
@@ -110,21 +132,32 @@ public static class EntryPoint
 
         using var host = hostBuilder.Build();
 
-        // 5. Show the bootstrap dialog on first run (per ADR 0008).
-        //    Marker file: <LocalAppData>\Mockingbird\bootstrap-state.json with {done:true}.
-        var bootstrapMarker = pathBootstrap.BootstrapStatePath;
-        if (!File.Exists(bootstrapMarker))
+        // 5. Run the first-launch bootstrap dialog if the runtime isn't installed yet
+        //    (per ADR 0008). The bootstrapper persists progress in bootstrap-state.json
+        //    so a half-finished install resumes where it left off on the next launch.
+        //    The stub engine path skips this entirely.
+        var useStub = string.Equals(
+            Environment.GetEnvironmentVariable("MOCKINGBIRD_USE_STUB_ENGINE"),
+            "1", StringComparison.Ordinal);
+        if (!useStub)
         {
-            // We need an Application instance to show a Window. Create the WPF App
-            // up-front so dialogs can use it; we'll keep using the same App below.
-            EnsureApplication();
-            var dialog = new BootstrapDialog();
-            dialog.ShowDialog();
-            File.WriteAllText(bootstrapMarker, "{\"done\":true}");
-            Log.Information("Bootstrap marker written to {Path}", bootstrapMarker);
+            var bootstrapper = host.Services.GetRequiredService<PythonRuntimeBootstrapper>();
+            if (!bootstrapper.IsBootstrapped)
+            {
+                EnsureApplication();
+                var dialogLogger = host.Services.GetRequiredService<ILogger<BootstrapDialog>>();
+                var dialog = new BootstrapDialog(bootstrapper, dialogLogger);
+                dialog.ShowDialog();
+                if (!dialog.BootstrapSucceeded)
+                {
+                    Log.Warning("First-run bootstrap did not complete — exiting.");
+                    return 0;
+                }
+                Log.Information("First-run bootstrap completed.");
+            }
         }
 
-        // 6. Start hosted services (queue worker + HTTP).
+        // 6. Start hosted services (queue worker + HTTP + sidecar host when not stubbed).
         host.Start();
 
         // 7. WPF Application + tray window.

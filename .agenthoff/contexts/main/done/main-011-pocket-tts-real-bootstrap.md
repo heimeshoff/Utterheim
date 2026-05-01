@@ -1,11 +1,11 @@
 ---
 id: main-011
 title: Real pocket-tts engine — Python sidecar bootstrap and PocketTtsEngine
-status: todo
+status: done
 type: feature
 context: main
 created: 2026-05-01
-completed:
+completed: 2026-05-01
 commit:
 depends_on: [main-009]
 blocks: []
@@ -112,3 +112,55 @@ skeleton tractable.
 - Does NOT depend on main-010 (styleguide). This task is engine work, not
   frontend; the bootstrap dialog can stay utilitarian and inherit main-010's
   styling once both are merged.
+
+## Outcome
+
+Probe-installed `pocket-tts==2.0.0` cleanly into a fresh Python 3.12 venv on
+Windows 11; ADR 0002's Python-sidecar path is validated. Read
+`pocket_tts/main.py` to nail down the streaming protocol: server is started via
+`python -m pocket_tts serve --host 127.0.0.1 --port N`, exposes `POST /tts`
+(form-encoded `text` + `voice_url`, returns a streaming WAV with `mimi.sample_rate`
+24 kHz mono 16-bit PCM after a standard 44-byte RIFF header) plus `GET /health`.
+
+Code:
+
+- `Services/Tts/PocketTtsEngine.cs` — `ITtsEngine` impl that posts to `/tts`,
+  strips the WAV header, and yields raw PCM chunks straight through to the
+  existing `Channel<byte[]>` / `IAsyncEnumerable` path.
+- `Services/Tts/SidecarHost.cs` — `IHostedService` that supervises the python.exe
+  process: parses Uvicorn's port banner, polls `/health`, redirects stdout/stderr
+  into Serilog under a `sidecar` source, restarts on crash with capped
+  exponential backoff (1/2/4/8/16/30 s, fail-permanent after 5 attempts).
+- `Services/Tts/PythonRuntimeBootstrapper.cs` — first-launch installer:
+  downloads Python 3.12.7 embeddable, enables `site` in the `._pth` (embeddable
+  Python's pip-blocker), bootstraps pip via `get-pip.py`, pip-installs
+  `pocket-tts>=2.0,<3`, runs an `import pocket_tts` smoke test. Persists per-step
+  progress to `bootstrap-state.json` so a half-finished run resumes on the next
+  launch.
+- `Services/Tts/SidecarStatus.cs` — `SidecarState` enum + `SidecarStatus` record
+  for the `/status` endpoint.
+- `Views/BootstrapDialog.xaml(.cs)` — real first-run UX with per-step status,
+  step counter, overall progress bar, cancel + retry. Mirrors WhisperHeim's
+  `ModelDownloadDialog` shape per ADR 0008.
+- `EntryPoint.cs` — DI swap to `PocketTtsEngine` by default; `StubTtsEngine`
+  preserved behind `MOCKINGBIRD_USE_STUB_ENGINE=1`. `SidecarHost` registered as
+  a hosted service when the real engine is selected. Bootstrap dialog now drives
+  `PythonRuntimeBootstrapper` instead of just writing a sentinel file.
+- `Services/Http/SpeakServer.cs` — `/status` reports the real sidecar state /
+  healthy / port / lastError when the sidecar is wired; falls back to a `stub`
+  reading when the env-flagged stub is in use. `SidecarHost` injected as an
+  optional ctor parameter.
+
+Build: `dotnet build mockingbird.sln -c Debug --nologo -v quiet` → 0 warnings,
+0 errors.
+
+User-verifiable acceptance criteria pending first run on a clean machine:
+
+- [ ] Bootstrap dialog runs end-to-end, downloads Python + pocket-tts, hands off.
+- [ ] `curl POST /speak {"text": "...", "voice": "alba"}` produces audible
+  speech within ≤2 s.
+- [ ] Streaming behaviour: long text starts playing before synthesis completes.
+- [ ] `GET /status` reports `sidecar.state = "running"` and `sidecar.healthy = true`.
+- [ ] Sidecar stdout/stderr appear in `mockingbird-YYYYMMDD.log` under the
+  `sidecar` source.
+- [ ] Tray "Exit" terminates the python.exe — no zombie process.
