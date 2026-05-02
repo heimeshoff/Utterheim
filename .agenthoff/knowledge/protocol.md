@@ -5,13 +5,23 @@ Newest entries on top.
 
 ---
 
+## 2026-05-02 10:08 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 1
+
+---
+
 ## 2026-05-02 10:07 -- Task completed: main-020 - Navigation shell — wpfui NavigationView with four-page skeleton
 
 **Type:** Work / Task completion
 **Task:** main-020 - Navigation shell — wpfui NavigationView with four-page skeleton
 **Summary:** Replaced placeholder MainWindow content with a wpfui NavigationView shell hosting four stub pages (Speak / Voices / Settings / About), wired CommunityToolkit.Mvvm and an IPageService→DI adapter, and added a persistent status footer driven by SidecarHost.StateChanged.
-**Commit:** (pending)
-**Files changed:** 21
+**Commit:** a19e9b3
+**Files changed:** 25
 **ADRs written:** 0009, 0010 (drafts finalised in-place; not authored by worker)
 
 ---

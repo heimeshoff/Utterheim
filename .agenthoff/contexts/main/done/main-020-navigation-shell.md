@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-01
 completed: 2026-05-02
-commit:
+commit: a19e9b3
 depends_on: [main-010]
 blocks: [main-013, main-014, main-016, main-017]
 tags: [frontend, foundation, navigation]
