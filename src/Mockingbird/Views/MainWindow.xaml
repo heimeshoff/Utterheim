@@ -3,6 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:tray="clr-namespace:Wpf.Ui.Tray.Controls;assembly=Wpf.Ui.Tray"
+                 xmlns:pages="clr-namespace:Mockingbird.Views.Pages"
                  Title="Mockingbird — Local voices for Claude Code"
                  Width="900" Height="600"
                  Icon="pack://application:,,,/Resources/mockingbird.ico"
@@ -10,13 +11,6 @@
                  WindowBackdropType="Mica"
                  WindowStartupLocation="CenterScreen">
     <ui:FluentWindow.Resources>
-        <!--
-            Inline brand mark mirroring assets/branding/mockingbird-logo.svg.
-            PLACEHOLDER artwork — the user is expected to replace this before
-            signing off on docs/styleguide.md. Drawn via Path geometry so it
-            renders crisp at any size and tints with currentColor (theme).
-            Reused for the title bar mini-icon and the centre splash mark.
-        -->
         <Style x:Key="BrandMarkStyle" TargetType="Viewbox">
             <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="UseLayoutRounding" Value="True" />
@@ -27,6 +21,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <ui:TitleBar Grid.Row="0" Title="Mockingbird" />
@@ -60,57 +55,15 @@
             </tray:NotifyIcon.Menu>
         </tray:NotifyIcon>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-
-            <Border Grid.Column="0" Background="{DynamicResource ApplicationBackgroundBrush}">
-                <StackPanel Margin="12">
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,16">
-                        <Viewbox Width="28" Height="28" Style="{StaticResource BrandMarkStyle}">
-                            <Canvas Width="256" Height="256">
-                                <!-- Head -->
-                                <Ellipse Canvas.Left="62" Canvas.Top="46" Width="60" Height="60"
-                                         Fill="{DynamicResource TextFillColorPrimaryBrush}" />
-                                <!-- Body -->
-                                <Path Fill="{DynamicResource TextFillColorPrimaryBrush}"
-                                      Data="M 44 196 Q 52 132 92 124 Q 132 132 140 196 Z" />
-                                <!-- Sound waves -->
-                                <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
-                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                      Data="M 138 76 Q 158 56 158 76 Q 158 96 138 76" />
-                                <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
-                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                      Data="M 168 76 Q 196 46 196 76 Q 196 106 168 76" />
-                                <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
-                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                      Data="M 198 76 Q 234 36 234 76 Q 234 116 198 76" />
-                            </Canvas>
-                        </Viewbox>
-                        <TextBlock Text="Mockingbird"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"
-                                   Margin="10,0,0,0" />
-                    </StackPanel>
-                    <ui:Button Content="Speak"
-                               Icon="{ui:SymbolIcon Mic24}"
-                               Appearance="Secondary"
-                               HorizontalAlignment="Stretch"
-                               IsEnabled="False" />
-                    <TextBlock Text="(skeleton — full UI lands after styleguide sign-off)"
-                               FontSize="11"
-                               Opacity="0.6"
-                               TextWrapping="Wrap"
-                               Margin="0,16,0,0" />
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="1" Padding="40">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <Viewbox Width="96" Height="96" Margin="0,0,0,16" Style="{StaticResource BrandMarkStyle}">
+        <ui:NavigationView x:Name="RootNavigation"
+                           Grid.Row="1"
+                           PaneDisplayMode="Left"
+                           IsBackButtonVisible="Collapsed"
+                           IsPaneToggleVisible="False"
+                           OpenPaneLength="220">
+            <ui:NavigationView.PaneHeader>
+                <StackPanel Orientation="Horizontal" Margin="12,12,12,16">
+                    <Viewbox Width="28" Height="28" Style="{StaticResource BrandMarkStyle}">
                         <Canvas Width="256" Height="256">
                             <Ellipse Canvas.Left="62" Canvas.Top="46" Width="60" Height="60"
                                      Fill="{DynamicResource TextFillColorPrimaryBrush}" />
@@ -128,23 +81,53 @@
                         </Canvas>
                     </Viewbox>
                     <TextBlock Text="Mockingbird"
-                               FontSize="32"
-                               FontWeight="Light"
-                               TextAlignment="Center" />
-                    <TextBlock Text="Local voices for Claude Code"
-                               FontSize="16"
-                               FontWeight="Light"
-                               Opacity="0.85"
-                               TextAlignment="Center"
-                               Margin="0,4,0,0" />
-                    <TextBlock x:Name="StatusText"
-                               Text="HTTP listening on http://127.0.0.1:7223  •  Engine: stub (test tone)"
-                               FontSize="13"
-                               Opacity="0.7"
-                               TextAlignment="Center"
-                               Margin="0,16,0,0" />
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Margin="10,0,0,0" />
                 </StackPanel>
-            </Border>
-        </Grid>
+            </ui:NavigationView.PaneHeader>
+
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem Content="Speak"
+                                       TargetPageType="{x:Type pages:SpeakPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Mic24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="Voices"
+                                       TargetPageType="{x:Type pages:VoicesPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="PersonVoice24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="Settings"
+                                       TargetPageType="{x:Type pages:SettingsPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Settings24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="About"
+                                       TargetPageType="{x:Type pages:AboutPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Info24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+        </ui:NavigationView>
+
+        <Border x:Name="StatusFooter"
+                Grid.Row="2"
+                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="16,4"
+                MinHeight="28">
+            <TextBlock VerticalAlignment="Center"
+                       FontSize="12"
+                       Opacity="0.85">
+                <Run Text="HTTP " /><Run Text="{Binding HttpEndpoint, FallbackValue='—'}" /><Run Text="  •  Engine: " /><Run Text="{Binding EngineState, FallbackValue='—'}" />
+            </TextBlock>
+        </Border>
     </Grid>
 </ui:FluentWindow>

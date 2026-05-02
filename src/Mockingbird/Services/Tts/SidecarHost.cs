@@ -77,6 +77,13 @@ public sealed class SidecarHost : IHostedService, IDisposable
     }
 
     /// <summary>
+    /// Raised on the thread that mutates state (typically the supervisor task).
+    /// Subscribers must marshal to the UI dispatcher themselves. The status
+    /// footer view-model uses this to keep "Engine: {state}" live.
+    /// </summary>
+    public event EventHandler<SidecarStatus>? StateChanged;
+
+    /// <summary>
     /// Wait until the sidecar reports healthy. Used by the engine before issuing
     /// the first synthesis request. Times out via <paramref name="ct"/>.
     /// </summary>
@@ -339,24 +346,42 @@ public sealed class SidecarHost : IHostedService, IDisposable
 
     private void SetState(SidecarState state, bool healthy = false, string? error = null)
     {
+        SidecarStatus snapshot;
         lock (_stateLock)
         {
             _state = state;
             _lastHealthCheckSucceeded = healthy;
             if (error is not null) _lastError = error;
+            snapshot = new SidecarStatus(_state, _lastHealthCheckSucceeded, _port, _lastError);
         }
+        RaiseStateChanged(snapshot);
     }
 
     private void SetFailed(string error)
     {
+        SidecarStatus snapshot;
         lock (_stateLock)
         {
             _state = SidecarState.Failed;
             _lastError = error;
             _lastHealthCheckSucceeded = false;
+            snapshot = new SidecarStatus(_state, _lastHealthCheckSucceeded, _port, _lastError);
         }
         _logger.LogError("Sidecar permanently failed: {Error}", error);
+        RaiseStateChanged(snapshot);
         _readyTcs?.TrySetException(new InvalidOperationException(error));
+    }
+
+    private void RaiseStateChanged(SidecarStatus snapshot)
+    {
+        try
+        {
+            StateChanged?.Invoke(this, snapshot);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "SidecarHost.StateChanged subscriber threw.");
+        }
     }
 
     public void Dispose()

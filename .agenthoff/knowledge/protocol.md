@@ -5,6 +5,102 @@ Newest entries on top.
 
 ---
 
+## 2026-05-02 10:07 -- Task completed: main-020 - Navigation shell — wpfui NavigationView with four-page skeleton
+
+**Type:** Work / Task completion
+**Task:** main-020 - Navigation shell — wpfui NavigationView with four-page skeleton
+**Summary:** Replaced placeholder MainWindow content with a wpfui NavigationView shell hosting four stub pages (Speak / Voices / Settings / About), wired CommunityToolkit.Mvvm and an IPageService→DI adapter, and added a persistent status footer driven by SidecarHost.StateChanged.
+**Commit:** (pending)
+**Files changed:** 21
+**ADRs written:** 0009, 0010 (drafts finalised in-place; not authored by worker)
+
+---
+
+## 2026-05-02 09:57 -- Batch started: [main-020]
+
+**Type:** Work / Batch start
+**Tasks:** main-020 - Navigation shell — wpfui NavigationView with four-page skeleton
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-01 16:30 -- Model / Refined: main-020 - Navigation shell (user pass)
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** todo (was demoted to backlog mid-refinement, then re-promoted
+once user resolved the open questions)
+**Summary:** Two-pass refinement on main-020. Orchestrator pass surfaced six
+opens (wpfui v3 lifecycle interface, page service choice, MVVM toolkit,
+engine-status interim visibility, brand-mark extraction, titlebar text) and
+demoted the task back to `backlog/` pending answers. Marco delegated the
+calls back ("you decide" on most). Decisions: implement both
+`INavigableView<T>` (typed VM) and `INavigationAware` (lifecycle hooks);
+use wpfui's built-in `IPageService`/`INavigationService` with a thin
+adapter; **adopt CommunityToolkit.Mvvm** (override of orchestrator's bare
+INPC pick — source-gen attributes scale better across 4+ pages); **ship a
+persistent status footer** showing HTTP endpoint + engine state (no signal
+regression while main-017 is unbuilt); brand-mark extraction punted to
+worker time; static `TitleBar` text. Re-promoted to `todo/` once all six
+landed.
+**ADRs written:** 0010 — rewritten in place from "bare INPC" to
+"`CommunityToolkit.Mvvm` source generators". Filename retains its slug.
+**Side effects:** main-013 received a small editorial fix —
+`INavigableView<SpeakPageViewModel>.OnNavigatedTo()` references corrected
+to `INavigationAware.OnNavigatedTo()` (intent unchanged, interface name
+was wrong).
+
+---
+
+## 2026-05-01 15:50 -- Model / Refined: main-013 - Speak page (user pass)
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (still blocked on main-020)
+**Summary:** Marco walked through the eight open questions in person.
+Confirmed Q1 FIFO, Q2 SpeakService extraction, Q3 navigation-shell split,
+Q5(a) re-synthesize on Save, Q6 four-state status line. Punted Q4 back
+("you decide") — kept VoiceCatalog (in-process) over HTTP-loopback for
+cleaner startup ordering and symmetry with SpeakService. **Overrode Q7**:
+the picker now reads from a new `UserSettings.DefaultVoiceId` (with `alba`
+fallback) instead of always picking the first voice. The settings *storage*
+ships in main-013 (new `Services\Settings\UserSettings.cs` + forward-compat
+`settings.json`); the *UI to mutate* moves to main-016.
+**Side effects:** main-016's forward-link rewritten — no longer "add the
+storage and the UI", now "extend the existing UserSettings with the
+default-voice dropdown plus the other settings slots".
+
+---
+
+## 2026-05-01 15:30 -- Model / Refined: main-013 - Speak page
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (blocked on main-020)
+**Summary:** Resolved all eight open questions on the Speak page task — FIFO (no
+barge), extract `SpeakService` and `VoiceCatalog` so HTTP and UI share the seam
+structurally, render-on-Save (textbox is source of truth), four-state status
+line with transient `stopped`, alphabetical default voice (alba), refresh on
+`OnNavigatedTo()`. The navigation shell was split out into a separate task to
+keep main-013 page-shaped and unblock the other page tasks symmetrically.
+**Split into:** main-020 (navigation shell, promoted directly to todo/)
+**ADRs written:** 0009 (page navigation via wpfui NavigationView with
+INavigableView pages)
+**Side effects:** main-014, main-016, main-017 all gained `main-020` in their
+`depends_on`. main-016 picked up a forward-link for the persisted "default
+voice" setting deferred from Q7.
+
+---
+
+## 2026-05-01 15:05 -- Model / Captured: main-013..main-019 (v1 feature batch)
+
+**Type:** Model / Capture
+**BC:** main
+**Filed to:** backlog
+**Summary:** Captured the seven natural next steps after the foundation phase as backlog items: page set (main-013 Speak, main-014 Voices, main-015 voice cloning, main-016 Settings, main-017 About) all gated by the now-OPEN styleguide (main-010); main-018 chore to close out main-011's pending user-verifiable acceptance criteria on a clean machine; main-019 Claude Code hook sample so the speak endpoint actually gets used. Suggested run order: main-018 first (verify foundation), main-019 next (deliver v1 payoff), then page set in styleguide-canonical order. Tasks are intentionally lean — refine via /agenthoff:model before promotion.
+
+---
+
 ## 2026-05-01 14:43 -- Work session ended
 
 **Type:** Work / Session end

@@ -60,8 +60,8 @@ Note: the walking skeleton (`main-009`) was always exempt — its UI is a placeh
 
 ## Code structure
 
-The walking skeleton (main-009) materialises ADRs 0001–0008 as code. Top-level
-layout:
+The walking skeleton (main-009) materialises ADRs 0001–0008 as code. main-020
+adds the navigation shell on top per ADRs 0009 and 0010. Top-level layout:
 
 ```
 mockingbird.sln
@@ -70,12 +70,30 @@ src\
     EntryPoint.cs                     composition root + IHost lifecycle
     App.xaml(.cs)                     WPF Application + WPF-UI theme dictionary
     Views\
-      MainWindow.xaml(.cs)            Mica FluentWindow + tray:NotifyIcon menu
+      MainWindow.xaml(.cs)            Mica FluentWindow + ui:NavigationView shell
+                                      (sidebar + four-page set + status footer) +
+                                      tray:NotifyIcon menu
       BootstrapDialog.xaml(.cs)       first-run dialog (placeholder in v1)
+      Pages\
+        SpeakPage.xaml(.cs)           Stub in main-020 — main-013 fills it
+        VoicesPage.xaml(.cs)          Stub in main-020 — main-014 fills it
+        SettingsPage.xaml(.cs)        Stub in main-020 — main-016 fills it
+        AboutPage.xaml(.cs)           Stub in main-020 — main-017 fills it
+    ViewModels\
+      EngineStatusViewModel.cs        Backs the persistent footer (HTTP +
+                                      Engine state, live via SidecarHost.StateChanged)
+      Pages\
+        SpeakPageViewModel.cs         Empty ObservableObject stub (main-013 fills)
+        VoicesPageViewModel.cs        Empty ObservableObject stub (main-014 fills)
+        SettingsPageViewModel.cs      Empty ObservableObject stub (main-016 fills)
+        AboutPageViewModel.cs         Empty ObservableObject stub (main-017 fills)
     Services\
+      Navigation\PageService.cs       Thin IPageService → IServiceProvider adapter (ADR 0009)
       Tts\
         ITtsEngine.cs                 the seam every TTS engine plugs into
         StubTtsEngine.cs              440 Hz test tone (replaced by main-011)
+        SidecarHost.cs                Owns python sidecar lifecycle; raises
+                                      StateChanged for the footer VM
       Speak\
         SpeakRequest.cs               unit of work
         SpeakQueue.cs                 Channel<T> worker (ADR 0007, 0004)
@@ -108,6 +126,29 @@ Path layout at runtime (per ADR 0005):
   bootstrap-state.json                  first-run completion marker
 <dataPath>\voices\library.json          empty list in v1 skeleton
 ```
+
+## UI shell
+
+As of main-020 the tray window hosts a **wpfui `NavigationView`** with the
+canonical four-page set (Speak / Voices / Settings / About) per ADR 0009.
+Pages are real WPF `Page` subclasses, registered transient in DI, and
+implement both `Wpf.Ui.Controls.INavigableView<TViewModel>` (typed VM
+accessor) and `Wpf.Ui.Controls.INavigationAware` (`OnNavigatedTo` /
+`OnNavigatedFrom` lifecycle hooks). A thin `PageService` delegates wpfui's
+`IPageService` calls to the host's `IServiceProvider`. View-models use the
+`CommunityToolkit.Mvvm` source-generator attributes (`[ObservableProperty]`,
+`[RelayCommand]`) per ADR 0010 — no hand-rolled `ObservableBase` /
+`RelayCommand` helpers.
+
+A persistent **status footer** below the navigation area shows
+`HTTP {host}:{port}  •  Engine: {state}`. Backed by
+`EngineStatusViewModel`; the engine label updates live as
+`SidecarHost.StateChanged` fires (`starting` → `running` → `restarting` →
+`failed` → `stopping`). When the stub engine is selected
+(`MOCKINGBIRD_USE_STUB_ENGINE=1`) the label reads `stub` and never changes.
+The four feature pages (main-013/014/016/017) replace each stub with real
+content; main-017 may surface a richer status panel and remove the footer
+at that point.
 
 ## Engine status
 

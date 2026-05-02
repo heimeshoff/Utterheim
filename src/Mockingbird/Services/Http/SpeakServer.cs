@@ -50,6 +50,12 @@ public sealed class SpeakServer : IHostedService
         _port = port;
     }
 
+    /// <summary>Host the Kestrel listener is bound to (loopback in v1).</summary>
+    public string Host => _host;
+
+    /// <summary>TCP port the Kestrel listener is bound to.</summary>
+    public int Port => _port;
+
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         var builder = WebApplication.CreateBuilder();

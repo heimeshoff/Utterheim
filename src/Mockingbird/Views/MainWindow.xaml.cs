@@ -1,29 +1,57 @@
 using System.ComponentModel;
 using System.Windows;
 using Mockingbird.Services.Speak;
+using Mockingbird.ViewModels;
+using Mockingbird.Views.Pages;
+using Wpf.Ui;
 using Wpf.Ui.Controls;
 
 namespace Mockingbird.Views;
 
 /// <summary>
-/// Skeleton main window. Closing it hides to tray rather than exiting the app
-/// (per ADR 0001 / vision: tray-resident behaviour). Tray menu owns shutdown.
-/// Real frontend lands in main-010 onward.
+/// Tray-resident shell window. Hosts a wpfui <c>NavigationView</c> with the
+/// canonical four-page set (Speak / Voices / Settings / About) per ADR 0009,
+/// plus a thin persistent status footer (per main-020 Q4) bound to
+/// <see cref="EngineStatusViewModel"/>. Closing the window hides to tray;
+/// the tray menu owns shutdown.
 /// </summary>
 public partial class MainWindow : FluentWindow
 {
     private readonly SpeakQueue? _queue;
     private readonly Action? _exitAction;
+    private readonly IPageService? _pageService;
 
     public MainWindow()
     {
         InitializeComponent();
     }
 
-    public MainWindow(SpeakQueue queue, Action exitAction) : this()
+    public MainWindow(
+        SpeakQueue queue,
+        Action exitAction,
+        IPageService pageService,
+        EngineStatusViewModel engineStatus) : this()
     {
         _queue = queue;
         _exitAction = exitAction;
+        _pageService = pageService;
+        StatusFooter.DataContext = engineStatus;
+
+        // wpfui's NavigationView uses IPageService to resolve page instances
+        // through DI (per ADR 0009). The IsSelected="True" on the Speak entry
+        // drives the initial navigation once the service is wired up; if
+        // wpfui 3.1.x doesn't navigate from IsSelected alone, Loaded falls
+        // back to an explicit Navigate call.
+        RootNavigation.SetPageService(_pageService);
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (RootNavigation.SelectedItem is null)
+        {
+            RootNavigation.Navigate(typeof(SpeakPage));
+        }
     }
 
     protected override void OnClosing(CancelEventArgs e)

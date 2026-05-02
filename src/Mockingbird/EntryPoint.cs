@@ -8,12 +8,17 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Mockingbird.Services.Hotkey;
 using Mockingbird.Services.Http;
+using Mockingbird.Services.Navigation;
 using Mockingbird.Services.Settings;
 using Mockingbird.Services.Speak;
 using Mockingbird.Services.Tts;
+using Mockingbird.ViewModels;
+using Mockingbird.ViewModels.Pages;
 using Mockingbird.Views;
+using Mockingbird.Views.Pages;
 using Serilog;
 using Serilog.Events;
+using Wpf.Ui;
 
 namespace Mockingbird;
 
@@ -128,6 +133,27 @@ public static class EntryPoint
                     sp.GetRequiredService<ILogger<DoubleTapDetector>>(),
                     NativeMethods.VK_LCONTROL,
                     hotkeyWindowMs));
+
+                // Navigation shell (main-020, ADR 0009).
+                services.AddSingleton<IPageService, PageService>();
+                services.AddSingleton<INavigationService>(sp => new Wpf.Ui.NavigationService(sp));
+
+                // Status-footer view-model — singleton so it survives navigation
+                // between pages and keeps tracking sidecar state changes.
+                services.AddSingleton(sp => new EngineStatusViewModel(
+                    sp.GetRequiredService<SpeakServer>(),
+                    sp.GetService<SidecarHost>()));
+
+                // Pages registered transient so each navigation gets a fresh
+                // instance (the wpfui-canonical model). View-models match.
+                services.AddTransient<SpeakPageViewModel>();
+                services.AddTransient<VoicesPageViewModel>();
+                services.AddTransient<SettingsPageViewModel>();
+                services.AddTransient<AboutPageViewModel>();
+                services.AddTransient<SpeakPage>();
+                services.AddTransient<VoicesPage>();
+                services.AddTransient<SettingsPage>();
+                services.AddTransient<AboutPage>();
             });
 
         using var host = hostBuilder.Build();
@@ -167,10 +193,12 @@ public static class EntryPoint
         var queue = host.Services.GetRequiredService<SpeakQueue>();
         var hotkey = host.Services.GetRequiredService<DoubleTapDetector>();
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
+        var pageService = host.Services.GetRequiredService<IPageService>();
+        var engineStatus = host.Services.GetRequiredService<EngineStatusViewModel>();
 
         Action exitAction = () => app.Dispatcher.BeginInvoke(() => app.Shutdown());
 
-        var window = new MainWindow(queue, exitAction);
+        var window = new MainWindow(queue, exitAction, pageService, engineStatus);
         window.Show();
 
         hotkey.DoubleTapped += (_, _) =>
