@@ -94,6 +94,9 @@ src\
         StubTtsEngine.cs              440 Hz test tone (replaced by main-011)
         SidecarHost.cs                Owns python sidecar lifecycle; raises
                                       StateChanged for the footer VM
+        ProcessJobObject.cs           Win32 Job Object wrapper (ADR 0012) —
+                                      KILL_ON_JOB_CLOSE keeps the python tree
+                                      from outliving the host (main-022)
       Speak\
         SpeakRequest.cs               unit of work
         SpeakQueue.cs                 Channel<T> worker (ADR 0007, 0004)
@@ -161,6 +164,12 @@ As of main-011 the **real pocket-tts engine is wired in**:
   process: parses the assigned port from Uvicorn's startup banner, polls `/health`,
   redirects stdout/stderr into Serilog under a `sidecar` source, terminates on host
   shutdown, and restarts on crash with capped exponential backoff (5 attempts).
+  Per ADR 0012, every spawned python is bound to a Win32 Job Object with
+  `KILL_ON_JOB_CLOSE`, so the entire process tree (uvicorn workers, multiprocessing
+  spawn, etc.) dies atomically on tray Exit — *and* on abrupt host death — with no
+  zombie `python.exe` left in Task Manager. A `_shuttingDown` flag suppresses the
+  auto-restart loop during host shutdown so the supervisor cannot respawn the
+  python we just killed.
 - `PythonRuntimeBootstrapper` runs once on first launch: downloads Python 3.12.7
   embeddable to `%LOCALAPPDATA%\Mockingbird\runtime\python\`, enables `site` in the
   `._pth` file, bootstraps pip, pip-installs `pocket-tts>=2.0,<3` (which pulls torch

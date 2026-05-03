@@ -41,6 +41,20 @@ public sealed class SidecarHost : IHostedService, IDisposable
     private Task? _supervisorTask;
     private TaskCompletionSource<bool>? _readyTcs;
 
+    // Win32 Job Object that owns every python.exe (and descendant) we spawn.
+    // KILL_ON_JOB_CLOSE means: on Dispose, *and* on host-process death, Windows
+    // atomically kills every member of the job. This is the load-bearing
+    // anti-zombie mechanism per main-022; tree-walking Process.Kill alone has
+    // races when grandchildren get re-parented or when the host is killed
+    // outright.
+    private readonly ProcessJobObject _jobObject = new();
+
+    // Set true during StopAsync so the supervisor's restart loop bails out
+    // even if it sees the sidecar process exit before noticing ct cancellation.
+    // Belt-and-suspenders against the auto-restart-during-shutdown race noted
+    // in main-018 criterion 4 / main-022.
+    private volatile bool _shuttingDown;
+
     public SidecarHost(
         DataPathService paths,
         PythonRuntimeBootstrapper bootstrapper,
@@ -122,6 +136,15 @@ public sealed class SidecarHost : IHostedService, IDisposable
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
+        // Order matters per main-022:
+        //   1. _shuttingDown first — so any supervisor iteration that races
+        //      past ct.IsCancellationRequested still refuses to respawn.
+        //   2. Cancel the supervisor token so blocking awaits return.
+        //   3. Wait briefly for the supervisor to unwind on its own.
+        //   4. Terminate the process tree (graceful tree-kill via Process,
+        //      then atomic kill via JobObject as the safety net).
+        //   5. Verify nothing is left alive; escalate to ERR if it is.
+        _shuttingDown = true;
         SetState(SidecarState.Stopping);
         try { _supervisorCts?.Cancel(); } catch { /* tolerate */ }
 
@@ -130,14 +153,45 @@ public sealed class SidecarHost : IHostedService, IDisposable
             if (_supervisorTask is not null)
             {
                 using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(2));
                 await Task.WhenAny(_supervisorTask, Task.Delay(Timeout.Infinite, timeoutCts.Token))
                     .ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) { /* shutdown */ }
 
+        // Capture the process we spawned (if any) before TerminateProcess nulls _process,
+        // so we can post-verify the OS-level exit after the JobObject is disposed.
+        var spawned = _process;
         TerminateProcess();
+
+        // Closing the JobObject triggers KILL_ON_JOB_CLOSE for everything still
+        // in it — including any uvicorn worker / multiprocessing spawn that
+        // tree-walking Process.Kill may have missed.
+        try { _jobObject.Dispose(); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Error disposing sidecar JobObject."); }
+
+        // Post-verification: if Windows hasn't reaped the process within ~1 s
+        // after both kill paths fired, log at ERR per main-022 acceptance
+        // criterion 3 ("if the sidecar's graceful shutdown path stalls, the
+        // host still hard-kills it within ~3 s and logs the escalation at ERR").
+        if (spawned is not null)
+        {
+            int pidForLog;
+            try { pidForLog = spawned.Id; } catch { pidForLog = -1; }
+            try
+            {
+                if (!spawned.WaitForExit(1000))
+                {
+                    _logger.LogError(
+                        "Pocket-tts sidecar (PID {Pid}) still alive after tree-kill + JobObject close. " +
+                        "Manual cleanup may be required.", pidForLog);
+                }
+            }
+            catch (InvalidOperationException) { /* process handle no longer valid — already gone */ }
+            catch (Exception ex) { _logger.LogWarning(ex, "Error verifying sidecar exit."); }
+        }
+
         _logger.LogInformation("SidecarHost stopped.");
     }
 
@@ -146,7 +200,7 @@ public sealed class SidecarHost : IHostedService, IDisposable
         var sidecarLogger = _loggerFactory.CreateLogger("sidecar");
         var attempt = 0;
 
-        while (!ct.IsCancellationRequested)
+        while (!ct.IsCancellationRequested && !_shuttingDown)
         {
             try
             {
@@ -187,6 +241,20 @@ public sealed class SidecarHost : IHostedService, IDisposable
                 if (!process.Start())
                     throw new InvalidOperationException("Failed to spawn pocket-tts sidecar.");
 
+                // Bind the python process to our JobObject *before* it has a
+                // chance to spawn workers — that way every grandchild is in
+                // the job too and KILL_ON_JOB_CLOSE catches them all (main-022).
+                try
+                {
+                    _jobObject.AssignProcess(process.Handle);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Failed to assign sidecar (PID {Pid}) to JobObject — zombie risk on host exit.",
+                        process.Id);
+                }
+
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 _logger.LogInformation("Pocket-tts sidecar started (PID {Pid}, attempt {Attempt})", process.Id, attempt);
@@ -214,7 +282,7 @@ public sealed class SidecarHost : IHostedService, IDisposable
                 // Wait for the process to exit (clean shutdown or crash).
                 await process.WaitForExitAsync(ct).ConfigureAwait(false);
 
-                if (ct.IsCancellationRequested) break;
+                if (ct.IsCancellationRequested || _shuttingDown) break;
 
                 _logger.LogWarning("Pocket-tts sidecar exited unexpectedly (code {Code}). Restarting…", process.ExitCode);
                 SetState(SidecarState.Restarting, healthy: false);
@@ -233,7 +301,7 @@ public sealed class SidecarHost : IHostedService, IDisposable
                 TerminateProcess();
             }
 
-            if (ct.IsCancellationRequested) break;
+            if (ct.IsCancellationRequested || _shuttingDown) break;
 
             // Back off: 1s, 2s, 4s, 8s, capped at 30s. After 5 attempts, fail permanently
             // so we don't pin a CPU re-spawning a broken interpreter forever.
@@ -386,8 +454,10 @@ public sealed class SidecarHost : IHostedService, IDisposable
 
     public void Dispose()
     {
+        _shuttingDown = true;
         try { _supervisorCts?.Cancel(); } catch { /* tolerate */ }
         TerminateProcess();
+        try { _jobObject.Dispose(); } catch { /* tolerate */ }
         _supervisorCts?.Dispose();
     }
 }

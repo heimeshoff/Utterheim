@@ -5,6 +5,23 @@ Newest entries on top.
 
 ---
 
+## 2026-05-03 23:55 -- Batch started: [main-022]
+
+**Type:** Work / Batch start
+**Tasks:** main-022 - Tray Exit leaves the python.exe sidecar alive as a zombie
+**Parallel:** no (1 worker — only ready task; main-018 + main-019 blocked on this)
+
+---
+
+## 2026-05-03 23:50 -- Model / Promoted: main-022 - Tray Exit leaves the python.exe sidecar alive as a zombie
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+**Why now:** main-022 already carried 5 concrete acceptance criteria, identified affected files (`SidecarProcessManager`, `App.xaml.cs`, supervisor), and a three-point fix plan. No unmet dependencies. Promoting unblocks main-018 → main-019.
+
+---
+
 ## 2026-05-03 23:35 -- Bugs filed: main-022, main-023 (from main-018 verification)
 
 **Type:** Work / Verification finding → bugs filed
