@@ -24,25 +24,42 @@ already satisfied (audio precedes synthesis end); only the latency
 
 ## What
 
-Apply the change main-023 recommends. Until that diagnosis lands, the
-fix shape is unknown — likely candidates per main-023's hypotheses are:
+main-023 diagnosed H4 (HTTP transport buffering) as the sole cause:
+`_http.PostAsync(...)` at `src/Mockingbird/Services/Tts/PocketTtsEngine.cs:78`
+uses the default `HttpCompletionOption.ResponseContentRead`, which
+buffers the entire WAV before the awaited Task returns. Python's
+`/tts` is already a proper `StreamingResponse` with chunked transfer
+encoding — C# is throwing that streaming away.
 
-- Chunk input by sentence/clause before handing to pocket-tts and
-  stream chunk-by-chunk (Python sidecar change).
-- Parallelise preprocessing of sentence N+1 while sentence N is being
-  generated.
-- Switch the HTTP response to chunked transfer / streaming if buffering
-  is the culprit (C# pipeline change).
-- A targeted buffer-flush change if the bottleneck is a single buffer
-  in our path.
+### The fix
 
-main-023's Outcome will pick the actual fix and sharpen the file/line
-scope. **Do not start this task until that diagnosis exists.** When
-main-023 closes, refine this task's `## What` to reflect the chosen
-approach before promoting to `todo/`.
+Replace line 78 with the streaming-completion form:
 
-Use the measurement methodology and sample inputs that main-023
-commits to `examples/perf/` for before/after numbers.
+```csharp
+using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+using var response = await _http.SendAsync(
+    request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+```
+
+Two lines instead of one (because `SendAsync` with options requires an
+explicit `HttpRequestMessage`).
+
+The existing 8 KB chunk-reader at `PocketTtsEngine.cs:86–102` does NOT
+need to change — `ReadAsStreamAsync()` will now return a network-backed
+stream that the loop already handles correctly. AudioPlayer also does
+not need changes (it already plays chunks).
+
+### Verify
+
+Run the same `examples/perf/measure-latency.ps1` harness against the
+same `examples/perf/*.txt` sample files that main-023 used as the
+"before" baseline. main-023's Outcome table is your "before"; produce
+an "after" table covering all four inputs.
+
+Expected: first-audio time becomes input-length-independent, landing
+in ~200–500 ms range. The `-Repeat 3` flag now becomes useful
+(measurements should be tight; before was noisy because synthesis
+time varied per content).
 
 ## Acceptance criteria
 
@@ -63,9 +80,9 @@ commits to `examples/perf/` for before/after numbers.
 
 ## Notes
 
-- **Blocked on main-023.** Fix scope can't be sized until diagnosis
-  lands. Acceptance criteria here are stable; the implementation
-  approach is intentionally TBD.
+- **main-023 diagnosis complete (2026-05-04).** Single-file change at
+  `PocketTtsEngine.cs:78`. ~10 minutes of work + measurement runs.
+  Promotable now.
 - Reference: main-023 (diagnosis), vision §What success looks like,
   ADR 0002 (Python sidecar), ADR 0003 (HTTP transport).
 - Out of scope: full streaming-synthesis redesign, alternate engines,

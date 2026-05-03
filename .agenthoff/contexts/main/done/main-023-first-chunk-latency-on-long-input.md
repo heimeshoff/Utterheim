@@ -1,11 +1,11 @@
 ---
 id: main-023
 title: Diagnose first-chunk latency on long input (~9s for 200-word paragraph)
-status: todo
+status: done
 type: spike
 context: main
 created: 2026-05-03
-completed:
+completed: 2026-05-04
 commit:
 depends_on: [main-011, main-021]
 blocks: [main-024]
@@ -319,4 +319,106 @@ completes the bootstrap dialog.
      - which hypothesis(es) won, with file:line refs
      - recommended fix shape for main-024
 ```
+
+## Outcome (2026-05-04)
+
+### Verdict: H4 confirmed — single change in C# host
+
+Latency scales linearly with input size because `_http.PostAsync(...)` at
+`src/Mockingbird/Services/Tts/PocketTtsEngine.cs:78` uses the default
+`HttpCompletionOption.ResponseContentRead`, which buffers the entire
+response body before the awaited Task completes. Python's `/tts` endpoint
+streams correctly (`StreamingResponse`, `Transfer-Encoding: chunked`), but
+C# discards that streaming property by waiting for the whole WAV before
+reading the first byte.
+
+The downstream chunk-reading loop in `PocketTtsEngine.cs:86–102` is already
+streaming-shaped — it just needs to receive a real network-backed stream
+instead of a pre-buffered MemoryStream.
+
+### Measurements (single fresh sidecar boot, voice=alba)
+
+| Run | Input | Chars | TTFB | end-to-end (first audio) |
+|---|---|---:|---:|---:|
+| cold-short | "Hello, this is mockingbird." | 27 | n/a | **663 ms** ✓ |
+| warm-short | same | 27 | n/a | **802 ms** ✓ |
+| warm-medium (clean queue) | vision §Purpose paragraph | 1,159 | **63 ms** | **22,968 ms** ❌ |
+| warm-long | vision sections concatenated | 6,855 | n/a | **139,000 ms** ❌ |
+
+(`cold-short` and `warm-short` from the script's own output. `warm-medium`
+from a clean re-run on a drained queue with no `-Repeat`. `warm-long`
+read from the mockingbird log — the script's 30 s tail-poll timed out
+but the request itself completed, so the actual T1 timestamp is
+authoritative.)
+
+Latency-per-character is roughly constant at ~20 ms/char for inputs
+above ~1 KB. That linearity is the H4 signature: in a streaming pipeline,
+first-audio time is independent of total input size.
+
+### Smoking-gun evidence
+
+For the medium run:
+- HTTP TTFB = **63 ms** — Python returns headers essentially instantly.
+- `FIRST-AUDIO-DISPATCH` fires **22,968 ms** later.
+
+The 22.9 s window is the C# buffering window: Python is streaming bytes
+the whole time, C# isn't reading them until the body completes. Same
+pattern at 6 × scale on the long run.
+
+### Hypotheses ruled out
+
+- **H1 (whole-text preprocessing):** sentencepiece tokenization runs in
+  microseconds; cannot produce 22.9 s on a 1.2 KB input. Not the cause.
+- **H2 (sentence-batched generation):** within a sentence, pocket-tts
+  pipelines generation/decoding (`tts_model.py:493-502`) and yields
+  ~200 ms first chunk. The serial-across-sentences cost only manifests
+  *after* first audio. Not the cause of first-audio delay.
+- **H3 (per-voice prompt-encoding warmup):** would be a one-time hit on
+  the first call to a voice. Cold-short was 663 ms (within budget), so
+  even cold cost is fine. Not the cause.
+
+### Recommended fix shape (for main-024)
+
+Replace line 78 with:
+
+```csharp
+using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+using var response = await _http.SendAsync(
+    request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+```
+
+Lines 79–102 stay identical. `ReadAsStreamAsync()` will now return a
+network-backed stream, and the existing chunk-loop already handles it.
+
+**Expected outcome after fix:**
+- First-audio time becomes input-length-independent.
+- Lands in ~200–500 ms across all inputs (pocket-tts intrinsic first-chunk
+  + HTTP RTT + 8 KB ReadAsync buffer fill).
+- main-024's existing acceptance criteria become trivially met.
+
+### Methodology + sample inputs landed
+
+`examples/perf/` carries the canonical `short`, `medium`, `long`, and
+`user-sample` inputs plus `measure-latency.ps1`. The
+`FIRST-AUDIO-DISPATCH` log line at `AudioPlayer.cs:78` is permanent
+instrumentation. Same harness produces before/after comparisons for
+main-024.
+
+The script's 30 s log-tail timeout is fine post-fix (the budget is now
+~500 ms, with 60× headroom). For the broken case it timed out on
+medium and long; we read T1 from the log directly.
+
+### Side issues observed (non-blocking)
+
+- **pocket-tts chunk warning** on long input:
+  `Chunk has 59 tokens (max 50), generation may skip words: 'whether
+  a finished-task cue can barge to the front...'` A sentence in
+  vision §Open questions exceeds pocket-tts's `MAX_TOKEN_PER_CHUNK=50`
+  limit. Engine accepts it with a warning. Pre-splitting at the
+  sidecar layer is a future option if the skip risk bites; not filing.
+- **`TerminateProcess` warning** on tray Exit:
+  `No process is associated with this object` (`SidecarHost.cs:393`)
+  — fires because main-022's Job Object already killed `python.exe`
+  by the time `Process.HasExited` is checked. Cosmetic. Worth filing
+  as a low-priority cleanup task when the user wants.
 

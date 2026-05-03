@@ -5,6 +5,17 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 01:25 -- Task completed: main-023 - Diagnose first-chunk latency on long input
+
+**Type:** Work / Spike completion (worker prep + user measurements)
+**Task:** main-023 - Diagnose first-chunk latency on long input
+**Summary:** H4 confirmed as sole cause. C# `_http.PostAsync(...)` at `PocketTtsEngine.cs:78` uses default `ResponseContentRead` and buffers the entire WAV before reading the first byte; Python streams correctly but C# discards that. Measurements: short 663 ms ✓ / 802 ms ✓, medium (1159 chars) 22968 ms ❌, long (6855 chars) 139000 ms ❌ — latency is linear in input size at ~20 ms/char, the H4 fingerprint. Fix is two lines: switch to `SendAsync` with `HttpCompletionOption.ResponseHeadersRead`. main-024's `What` sharpened with the exact change. Side issue noted: `TerminateProcess` warning on Exit (`SidecarHost.cs:393`) — cosmetic, file when convenient.
+**Commit:** TBD
+**Files changed:** 1 (Outcome block on the spike) + 1 (main-024 sharpened in backlog)
+**ADRs written:** none — fix is local, doesn't reshape transport contract
+
+---
+
 ## 2026-05-04 00:35 -- Batch started: [main-023] (prep-only worker dispatch — user-driven spike)
 
 **Type:** Work / Batch start
