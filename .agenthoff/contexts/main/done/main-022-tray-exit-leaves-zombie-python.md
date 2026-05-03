@@ -6,7 +6,7 @@ type: bug
 context: main
 created: 2026-05-03
 completed: 2026-05-03
-commit: ea528a1
+commit: 8a17ff9
 depends_on: []
 blocks: [main-018]
 tags: [bug, sidecar, lifecycle, foundation]

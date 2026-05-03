@@ -5,6 +5,17 @@ Newest entries on top.
 
 ---
 
+## 2026-05-03 23:58 -- Task completed: main-022 - Tray Exit leaves the python.exe sidecar alive as a zombie
+
+**Type:** Work / Task completion
+**Task:** main-022 - Tray Exit leaves the python.exe sidecar alive as a zombie
+**Summary:** Tray Exit now reaps the entire python sidecar process tree by binding every spawned python.exe to a Win32 Job Object with KILL_ON_JOB_CLOSE; an explicit _shuttingDown flag also prevents the supervisor from respawning the sidecar mid-shutdown.
+**Commit:** 8a17ff9
+**Files changed:** 6 (incl. moved task file + ADR + BC README)
+**ADRs written:** 0012-sidecar-jobobject-kill-on-close.md
+
+---
+
 ## 2026-05-03 23:55 -- Batch started: [main-022]
 
 **Type:** Work / Batch start
