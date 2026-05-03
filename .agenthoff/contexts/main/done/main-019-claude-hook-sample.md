@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-01
 completed: 2026-05-03
-commit:
+commit: 0723c7f
 depends_on: [main-011, main-018]
 blocks: []
 tags: [integration, claude, docs]

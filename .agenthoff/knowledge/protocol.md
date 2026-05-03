@@ -5,6 +5,47 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 00:09 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 2 (main-018 user-driven, main-019 worker-driven)
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 3 in this segment (db7bcff main-018 close, 0723c7f main-019 work, +pending SHA-record)
+**Backlog status:** todo/ and doing/ empty. main-013–017 (page-set) and main-023 (latency) remain in backlog/.
+
+---
+
+## 2026-05-04 00:08 -- Task completed: main-019 - Claude Code hook sample
+
+**Type:** Work / Task completion
+**Task:** main-019 - Claude Code hook sample — make the speak endpoint actually used
+**Summary:** Shipped `examples/claude-hooks/` with a PowerShell hook posting {text, voice} to /speak, plus a README covering Stop/Notification hook wiring, the per-terminal `MOCKINGBIRD_VOICE` convention, a parallel two-session worked example, and troubleshooting drawn from main-018 verification findings.
+**Commit:** 0723c7f
+**Files changed:** 4 (incl. moved task file + BC README)
+**ADRs written:** none
+
+---
+
+## 2026-05-04 00:06 -- Batch started: [main-019]
+
+**Type:** Work / Batch start
+**Tasks:** main-019 - Claude Code hook sample — make the speak endpoint actually used
+**Parallel:** no (1 worker — only ready task; main-018 just closed and unblocked it)
+
+---
+
+## 2026-05-04 00:05 -- Task completed: main-018 - Clean-machine first-run verification of main-011
+
+**Type:** Work / Task completion (user-driven verification, outside worker dispatch)
+**Task:** main-018 - Clean-machine first-run verification of main-011
+**Summary:** First-run criteria signed off. 5 confirmed pass (1, 2, 5, 6 hard-tested + 3 streaming observed); 1 accepted-unverifiable (4, auto-restart races); 3 assumed-pass (7, A, B — to be re-checked on regression). Follow-ups: main-022 fixed, main-023 still open.
+**Commit:** db7bcff
+**Files changed:** 1
+**ADRs written:** none
+
+---
+
 ## 2026-05-04 00:00 -- Work session ended
 
 **Type:** Work / Session end
