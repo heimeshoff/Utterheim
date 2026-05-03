@@ -6,7 +6,7 @@ type: spike
 context: main
 created: 2026-05-03
 completed: 2026-05-04
-commit:
+commit: c8567d6
 depends_on: [main-011, main-021]
 blocks: [main-024]
 tags: [spike, performance, sidecar, streaming]
