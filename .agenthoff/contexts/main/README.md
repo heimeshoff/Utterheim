@@ -191,6 +191,29 @@ As of main-011 the **real pocket-tts engine is wired in**:
 
 The "stub-engine plays a 440 Hz tone" note from the skeleton is now superseded.
 
+## Claude Code integration kit
+
+As of main-019, the bridge from "the speak endpoint exists" to "Claude
+Code sessions actually talk to me" ships as documentation + a sample
+script under `examples/claude-hooks/`:
+
+- `mockingbird-hook.ps1` — small PowerShell shim that POSTs `{text, voice}`
+  to `http://127.0.0.1:7223/speak`. Reads voice from
+  `$env:MOCKINGBIRD_VOICE` (default `alba`) and endpoint from
+  `$env:MOCKINGBIRD_ENDPOINT` (default per ADR 0003). `-Silent` swallows
+  all failures so a missing sidecar can never block Claude Code itself.
+- `README.md` — wiring recipe for Claude Code's `Stop` and `Notification`
+  hooks, voice-assignment convention (env var per terminal), the parallel
+  two-session worked example that demonstrates the v1 payoff, and a
+  troubleshooting section covering the failure modes surfaced by
+  main-018 verification (sidecar not running, port collision, cold-start
+  latency on long input, watchdog vs `/status`-polling races).
+
+Voice routing is **caller-side by design** — the BC has no concept of a
+session id, and per-session voice is purely an env-var contract between
+the user's shell and the hook script. Server-mediated routing would be
+a separate decision task.
+
 ## Notes for the architect
 
 ADRs 0001–0008 are committed. The walking skeleton (main-009) materialised them as
