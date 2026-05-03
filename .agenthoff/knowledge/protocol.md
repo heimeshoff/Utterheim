@@ -5,6 +5,44 @@ Newest entries on top.
 
 ---
 
+## 2026-05-03 23:05 -- Batch started: [main-021]
+
+**Type:** Work / Batch start
+**Tasks:** main-021 - Bootstrap skips pocket-tts install when state file outlives runtime; smoke-test stderr is invisible
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-03 22:34 -- Model / Promoted: main-021
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+**Summary:** Promoted main-021 (bootstrap skips pocket-tts install when state file outlives runtime; smoke-test stderr is invisible). Required to unblock main-018 verification. No `depends_on`, so it is the only ready task in the BC.
+
+---
+
+## 2026-05-03 22:30 -- Bug filed: main-021 (bootstrap skips pocket-tts install)
+
+**Type:** Work / Verification finding → bug filed
+**BC:** main
+**Trigger:** User attempted main-018 first-run verification; bootstrap dialog failed with `Python smoke test exited with code 1` (eight retries logged in mockingbird-20260503.log between 22:18:04 and 22:18:36).
+**Root cause (recorded in main-021):** Two defects in `PythonRuntimeBootstrapper`. (A) Step 3 `InstallPocketTts` checks only the persisted state flag, not `pocket_tts/__init__.py` on disk — so a stale `bootstrap-state.json` (e.g. after a manual wipe of `runtime/`) silently skips re-installing pocket-tts. (B) Subprocess stderr is logged at `LogDebug` so the actual Python traceback never reaches the file log; user sees only the generic exit-code-1 message.
+**Action:** Filed main-021 in backlog with both fix sketches and acceptance criteria. Added main-021 to main-018's `depends_on`. main-018 stays in todo with an `## Outcome (verification paused)` block; verification cannot proceed until main-021 lands.
+**Workaround for the user:** delete `bootstrap-state.json` alongside `runtime\` and `models\pocket-tts\` before relaunching.
+**Worker dispatch:** none (no ready, unblocked tasks remain — main-018 is now blocked on main-021, main-019 transitively blocked).
+
+---
+
+## 2026-05-03 -- Model / Promoted: main-018 + main-019
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+**Summary:** Promoted main-018 (clean-machine first-run verification of main-011) and main-019 (Claude Code hook sample) — the two foundation-closing tasks that turn main-011 from "code-clean" into "actually used". Encoded ordering as a hard dependency: main-019 now depends on main-018 (its troubleshooting acceptance criterion references failure modes from the verification run); main-018 blocks main-019.
+
+---
+
 ## 2026-05-02 10:08 -- Work session ended
 
 **Type:** Work / Session end

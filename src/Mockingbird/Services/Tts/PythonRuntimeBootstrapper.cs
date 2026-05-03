@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Mockingbird.Services.Settings;
@@ -70,6 +71,20 @@ public sealed class PythonRuntimeBootstrapper
         // Step 1 — download + extract embeddable Python.
         if (!state.PythonExtracted || !File.Exists(PythonExePath))
         {
+            // Defensive reset: if we're re-extracting Python, anything pip / pocket-tts
+            // wrote into the previous runtime's site-packages is gone. The state file
+            // can outlive runtime/ (clean-machine simulation, manual wipe, etc.) — see
+            // main-021. Force every downstream step to re-run rather than trusting the
+            // stale "Installed: true" flags.
+            if (state.PipInstalled || state.PocketTtsInstalled || state.RuntimeReady)
+            {
+                _logger.LogInformation(
+                    "Re-extracting Python runtime — resetting downstream bootstrap flags (PipInstalled, PocketTtsInstalled, RuntimeReady).");
+                state.PipInstalled = false;
+                state.PocketTtsInstalled = false;
+                state.RuntimeReady = false;
+            }
+
             progress.Report(new BootstrapProgress(BootstrapStep.DownloadPython, 0, "Downloading Python runtime…"));
             var zipPath = Path.Combine(_paths.PythonRuntimePath, $"python-{PythonVersion}-embed-amd64.zip");
             await DownloadFileAsync(PythonEmbedUrl, zipPath, p =>
@@ -99,6 +114,16 @@ public sealed class PythonRuntimeBootstrapper
         // Step 2 — install pip (the embeddable distribution does not ship it).
         if (!state.PipInstalled || !PipExists())
         {
+            // If pip is missing on disk, anything that pip itself installed (pocket-tts)
+            // is also gone — same defensive reset as step 1.
+            if (state.PocketTtsInstalled || state.RuntimeReady)
+            {
+                _logger.LogInformation(
+                    "Re-installing pip — resetting downstream flags (PocketTtsInstalled, RuntimeReady).");
+                state.PocketTtsInstalled = false;
+                state.RuntimeReady = false;
+            }
+
             progress.Report(new BootstrapProgress(BootstrapStep.InstallPip, 0, "Installing pip…"));
             var getPipPath = Path.Combine(_paths.PythonRuntimePath, "get-pip.py");
             await DownloadFileAsync(GetPipUrl, getPipPath, p =>
@@ -120,8 +145,22 @@ public sealed class PythonRuntimeBootstrapper
         ct.ThrowIfCancellationRequested();
 
         // Step 3 — pip install pocket-tts. This pulls torch CPU (~115 MB) plus deps.
-        if (!state.PocketTtsInstalled)
+        // Belt-and-braces: trust the on-disk presence of pocket_tts/__init__.py over
+        // the persisted flag. main-021: we observed bootstrap-state.json outliving a
+        // wiped runtime/, leading the JSON to lie about pocket-tts being installed
+        // and step 4 (smoke test) failing with `ModuleNotFoundError`.
+        if (!state.PocketTtsInstalled || !PocketTtsActuallyInstalled())
         {
+            if (state.PocketTtsInstalled && !PocketTtsActuallyInstalled())
+            {
+                _logger.LogWarning(
+                    "bootstrap-state.json says pocket-tts is installed but {InitPath} is missing — re-installing.",
+                    Path.Combine(_paths.PythonRuntimePath, "Lib", "site-packages", "pocket_tts", "__init__.py"));
+                state.PocketTtsInstalled = false;
+                state.RuntimeReady = false;
+                SaveState(state);
+            }
+
             progress.Report(new BootstrapProgress(BootstrapStep.InstallPocketTts, 0,
                 "Installing pocket-tts (this downloads ~500 MB of dependencies)…"));
             await RunPipAsync($"install --no-warn-script-location {PocketTtsSpec}", ct,
@@ -172,6 +211,10 @@ public sealed class PythonRuntimeBootstrapper
                 lines.Add("Lib\\site-packages");
             }
             File.WriteAllLines(pth, lines);
+            // Confirm the patch landed (main-021 acceptance criterion). After a
+            // runtime wipe step 1 re-extracts a fresh _pth and we re-patch it
+            // here; without this log the user has no way to verify.
+            _logger.LogInformation("Patched embeddable Python ._pth for site-packages support: {Path}", pth);
         }
     }
 
@@ -179,6 +222,18 @@ public sealed class PythonRuntimeBootstrapper
     {
         return File.Exists(Path.Combine(_paths.PythonRuntimePath, "Scripts", "pip.exe"))
             || File.Exists(Path.Combine(_paths.PythonRuntimePath, "Lib", "site-packages", "pip", "__init__.py"));
+    }
+
+    /// <summary>
+    /// True iff pocket-tts is physically present in the runtime's site-packages.
+    /// Used alongside the persisted state flag so a stale flag (e.g. state file
+    /// that outlived a wiped runtime) can't trick the bootstrapper into skipping
+    /// the install.
+    /// </summary>
+    private bool PocketTtsActuallyInstalled()
+    {
+        return File.Exists(Path.Combine(
+            _paths.PythonRuntimePath, "Lib", "site-packages", "pocket_tts", "__init__.py"));
     }
 
     private async Task RunPythonAsync(string scriptPath, string operationName, CancellationToken ct, Action<string>? onLine)
@@ -230,6 +285,17 @@ public sealed class PythonRuntimeBootstrapper
     {
         using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 
+        // Buffer stderr so that, on non-zero exit, we can surface the actual error
+        // (Python traceback, pip resolver complaint, etc.) in the thrown exception
+        // and the user-facing dialog. Default Serilog config writes INF and above
+        // to file, so before this fix any stderr logged at Debug was dropped on the
+        // floor — see main-021 Bug B. Keep the live feed at Debug for successful
+        // pip runs (pip writes progress to stderr); on failure we replay the buffer
+        // at Error level so it shows up in the file log.
+        var stderrBuffer = new StringBuilder();
+        const int stderrLineCap = 200; // hard ceiling so a runaway process can't OOM us
+        var stderrLineCount = 0;
+
         process.OutputDataReceived += (_, e) =>
         {
             if (string.IsNullOrEmpty(e.Data)) return;
@@ -241,6 +307,19 @@ public sealed class PythonRuntimeBootstrapper
             if (string.IsNullOrEmpty(e.Data)) return;
             // pip writes progress to stderr, so this isn't necessarily an error.
             _logger.LogDebug("[{Op} stderr] {Line}", operationName, e.Data);
+            lock (stderrBuffer)
+            {
+                if (stderrLineCount < stderrLineCap)
+                {
+                    stderrBuffer.AppendLine(e.Data);
+                    stderrLineCount++;
+                }
+                else if (stderrLineCount == stderrLineCap)
+                {
+                    stderrBuffer.AppendLine("… (stderr truncated — line cap reached)");
+                    stderrLineCount++;
+                }
+            }
             onLine?.Invoke(e.Data);
         };
 
@@ -262,9 +341,46 @@ public sealed class PythonRuntimeBootstrapper
 
         if (process.ExitCode != 0)
         {
-            throw new InvalidOperationException(
-                $"{operationName} exited with code {process.ExitCode}. See logs for details.");
+            // Tail of stderr — last ~30 lines is plenty to capture a Python
+            // traceback or pip resolver error without bloating the dialog.
+            string capturedStderr;
+            lock (stderrBuffer) { capturedStderr = stderrBuffer.ToString(); }
+            var tail = LastLines(capturedStderr, 30);
+
+            // Replay at Error level so the file log retains the full diagnostic.
+            // Single multi-line message; Serilog's file sink will preserve newlines.
+            if (!string.IsNullOrWhiteSpace(tail))
+            {
+                _logger.LogError(
+                    "{Op} exited with code {ExitCode}. Captured stderr (last 30 lines):{NewLine}{Stderr}",
+                    operationName, process.ExitCode, Environment.NewLine, tail);
+            }
+            else
+            {
+                _logger.LogError(
+                    "{Op} exited with code {ExitCode}. (No stderr was captured.)",
+                    operationName, process.ExitCode);
+            }
+
+            var msg = string.IsNullOrWhiteSpace(tail)
+                ? $"{operationName} exited with code {process.ExitCode}. (No stderr was captured — see the log for stdout.)"
+                : $"{operationName} exited with code {process.ExitCode}.{Environment.NewLine}{Environment.NewLine}{tail}";
+            throw new InvalidOperationException(msg);
         }
+    }
+
+    /// <summary>
+    /// Return the last <paramref name="count"/> non-empty lines of <paramref name="text"/>,
+    /// preserving line order. Used to keep error messages bounded.
+    /// </summary>
+    private static string LastLines(string text, int count)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        var lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+            .Where(l => !string.IsNullOrWhiteSpace(l))
+            .ToList();
+        if (lines.Count <= count) return string.Join(Environment.NewLine, lines);
+        return string.Join(Environment.NewLine, lines.Skip(lines.Count - count));
     }
 
     private async Task DownloadFileAsync(string url, string destination, Action<double> onProgress, CancellationToken ct)

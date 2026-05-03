@@ -165,7 +165,12 @@ As of main-011 the **real pocket-tts engine is wired in**:
   embeddable to `%LOCALAPPDATA%\Mockingbird\runtime\python\`, enables `site` in the
   `._pth` file, bootstraps pip, pip-installs `pocket-tts>=2.0,<3` (which pulls torch
   CPU plus deps, ~600 MB), and smoke-tests the import. Progress is persisted to
-  `bootstrap-state.json` so a half-finished run resumes on restart.
+  `bootstrap-state.json` so a half-finished run resumes on restart. Per ADR 0011,
+  on-disk sentinel files (`python.exe`, `pip`, `pocket_tts/__init__.py`) are
+  authoritative — a stale state file cannot trick the bootstrapper into skipping a
+  step whose artefacts have been wiped — and any subprocess that exits non-zero
+  surfaces its captured stderr tail in both the file log (at `Error`) and the
+  thrown exception (visible in the `BootstrapDialog`).
 - `BootstrapDialog` drives the bootstrapper with per-step progress, cancel, and retry.
 - `StubTtsEngine` is preserved behind `MOCKINGBIRD_USE_STUB_ENGINE=1` for offline /
   CI testing; the env flag also disables the sidecar and bootstrap-dialog wiring.
