@@ -6,7 +6,7 @@ type: bug
 context: main
 created: 2026-05-03
 completed: 2026-05-03
-commit:
+commit: 75650d9
 depends_on: []
 blocks: [main-018]
 tags: [bug, bootstrap, sidecar, foundation]

@@ -5,6 +5,40 @@ Newest entries on top.
 
 ---
 
+## 2026-05-03 23:35 -- Bugs filed: main-022, main-023 (from main-018 verification)
+
+**Type:** Work / Verification finding → bugs filed
+**BC:** main
+**Trigger:** User ran main-018 first-run verification post main-021 fix. Bootstrap, short speak, sidecar logs, and streaming-correctness criteria pass. Two breakages found.
+**main-022 (blocks main-018):** Tray Exit leaves `python.exe` sidecar alive in Task Manager. Acceptance criterion 6 hard-fails. Likely needs `Process.Kill(entireProcessTree: true)`, a graceful-then-hard shutdown sequence, and a "shutting down" flag to suppress the auto-restart watchdog during host exit.
+**main-023 (does not block main-018):** ~9 s first-chunk latency on 200-word input vs ≤2 s vision target. Streaming itself works (criterion 3 passes); this is a vision-level perf concern. Probable root cause: whole-text preprocessing before first chunk, or non-streaming HTTP transport.
+**Decision (criterion 4):** Not filing the auto-restart-race observability gap. The resilience contract is satisfied; visibility into the brief degraded window is debugging convenience, not user value.
+**main-018 status:** Stays in `todo/` with `depends_on: [main-011, main-021, main-022]` and an updated `## Outcome (partial)` block tracking 5/7 criteria + the two main-021 spot-checks.
+
+---
+
+## 2026-05-03 23:13 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 1
+**Halted on:** main-018 unblocked but cannot be auto-dispatched — it is a human first-run verification chore (real-audio playback, curl probes, log inspection). main-019 stays transitively blocked behind main-018.
+
+---
+
+## 2026-05-03 23:12 -- Task completed: main-021 - Bootstrap skips pocket-tts install when state file outlives runtime; smoke-test stderr is invisible
+
+**Type:** Work / Task completion
+**Task:** main-021 - Bootstrap skips pocket-tts install when state file outlives runtime; smoke-test stderr is invisible
+**Summary:** Bootstrap now treats on-disk sentinel files as authoritative — step 3 verifies `pocket_tts/__init__.py` before trusting the JSON flag, upstream re-runs cascade-reset downstream flags, and subprocess stderr is captured + replayed at Error on non-zero exit so failures are diagnosable in both the file log and the dialog.
+**Commit:** 75650d9
+**Files changed:** 3
+**ADRs written:** 0011-bootstrap-state-reconciliation.md
+
+---
+
 ## 2026-05-03 23:05 -- Batch started: [main-021]
 
 **Type:** Work / Batch start

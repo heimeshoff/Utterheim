@@ -1,13 +1,13 @@
 ---
 id: main-019
 title: Claude Code hook sample — make the speak endpoint actually used
-status: backlog
+status: todo
 type: feature
 context: main
 created: 2026-05-01
 completed:
 commit:
-depends_on: [main-011]
+depends_on: [main-011, main-018]
 blocks: []
 tags: [integration, claude, docs]
 ---
