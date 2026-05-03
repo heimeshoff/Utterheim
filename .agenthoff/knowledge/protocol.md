@@ -5,6 +5,17 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 00:30 -- Model / Refined: main-023 (split into spike + fix)
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** main-023 stays in backlog as a `spike`; new main-024 in backlog as the follow-up fix
+**Summary:** main-023 conflated investigation with implementation — 4 hypotheses to probe + acceptance criteria for the fix. Refined into a spike-and-fix split. main-023 (re-typed `bug` → `spike`) now has a measurement methodology (curl `time_starttransfer` + first-audio-at-speakers cue, canonical sample inputs in `examples/perf/`), an explicit pocket-tts CLI baseline step to bisect engine-slow vs us-slow, and a written-Outcome deliverable. main-024 (new) carries the original ≤2 s acceptance criteria, depends on main-023, holds the fix implementation. main-024's `What` is intentionally TBD until the spike's diagnosis sharpens it.
+**Split into:** main-023 (refined, still backlog) + main-024 (new, backlog)
+**ADRs written:** none (one may emerge from main-024 if the fix is architectural)
+
+---
+
 ## 2026-05-04 00:09 -- Work session ended
 
 **Type:** Work / Session end
