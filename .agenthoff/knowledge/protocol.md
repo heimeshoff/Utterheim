@@ -5,6 +5,14 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 00:35 -- Batch started: [main-023] (prep-only worker dispatch — user-driven spike)
+
+**Type:** Work / Batch start
+**Tasks:** main-023 - Diagnose first-chunk latency on long input
+**Parallel:** no (1 worker — narrowly scoped to prep half: sample inputs, log line, measurement script, code map. User runs measurements after prep lands.)
+
+---
+
 ## 2026-05-04 00:32 -- Model / Promoted: main-023 - Diagnose first-chunk latency on long input
 
 **Type:** Model / Promote

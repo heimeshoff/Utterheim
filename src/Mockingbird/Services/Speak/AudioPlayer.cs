@@ -60,10 +60,24 @@ public sealed class AudioPlayer : IDisposable
 
         try
         {
+            // Permanent first-chunk-latency instrumentation per main-023:
+            // log a single line the moment the first PCM sample is handed to the
+            // output device. Anything that greps for the literal substring
+            // "FIRST-AUDIO-DISPATCH" can compute end-to-end latency from the
+            // request's send timestamp.
+            var firstSampleLogged = false;
             await foreach (var chunk in chunks.WithCancellation(ct).ConfigureAwait(false))
             {
                 ct.ThrowIfCancellationRequested();
                 _provider.AddSamples(chunk, 0, chunk.Length);
+
+                if (!firstSampleLogged)
+                {
+                    firstSampleLogged = true;
+                    _logger.LogInformation(
+                        "FIRST-AUDIO-DISPATCH first PCM chunk handed to output device ({Bytes} bytes, {Hz} Hz)",
+                        chunk.Length, format.SampleRate);
+                }
 
                 // Light backpressure if we're buffering more than ~1 s ahead.
                 while (_provider.BufferedDuration.TotalSeconds > 1.0 && !ct.IsCancellationRequested)
