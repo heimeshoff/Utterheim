@@ -1,7 +1,7 @@
 ---
 id: main-024
 title: Implement first-chunk latency fix to meet ≤2s budget
-status: backlog
+status: todo
 type: bug
 context: main
 created: 2026-05-04

@@ -5,6 +5,15 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 01:30 -- Model / Promoted: main-024 - Implement first-chunk latency fix
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+**Why now:** main-023 closed (commit `c8567d6`) with H4 confirmed and exact fix scope (`PocketTtsEngine.cs:78`, two-line `SendAsync` swap). main-024's `What` is now concrete, dependencies met. Ready for worker dispatch.
+
+---
+
 ## 2026-05-04 01:25 -- Task completed: main-023 - Diagnose first-chunk latency on long input
 
 **Type:** Work / Spike completion (worker prep + user measurements)
