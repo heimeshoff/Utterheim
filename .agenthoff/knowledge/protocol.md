@@ -5,6 +5,17 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 00:00 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1 (main-022)
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 2 (8a17ff9 work, d778ff8 SHA+protocol)
+**Stopped because:** main-018 next in graph is a human-verification task (audible speech, Task Manager observation, mid-download kill); not dispatchable to a worker. main-019 depends on main-018's outcome.
+
+---
+
 ## 2026-05-03 23:58 -- Task completed: main-022 - Tray Exit leaves the python.exe sidecar alive as a zombie
 
 **Type:** Work / Task completion
