@@ -6,7 +6,7 @@ type: chore
 context: main
 created: 2026-05-01
 completed: 2026-05-03
-commit:
+commit: db7bcff
 depends_on: [main-011, main-021, main-022]
 blocks: [main-019]
 tags: [verification, foundation]

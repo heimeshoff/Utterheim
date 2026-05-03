@@ -5,6 +5,14 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 00:32 -- Model / Promoted: main-023 - Diagnose first-chunk latency on long input
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+
+---
+
 ## 2026-05-04 00:30 -- Model / Refined: main-023 (split into spike + fix)
 
 **Type:** Model / Refine

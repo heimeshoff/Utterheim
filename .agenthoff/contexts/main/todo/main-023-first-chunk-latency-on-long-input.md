@@ -1,7 +1,7 @@
 ---
 id: main-023
 title: Diagnose first-chunk latency on long input (~9s for 200-word paragraph)
-status: backlog
+status: todo
 type: spike
 context: main
 created: 2026-05-03
