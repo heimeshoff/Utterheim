@@ -1,11 +1,11 @@
 ---
 id: main-018
 title: Clean-machine first-run verification of main-011
-status: todo
+status: done
 type: chore
 context: main
 created: 2026-05-01
-completed:
+completed: 2026-05-03
 commit:
 depends_on: [main-011, main-021, main-022]
 blocks: [main-019]
@@ -50,11 +50,14 @@ against main-011 and reopen the engine work properly.
 
 ## Acceptance criteria
 
-- [ ] All seven main-011 user-verifiable criteria checked off in this task's
+- [x] All seven main-011 user-verifiable criteria checked off in this task's
   Outcome section, with evidence (log excerpts, timings, screenshots
-  optional).
-- [ ] If any criterion fails, a follow-up bug task is filed in `backlog/`
-  with reproduction steps.
+  optional). 5 confirmed pass (1, 2, 5, 6 hard-tested; 3 streaming
+  observed); 4 accepted-unverifiable (auto-restart races); 7, A, B
+  assumed-pass pending future regression.
+- [x] If any criterion fails, a follow-up bug task is filed in `backlog/`
+  with reproduction steps. main-022 (zombie sidecar — fixed, commit
+  `8a17ff9`) and main-023 (first-chunk latency — open in backlog).
 
 ## Notes
 
@@ -105,10 +108,10 @@ the same machine. Results so far:
 | 3 | Streaming on long input | ⚠️ pass-with-concern | 200-word paragraph: audio starts ~9 s in. Streaming *is* observable (audio precedes synthesis end), so this criterion passes. But ≤2 s vision target is missed badly. Filed as **main-023** (does not block this verification). |
 | 4 | `/status` reflects degraded | ⚠️ unverifiable | Auto-restart respawns the sidecar before `/status` polling can observe `degraded`. Not filing — auto-restart resilience is the more important contract and it's working. |
 | 5 | Sidecar logs flow through | ✅ pass | `[INF] sidecar INFO: …` lines present (Serilog source = "sidecar"; the `INFO:` prefix is from uvicorn's stdout, which is what we wanted to see captured). |
-| 6 | Tray Exit kills `python.exe` | ❌ **fail** | Host exits cleanly but `python.exe` remains in Task Manager. Filed as **main-022**; added to this task's `depends_on`. |
-| 7 | Half-finished bootstrap resumes | ⏸ not yet attempted | Pending. |
-| A | main-021 spot-check: stale state file | ⏸ not yet attempted | Delete `runtime\` only, keep `bootstrap-state.json`; relaunch should re-install pocket-tts. |
-| B | main-021 spot-check: stderr surfaces | ⏸ not yet attempted | Force a subprocess failure; traceback should reach log + dialog. |
+| 6 | Tray Exit kills `python.exe` | ✅ pass | After main-022 (commit `8a17ff9`, Win32 Job Object with KILL_ON_JOB_CLOSE), tray Exit reaps the sidecar process tree. User-confirmed 2026-05-03. |
+| 7 | Half-finished bootstrap resumes | ✅ pass (assumed) | Not actively re-tested. `bootstrap-state.json` resume logic exists from main-011 and main-021 reconciles it against on-disk runtime; treating as working until a regression surfaces. User decision 2026-05-03. |
+| A | main-021 spot-check: stale state file | ✅ pass (assumed) | Reconciliation logic landed in main-021 (`75650d9`); not re-exercised in this round. Treated as working until a regression surfaces. User decision 2026-05-03. |
+| B | main-021 spot-check: stderr surfaces | ✅ pass (assumed) | LogInformation path for subprocess stderr landed in main-021 (`75650d9`); not re-exercised in this round. Treated as working until a regression surfaces. User decision 2026-05-03. |
 
 Verification will resume once main-022 (zombie sidecar) is fixed —
 criterion 6 is a hard fail. Criteria 7, A, and B can be done at the
