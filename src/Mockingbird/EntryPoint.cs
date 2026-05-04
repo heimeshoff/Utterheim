@@ -12,6 +12,7 @@ using Mockingbird.Services.Navigation;
 using Mockingbird.Services.Settings;
 using Mockingbird.Services.Speak;
 using Mockingbird.Services.Tts;
+using Mockingbird.Services.Voices;
 using Mockingbird.ViewModels;
 using Mockingbird.ViewModels.Pages;
 using Mockingbird.Views;
@@ -123,6 +124,13 @@ public static class EntryPoint
                 // main-013 in-process seams: VoiceCatalog (shared by HTTP /voices
                 // and the page picker), SpeakService (shared by HTTP /speak and
                 // the Play button), and UserSettings (Default voice id storage).
+                // main-015 adds the voice library backend (cloned-voice persistence
+                // via temp+rename per ADR 0005, sidecar /export-voice client per
+                // ADR 0015, hosted-service shim that reconciles library.json on
+                // startup so the catalog has cloned voices ready before VMs resolve).
+                services.AddSingleton<VoiceLibraryService>();
+                services.AddSingleton<VoiceCloningClient>();
+                services.AddHostedService<VoiceLibraryStartup>();
                 services.AddSingleton<VoiceCatalog>();
                 services.AddSingleton<SpeakService>();
                 services.AddSingleton<UserSettings>();

@@ -53,4 +53,14 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Bundle the mockingbird-owned Python sidecar wrapper (ADR 0015 / main-015)
+         next to the binary. PythonRuntimeBootstrapper copies the package into the
+         bootstrapped Python runtime's site-packages on first launch. -->
+    <Content Include="PythonSidecar\mockingbird_sidecar\**\*.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>PythonSidecar\mockingbird_sidecar\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+
 </Project>

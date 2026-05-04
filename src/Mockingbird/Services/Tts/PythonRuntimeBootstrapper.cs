@@ -55,7 +55,8 @@ public sealed class PythonRuntimeBootstrapper
             var state = LoadState();
             return state.RuntimeReady
                    && File.Exists(PythonExePath)
-                   && File.Exists(Path.Combine(_paths.PythonRuntimePath, "Lib", "site-packages", "pocket_tts", "__init__.py"));
+                   && File.Exists(Path.Combine(_paths.PythonRuntimePath, "Lib", "site-packages", "pocket_tts", "__init__.py"))
+                   && File.Exists(Path.Combine(_paths.PythonRuntimePath, "Lib", "site-packages", "mockingbird_sidecar", "__init__.py"));
         }
     }
 
@@ -76,12 +77,13 @@ public sealed class PythonRuntimeBootstrapper
             // can outlive runtime/ (clean-machine simulation, manual wipe, etc.) — see
             // main-021. Force every downstream step to re-run rather than trusting the
             // stale "Installed: true" flags.
-            if (state.PipInstalled || state.PocketTtsInstalled || state.RuntimeReady)
+            if (state.PipInstalled || state.PocketTtsInstalled || state.MockingbirdSidecarInstalled || state.RuntimeReady)
             {
                 _logger.LogInformation(
-                    "Re-extracting Python runtime — resetting downstream bootstrap flags (PipInstalled, PocketTtsInstalled, RuntimeReady).");
+                    "Re-extracting Python runtime — resetting downstream bootstrap flags (PipInstalled, PocketTtsInstalled, MockingbirdSidecarInstalled, RuntimeReady).");
                 state.PipInstalled = false;
                 state.PocketTtsInstalled = false;
+                state.MockingbirdSidecarInstalled = false;
                 state.RuntimeReady = false;
             }
 
@@ -115,12 +117,15 @@ public sealed class PythonRuntimeBootstrapper
         if (!state.PipInstalled || !PipExists())
         {
             // If pip is missing on disk, anything that pip itself installed (pocket-tts)
-            // is also gone — same defensive reset as step 1.
-            if (state.PocketTtsInstalled || state.RuntimeReady)
+            // is also gone — same defensive reset as step 1. The mockingbird_sidecar
+            // copy is independent of pip but lives in the same site-packages tree, so
+            // it's also gone if site-packages was wiped.
+            if (state.PocketTtsInstalled || state.MockingbirdSidecarInstalled || state.RuntimeReady)
             {
                 _logger.LogInformation(
-                    "Re-installing pip — resetting downstream flags (PocketTtsInstalled, RuntimeReady).");
+                    "Re-installing pip — resetting downstream flags (PocketTtsInstalled, MockingbirdSidecarInstalled, RuntimeReady).");
                 state.PocketTtsInstalled = false;
+                state.MockingbirdSidecarInstalled = false;
                 state.RuntimeReady = false;
             }
 
@@ -157,6 +162,9 @@ public sealed class PythonRuntimeBootstrapper
                     "bootstrap-state.json says pocket-tts is installed but {InitPath} is missing — re-installing.",
                     Path.Combine(_paths.PythonRuntimePath, "Lib", "site-packages", "pocket_tts", "__init__.py"));
                 state.PocketTtsInstalled = false;
+                // mockingbird_sidecar lives in the same site-packages tree as pocket-tts;
+                // if pocket-tts is gone the wrapper almost certainly is too.
+                state.MockingbirdSidecarInstalled = false;
                 state.RuntimeReady = false;
                 SaveState(state);
             }
@@ -176,15 +184,91 @@ public sealed class PythonRuntimeBootstrapper
 
         ct.ThrowIfCancellationRequested();
 
-        // Step 4 — smoke test: import pocket_tts. Cheap, doesn't trigger weight download.
+        // Step 3b — install the mockingbird_sidecar wrapper (ADR 0015) into the
+        // bootstrapped runtime's site-packages. The wrapper itself is a tiny
+        // pure-Python package shipped next to mockingbird.exe; it has no pip
+        // dependencies of its own (everything it imports is satisfied by
+        // pocket-tts above). Copy-from-bundled-files is the simplest install
+        // shape per the ADR's "v1" recommendation.
+        if (!state.MockingbirdSidecarInstalled || !MockingbirdSidecarActuallyInstalled())
+        {
+            progress.Report(new BootstrapProgress(
+                BootstrapStep.InstallPocketTts, 0.95, "Installing mockingbird sidecar wrapper…"));
+            InstallMockingbirdSidecar();
+            state.MockingbirdSidecarInstalled = true;
+            state.RuntimeReady = false; // force smoke test re-run on first install
+            SaveState(state);
+            _logger.LogInformation("mockingbird_sidecar wrapper installed.");
+        }
+
+        // Step 4 — smoke test: import both pocket_tts and mockingbird_sidecar.
+        // Cheap, doesn't trigger weight download. The sidecar import in
+        // particular catches "wrong pocket-tts release" early per ADR 0015.
         progress.Report(new BootstrapProgress(BootstrapStep.SmokeTest, 0, "Verifying install…"));
-        await RunPythonInlineAsync("import pocket_tts; print('pocket_tts ok')", ct,
+        await RunPythonInlineAsync(
+            "import pocket_tts; import mockingbird_sidecar; print('pocket_tts + mockingbird_sidecar ok')",
+            ct,
             line => progress.Report(new BootstrapProgress(BootstrapStep.SmokeTest, 0.5, line)));
 
         state.RuntimeReady = true;
         SaveState(state);
         progress.Report(new BootstrapProgress(BootstrapStep.SmokeTest, 1.0, "Runtime ready."));
         _logger.LogInformation("Pocket-tts runtime bootstrap complete.");
+    }
+
+    /// <summary>
+    /// Copy the bundled mockingbird_sidecar package from the install folder
+    /// into the bootstrapped Python runtime's site-packages. Idempotent —
+    /// existing files are overwritten so a mockingbird upgrade refreshes the
+    /// wrapper. Per ADR 0015 the bundled source lives next to the .exe under
+    /// <c>PythonSidecar/mockingbird_sidecar/</c>.
+    /// </summary>
+    private void InstallMockingbirdSidecar()
+    {
+        var sourceRoot = LocateBundledSidecarRoot();
+        if (sourceRoot is null)
+        {
+            throw new InvalidOperationException(
+                "Could not locate bundled mockingbird_sidecar Python package. " +
+                "Expected at <appBaseDirectory>/PythonSidecar/mockingbird_sidecar/. " +
+                "Check the build output of src/Mockingbird/Mockingbird.csproj.");
+        }
+
+        var destRoot = Path.Combine(
+            _paths.PythonRuntimePath, "Lib", "site-packages", "mockingbird_sidecar");
+        Directory.CreateDirectory(destRoot);
+
+        foreach (var file in Directory.EnumerateFiles(sourceRoot, "*.py", SearchOption.AllDirectories))
+        {
+            var rel = Path.GetRelativePath(sourceRoot, file);
+            var dest = Path.Combine(destRoot, rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+            File.Copy(file, dest, overwrite: true);
+        }
+
+        _logger.LogInformation(
+            "mockingbird_sidecar copied from {Source} to {Dest}.", sourceRoot, destRoot);
+    }
+
+    /// <summary>
+    /// Find the bundled package directory. In production it sits beside
+    /// mockingbird.exe under <c>PythonSidecar/mockingbird_sidecar/</c>; in dev
+    /// builds the .csproj copies it to the same location next to the binary.
+    /// </summary>
+    private static string? LocateBundledSidecarRoot()
+    {
+        var candidate = Path.Combine(AppContext.BaseDirectory,
+            "PythonSidecar", "mockingbird_sidecar");
+        if (Directory.Exists(candidate)) return candidate;
+        return null;
+    }
+
+    private bool MockingbirdSidecarActuallyInstalled()
+    {
+        return File.Exists(Path.Combine(
+            _paths.PythonRuntimePath, "Lib", "site-packages", "mockingbird_sidecar", "__init__.py"))
+            && File.Exists(Path.Combine(
+                _paths.PythonRuntimePath, "Lib", "site-packages", "mockingbird_sidecar", "main.py"));
     }
 
     // ---- private helpers ----
@@ -456,6 +540,12 @@ public sealed class BootstrapState
     public bool PythonExtracted { get; set; }
     public bool PipInstalled { get; set; }
     public bool PocketTtsInstalled { get; set; }
+    /// <summary>
+    /// True after the bundled mockingbird_sidecar wrapper has been copied into
+    /// site-packages (ADR 0015). New in main-015 — older state files default to
+    /// false here, which causes the install step to run on next launch.
+    /// </summary>
+    public bool MockingbirdSidecarInstalled { get; set; }
     public bool RuntimeReady { get; set; }
 }
 

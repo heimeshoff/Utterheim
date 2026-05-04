@@ -35,6 +35,10 @@ From the vision's seed glossary, plus terms that surfaced during boundary analys
 | **Capture session** | An interactive recording episode that produces (or rejects) a single sample clip. |
 | **Engine** | The TTS implementation behind a profile. v1 has one engine (pocket-tts). A profile records its engine so future multi-engine selection is possible. |
 | **Speak endpoint** | The localhost-only HTTP/IPC surface Claude Code calls to enqueue speak requests. The published interface of this BC. |
+| **Voice library** | The on-disk catalog of cloned voices: `<dataPath>\voices\library.json` (master index) plus `<dataPath>\voices\<id>\` (per-voice profile + meta + optional sample). Persistence layer for "own-your-voices". |
+| **Voice id** | Stable lowercase-kebab folder name (`marco`, `marco-a3f2`). Generated from display name; never renamed. Collisions with built-in voice ids are rejected; collisions among cloned voices get a 4-hex disambiguator. |
+| **Library reconciliation** | Startup pass that brings `library.json` and on-disk voice folders into agreement: prune missing-on-disk entries, reinsert orphan folders from `meta.json`, log warnings for unreadable / future-schema files. |
+| **Sidecar wrapper** | The `mockingbird_sidecar` Python module that mounts mockingbird-owned routes (`/export-voice`, `/tts-with-state`) on top of pocket-tts's FastAPI app, sharing its resident `tts_model`. Per ADR 0015. |
 
 ## Key actors
 
@@ -97,7 +101,14 @@ src\
         ITtsEngine.cs                 the seam every TTS engine plugs into
         StubTtsEngine.cs              440 Hz test tone (replaced by main-011)
         SidecarHost.cs                Owns python sidecar lifecycle; raises
-                                      StateChanged for the footer VM
+                                      StateChanged for the footer VM. Spawns
+                                      `python -m mockingbird_sidecar serve`
+                                      (per ADR 0015) — same uvicorn banner so
+                                      port discovery is unchanged from pocket_tts.
+        PocketTtsEngine.cs            Real engine: built-in voices route /tts
+                                      with voice_url; cloned voices resolve to
+                                      profile.safetensors via VoiceLibraryService
+                                      and route /tts-with-state (ADR 0015 / main-015).
         ProcessJobObject.cs           Win32 Job Object wrapper (ADR 0012) —
                                       KILL_ON_JOB_CLOSE keeps the python tree
                                       from outliving the host (main-022)
@@ -108,12 +119,34 @@ src\
         AudioPlayer.cs                NAudio WaveOutEvent wrapper
         VoiceCatalog.cs               Single source of truth for the voice list —
                                       shared by HTTP /voices and the Speak page
-                                      picker (main-013, Q4)
+                                      picker (main-013, Q4). Composes engine
+                                      built-ins ∪ VoiceLibraryService.ListClonedAsync
+                                      (main-015) and re-fires VoicesChanged on
+                                      every LibraryChanged.
         SpeakService.cs               In-process seam shared by HTTP /speak and the
                                       Speak page Play button. Owns request construction,
                                       surfaces the four-label status state-machine, and
                                       provides off-queue RenderToFileAsync for Save
                                       (main-013, Q2 / Q5 / Q6)
+      Voices\
+        ClonedVoiceMeta.cs            Schema records (ClonedVoiceMeta v1,
+                                      ClonedVoiceIndexEntry, VoiceLibraryFile,
+                                      VoiceSource enum, LibraryChangedArgs,
+                                      VoiceValidationException) per ADR 0005 +
+                                      main-015 schema ratification.
+        VoiceLibraryService.cs        Owns <dataPath>\voices\* — temp+rename for every
+                                      mutation (profile.safetensors → meta.json →
+                                      library.json), id sanitisation + built-in
+                                      collision rejection, startup reconciliation
+                                      between library.json and on-disk folders,
+                                      LibraryChanged event for the catalog.
+        VoiceLibraryStartup.cs        Hosted-service shim: runs LoadAsync once on
+                                      host start so the catalog has cloned rows
+                                      before page VMs resolve.
+        VoiceCloningClient.cs         HTTP client wrapping the sidecar's POST
+                                      /export-voice endpoint (ADR 0015) — uploads
+                                      a sample WAV, receives .safetensors bytes
+                                      that the C# host persists.
       Http\SpeakServer.cs             Kestrel minimal API on 127.0.0.1:7223 (ADR 0003).
                                       /speak and /voices route through SpeakService /
                                       VoiceCatalog (main-013).
@@ -126,6 +159,17 @@ src\
                                       settings.json — v1 stores DefaultVoiceId only;
                                       forward-compatible JSON shape for main-016 (main-013)
     appsettings.json                  default port + hotkey window
+    PythonSidecar\
+      mockingbird_sidecar\            mockingbird-owned Python wrapper around pocket_tts
+                                      (ADR 0015 / main-015). Bundled next to the .exe;
+                                      bootstrapper copies into runtime\python\Lib\
+                                      site-packages\mockingbird_sidecar\ on first launch.
+                                      Adds /export-voice and /tts-with-state to the
+                                      pocket_tts FastAPI app while keeping its TTSModel
+                                      resident across requests.
+        __init__.py                   package marker
+        __main__.py                   `python -m mockingbird_sidecar` entry point
+        main.py                       FastAPI route definitions + typer `serve` command
   Mockingbird.Cli\                    mockingbird-speak — single-file CLI wrapper
 assets\branding\                      brand mark + raster outputs
   mockingbird-logo.svg                source artwork (placeholder, signed off)
@@ -142,12 +186,19 @@ Path layout at runtime (per ADR 0005):
 %APPDATA%\Mockingbird\bootstrap.json    machine-local data-path pointer
 %LOCALAPPDATA%\Mockingbird\
   logs\mockingbird-YYYYMMDD.log         Serilog rolling sink (ADR 0008)
-  runtime\python\                       (main-011 will populate this)
+  runtime\python\                       embeddable Python + pocket_tts +
+                                        mockingbird_sidecar (main-011 / main-015)
   models\pocket-tts\                    (main-011 will populate this)
   cache\
   bootstrap-state.json                  first-run completion marker
   settings.json                         UserSettings — DefaultVoiceId in v1 (main-013)
-<dataPath>\voices\library.json          empty list in v1 skeleton
+<dataPath>\voices\library.json          { schemaVersion: 1, voices: [...] }
+                                        — id/name/engine/source/createdAt per row
+                                        (main-015)
+<dataPath>\voices\<id>\                 per cloned voice (main-015)
+  profile.safetensors                   exported voice state from /export-voice
+  meta.json                             schemaVersion 1 + sampleSeconds + tags
+  sample.wav                            optional retained sample
 ```
 
 ## UI shell
@@ -177,17 +228,23 @@ at that point.
 
 As of main-011 the **real pocket-tts engine is wired in**:
 
-- `PocketTtsEngine` posts text to the Python sidecar's `POST /tts` form endpoint and
-  streams 24 kHz mono 16-bit PCM chunks (after stripping the WAV header) straight to
-  `AudioPlayer` via the existing `IAsyncEnumerable<byte[]>` path. The HTTP call uses
-  `HttpCompletionOption.ResponseHeadersRead` per ADR 0013 — the default
+- `PocketTtsEngine` posts text to the Python sidecar and streams 24 kHz mono 16-bit
+  PCM chunks (after stripping the WAV header) straight to `AudioPlayer` via the
+  existing `IAsyncEnumerable<byte[]>` path. **Built-in voices** route to `POST /tts`
+  with form-encoded `voice_url`; **cloned voices** (main-015) resolve to
+  `<dataPath>\voices\<id>\profile.safetensors` via `VoiceLibraryService` and route
+  to `POST /tts-with-state` with the profile uploaded as `voice_state`. Both calls
+  use `HttpCompletionOption.ResponseHeadersRead` per ADR 0013 — the default
   `ResponseContentRead` would buffer the entire WAV, scaling first-chunk latency
   linearly with input size and breaking the ≤2 s budget on anything beyond a short
   sentence.
-- `SidecarHost` owns the `python.exe -m pocket_tts serve --host 127.0.0.1 --port 0`
-  process: parses the assigned port from Uvicorn's startup banner, polls `/health`,
-  redirects stdout/stderr into Serilog under a `sidecar` source, terminates on host
-  shutdown, and restarts on crash with capped exponential backoff (5 attempts).
+- `SidecarHost` owns the `python.exe -m mockingbird_sidecar serve --host 127.0.0.1
+  --port 0` process (per ADR 0015 — the wrapper module imports pocket_tts's FastAPI
+  app and mounts `/export-voice` + `/tts-with-state` so cloning + cloned-voice
+  synthesis share the same resident `tts_model`): parses the assigned port from
+  Uvicorn's startup banner (unchanged regex — uvicorn logs the same line), polls
+  `/health`, redirects stdout/stderr into Serilog under a `sidecar` source, terminates
+  on host shutdown, and restarts on crash with capped exponential backoff (5 attempts).
   Per ADR 0012, every spawned python is bound to a Win32 Job Object with
   `KILL_ON_JOB_CLOSE`, so the entire process tree (uvicorn workers, multiprocessing
   spawn, etc.) dies atomically on tray Exit — *and* on abrupt host death — with no
@@ -197,19 +254,24 @@ As of main-011 the **real pocket-tts engine is wired in**:
 - `PythonRuntimeBootstrapper` runs once on first launch: downloads Python 3.12.7
   embeddable to `%LOCALAPPDATA%\Mockingbird\runtime\python\`, enables `site` in the
   `._pth` file, bootstraps pip, pip-installs `pocket-tts>=2.0,<3` (which pulls torch
-  CPU plus deps, ~600 MB), and smoke-tests the import. Progress is persisted to
+  CPU plus deps, ~600 MB), copies the bundled `mockingbird_sidecar` wrapper from the
+  install folder into `runtime\python\Lib\site-packages\mockingbird_sidecar\`
+  (main-015), and smoke-tests both imports. Progress is persisted to
   `bootstrap-state.json` so a half-finished run resumes on restart. Per ADR 0011,
-  on-disk sentinel files (`python.exe`, `pip`, `pocket_tts/__init__.py`) are
-  authoritative — a stale state file cannot trick the bootstrapper into skipping a
-  step whose artefacts have been wiped — and any subprocess that exits non-zero
-  surfaces its captured stderr tail in both the file log (at `Error`) and the
-  thrown exception (visible in the `BootstrapDialog`).
+  on-disk sentinel files (`python.exe`, `pip`, `pocket_tts/__init__.py`,
+  `mockingbird_sidecar/__init__.py`) are authoritative — a stale state file cannot
+  trick the bootstrapper into skipping a step whose artefacts have been wiped — and
+  any subprocess that exits non-zero surfaces its captured stderr tail in both the
+  file log (at `Error`) and the thrown exception (visible in the `BootstrapDialog`).
 - `BootstrapDialog` drives the bootstrapper with per-step progress, cancel, and retry.
 - `StubTtsEngine` is preserved behind `MOCKINGBIRD_USE_STUB_ENGINE=1` for offline /
   CI testing; the env flag also disables the sidecar and bootstrap-dialog wiring.
-- `GET /voices` returns the eight pocket-tts built-ins (`alba`, `marius`, `javert`,
-  `jean`, `fantine`, `cosette`, `eponine`, `azelma`) with `engine: "pocket-tts"`,
-  `isBuiltIn: true`. Voice cloning UI and the wider voice library are separate tasks.
+- `GET /voices` returns the union of the eight pocket-tts built-ins (`alba`, `marius`,
+  `javert`, `jean`, `fantine`, `cosette`, `eponine`, `azelma`) with `isBuiltIn: true`
+  plus every cloned voice from `library.json` with `isBuiltIn: false`. The union is
+  composed by `VoiceCatalog` (main-013) which now consumes `VoiceLibraryService`
+  (main-015) alongside the engine. Voice cloning UI lands in main-025; the per-row
+  delete affordance ships with main-026.
 - `GET /status` reports `sidecar.state` (notstarted / starting / running / restarting
   / failed / stopping), `sidecar.healthy`, `sidecar.port`, and `sidecar.lastError`.
 
@@ -379,11 +441,121 @@ single source of truth (main-015 will fire `VoicesChanged` on save / delete).
 
 ### Out-of-scope reminders for v1
 
-- No delete affordance — moved to main-015 where cloned voices the button
-  would operate on actually exist.
+- No delete affordance — main-026 wires it on top of main-015's `DeleteAsync`.
 - No search / filter / tags — vision-deferred until ~15 voices.
 - No per-session voice routing UI — env-var-only per main-019.
 - No per-row preview error toasts — footer + log file is sufficient signal.
+
+## Voice library
+
+As of main-015 the cloned-voice **backend** is real (no UI ships in this task —
+main-025 builds the cloning sub-flow and main-026 the per-row delete):
+
+- **`VoiceLibraryService`** owns `<dataPath>\voices\*` per ADR 0005. Singleton in
+  DI. Every mutation is temp+rename (`profile.safetensors.tmp` → final, then
+  `meta.json.tmp` → final, then `library.json.tmp` → final). Order matters: the
+  master index (`library.json`) is written **last** so a crash mid-Add leaves a
+  recoverable orphan folder rather than an index pointing at nothing. `DeleteAsync`
+  inverts the order — index pruned **first**, then the folder — so a file-locked
+  folder (e.g. sidecar still has `profile.safetensors` open from a just-finished
+  preview) doesn't keep the row visible. One 200 ms retry on `IOException`; if
+  the folder still won't delete the warning is logged and startup reconciliation
+  cleans up next launch.
+- **`VoiceLibraryStartup`** is a hosted-service shim that runs `LoadAsync` once on
+  host start so the catalog has cloned rows ready before page VMs resolve.
+  Reconciliation is bidirectional: library entries without folders are dropped (with
+  a warning + a re-write of `library.json`), folders without entries are reinserted
+  from `meta.json` (with a warning), and `meta.json` files declaring
+  `schemaVersion > 1` are skipped with a warning rather than crashing.
+- **`VoiceCatalog`** subscribes to `VoiceLibraryService.LibraryChanged` and re-fires
+  its own `VoicesChanged` so main-014's Voices page refreshes live. `ListAsync`
+  returns engine built-ins first, cloned voices second.
+- **`VoiceCloningClient`** is the C# side of the sidecar's `POST /export-voice`
+  contract. Uploads a sample WAV via multipart, returns the `.safetensors` bytes
+  the C# host then hands to `VoiceLibraryService.AddAsync` for persistence. The
+  sidecar is stateless between requests — no on-disk profile lives on the Python
+  side.
+- **Sidecar wrapper module** `mockingbird_sidecar` is bundled next to the binary
+  under `src\Mockingbird\PythonSidecar\mockingbird_sidecar\` and copied into the
+  Python runtime's site-packages by the bootstrapper (per ADR 0015). It mounts
+  `POST /export-voice` and `POST /tts-with-state` on top of pocket-tts's existing
+  FastAPI app, and re-exports a `serve` typer command that mirrors
+  `pocket_tts serve` — so `SidecarHost.cs`'s spawn argument string only changes
+  the module name (`pocket_tts` → `mockingbird_sidecar`).
+
+### Voice profile schema (locked v1)
+
+Per-voice `meta.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "id": "marco",
+  "name": "Marco",
+  "engine": "pocket-tts",
+  "pocketTtsVersion": null,
+  "source": "Mic",
+  "createdAt": "2026-05-04T12:34:56+00:00",
+  "sampleSeconds": 12,
+  "samplePath": "sample.wav",
+  "tags": []
+}
+```
+
+Master `library.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "voices": [
+    { "id": "marco", "name": "Marco", "engine": "pocket-tts",
+      "source": "Mic", "createdAt": "2026-05-04T12:34:56+00:00" }
+  ]
+}
+```
+
+The library mirrors a strict subset of `meta.json` so the catalog can populate
+the picker without reading N per-voice files. Full per-voice metadata (sample
+length, source path, tags, pocket-tts version) lives in `meta.json` only;
+catalog consumers that need them can lazy-read on demand.
+
+### Naming rules
+
+- **`id`** — lowercase-kebab, `[a-z0-9-]`, 1–40 chars. Generated from the display
+  name by lowercasing, mapping whitespace / `_` / `.` to `-`, dropping anything
+  else, and trimming leading/trailing dashes. Stable per voice — never renamed.
+- **Built-in collision** — if the generated id matches one of the eight
+  built-ins (`alba`, `marius`, `javert`, `jean`, `fantine`, `cosette`, `eponine`,
+  `azelma`), `AddAsync` throws `VoiceValidationException` with a "pick a
+  different name" message rather than disambiguating. The user explicitly typed
+  "Alba" and we won't silently shadow the built-in.
+- **Cloned-id collision** — if the id collides with another *cloned* voice or an
+  on-disk folder (orphan, ID-typo recovery), a 4-hex `Guid.NewGuid()` suffix
+  is appended (`marco`, `marco-a3f2`).
+- **Display name** — up to 40 chars after trim + whitespace-collapse; not
+  required unique (two voices both called "Marco" coexist via different ids).
+
+### Engine resolution flow
+
+`PocketTtsEngine.StreamAsync(text, voiceId, ct)` branches on whether `voiceId`
+matches one of the eight reserved built-in ids (case-insensitive set). If yes,
+the existing `/tts` + `voice_url` path runs unchanged. If no, the engine asks
+`VoiceLibraryService.TryResolveProfilePath(voiceId)`; null → throws
+`InvalidOperationException("Unknown voice id …")` which surfaces through
+`SpeakService` to the page status line and to the HTTP `/speak` 500 body. Non-null
+→ POST the file as `voice_state` to `/tts-with-state`. The streaming response
+shape (24 kHz mono 16-bit PCM after a 44-byte WAV header) is identical for both
+endpoints, so the WAV-stripping + chunk-yielding tail of `StreamAsync` is shared.
+
+### What is *not* in main-015
+
+- Cloning UI (mic capture, loopback capture, sample preview) — main-025.
+- Per-row delete button + confirmation dialog — main-026.
+- File-import path (`source: "Import"`) — backend supports it; no UI in v1.
+- Voice rename / re-tag — no v1 task.
+- Active-playback guard on delete — delete during preview is allowed; the
+  playback cancellation path covers the file-just-disappeared race.
+- Tray-warning popup for orphan folders — warning log is enough in v1.
 
 ## Claude Code integration kit
 

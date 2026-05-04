@@ -218,7 +218,10 @@ public sealed class SidecarHost : IHostedService, IDisposable
                 {
                     FileName = _bootstrapper.PythonExePath,
                     // -u forces unbuffered stdout/stderr so we observe Uvicorn's startup banner promptly.
-                    Arguments = "-u -m pocket_tts serve --host 127.0.0.1 --port 0",
+                    // mockingbird_sidecar wraps pocket_tts.main:web_app and adds /export-voice and
+                    // /tts-with-state for voice cloning (ADR 0015 / main-015). Same uvicorn banner so
+                    // the PortRegex below picks up the assigned port unchanged.
+                    Arguments = "-u -m mockingbird_sidecar serve --host 127.0.0.1 --port 0",
                     WorkingDirectory = _paths.PythonRuntimePath,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
