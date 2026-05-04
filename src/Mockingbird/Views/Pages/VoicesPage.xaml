@@ -17,7 +17,8 @@
                     MaxWidth="900"
                     HorizontalAlignment="Center">
 
-            <!-- Page title — small Light/28 heading per main-029 -->
+            <!-- Page title — small Light/28 heading per main-029, no big hero
+                 (the big hero is reserved for Speak + About per main-030). -->
             <TextBlock Text="Voices"
                        FontSize="28"
                        FontWeight="Light"
@@ -52,129 +53,20 @@
                            TextWrapping="Wrap" />
             </Border>
 
-            <!-- Voice list (Engine: running) -->
-            <StackPanel Visibility="{Binding ViewModel.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}">
-                <!-- Built-in voices section -->
-                <TextBlock Text="Built-in"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,8" />
-                <ItemsControl ItemsSource="{Binding ViewModel.BuiltInVoices}"
-                              Margin="0,0,0,16">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Padding="8,12"
-                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                    BorderThickness="0,0,0,1">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding DisplayName}"
-                                                   FontSize="14" />
-                                        <TextBlock Text="{Binding Meta}"
-                                                   FontSize="11"
-                                                   Margin="0,2,0,0"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-
-                                    <ui:Button Grid.Column="1"
-                                               Content="Preview"
-                                               Appearance="Secondary"
-                                               Icon="{ui:SymbolIcon Play24}"
-                                               Command="{Binding PreviewCommand}"
-                                               Margin="8,0,8,0"
-                                               VerticalAlignment="Center" />
-
-                                    <ui:SymbolIcon Grid.Column="2"
-                                                   Symbol="Speaker224"
-                                                   FontSize="16"
-                                                   VerticalAlignment="Center"
-                                                   Visibility="{Binding IsActiveRequest, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!-- Cloned voices section -->
-                <TextBlock Text="Cloned"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,8" />
-                <TextBlock Text="No cloned voices yet — clone one below."
-                           FontSize="12"
-                           Margin="0,0,0,8"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           Visibility="{Binding ViewModel.ClonedSectionIsEmpty, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Visible}" />
-                <ItemsControl ItemsSource="{Binding ViewModel.ClonedVoices}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Padding="8,12"
-                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                    BorderThickness="0,0,0,1">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <!-- main-026: 4-column layout for cloned rows.
-                                             name+meta | Preview | Delete | active indicator -->
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding DisplayName}"
-                                                   FontSize="14" />
-                                        <TextBlock Text="{Binding Meta}"
-                                                   FontSize="11"
-                                                   Margin="0,2,0,0"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-
-                                    <ui:Button Grid.Column="1"
-                                               Content="Preview"
-                                               Appearance="Secondary"
-                                               Icon="{ui:SymbolIcon Play24}"
-                                               Command="{Binding PreviewCommand}"
-                                               Margin="8,0,8,0"
-                                               VerticalAlignment="Center" />
-
-                                    <ui:Button Grid.Column="2"
-                                               Appearance="Secondary"
-                                               Icon="{ui:SymbolIcon Delete24}"
-                                               Command="{Binding DeleteCommand}"
-                                               ToolTip="Delete voice"
-                                               Margin="0,0,8,0"
-                                               VerticalAlignment="Center" />
-
-                                    <ui:SymbolIcon Grid.Column="3"
-                                                   Symbol="Speaker224"
-                                                   FontSize="16"
-                                                   VerticalAlignment="Center"
-                                                   Visibility="{Binding IsActiveRequest, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-
-            <!-- Cloning panel (main-025) -->
-            <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                    BorderThickness="0,1,0,0"
-                    Padding="0,16,0,0"
-                    Margin="0,16,0,0"
+            <!-- main-030 swap: Clone card moves ABOVE the voice list — clone first,
+                 browse second. Styled as a single WhisperHeim card (Border, CornerRadius=12,
+                 Padding=24) per the styleguide §Card spec. Visible only while the
+                 engine is running. -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="12"
+                    Padding="24"
+                    Margin="0,0,0,24"
                     Visibility="{Binding ViewModel.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}">
                 <StackPanel>
                     <TextBlock Text="Clone a new voice"
                                FontSize="14"
                                FontWeight="SemiBold"
-                               Margin="0,0,0,8" />
+                               Margin="0,0,0,12" />
 
                     <!-- Source toggle: Microphone | System Audio -->
                     <StackPanel Orientation="Horizontal"
@@ -314,6 +206,118 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+
+            <!-- Voice list (Engine: running) — now BELOW the clone card per main-030 -->
+            <StackPanel Visibility="{Binding ViewModel.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}">
+                <!-- Built-in voices section -->
+                <TextBlock Text="Built-in"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8" />
+                <ItemsControl ItemsSource="{Binding ViewModel.BuiltInVoices}"
+                              Margin="0,0,0,16">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="8,12"
+                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                    BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   FontSize="14" />
+                                        <TextBlock Text="{Binding Meta}"
+                                                   FontSize="11"
+                                                   Margin="0,2,0,0"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <ui:Button Grid.Column="1"
+                                               Content="Preview"
+                                               Appearance="Secondary"
+                                               Icon="{ui:SymbolIcon Play24}"
+                                               Command="{Binding PreviewCommand}"
+                                               Margin="8,0,8,0"
+                                               VerticalAlignment="Center" />
+
+                                    <ui:SymbolIcon Grid.Column="2"
+                                                   Symbol="Speaker224"
+                                                   FontSize="16"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding IsActiveRequest, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Cloned voices section -->
+                <TextBlock Text="Cloned"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8" />
+                <TextBlock Text="No cloned voices yet — clone one above."
+                           FontSize="12"
+                           Margin="0,0,0,8"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Visibility="{Binding ViewModel.ClonedSectionIsEmpty, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Visible}" />
+                <ItemsControl ItemsSource="{Binding ViewModel.ClonedVoices}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="8,12"
+                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                    BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <!-- main-026: 4-column layout for cloned rows.
+                                             name+meta | Preview | Delete | active indicator -->
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   FontSize="14" />
+                                        <TextBlock Text="{Binding Meta}"
+                                                   FontSize="11"
+                                                   Margin="0,2,0,0"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <ui:Button Grid.Column="1"
+                                               Content="Preview"
+                                               Appearance="Secondary"
+                                               Icon="{ui:SymbolIcon Play24}"
+                                               Command="{Binding PreviewCommand}"
+                                               Margin="8,0,8,0"
+                                               VerticalAlignment="Center" />
+
+                                    <ui:Button Grid.Column="2"
+                                               Appearance="Secondary"
+                                               Icon="{ui:SymbolIcon Delete24}"
+                                               Command="{Binding DeleteCommand}"
+                                               ToolTip="Delete voice"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Center" />
+
+                                    <ui:SymbolIcon Grid.Column="3"
+                                                   Symbol="Speaker224"
+                                                   FontSize="16"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding IsActiveRequest, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>

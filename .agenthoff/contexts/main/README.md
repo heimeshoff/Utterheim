@@ -91,6 +91,14 @@ src\
       Dialogs\
         DeleteVoiceDialog.xaml(.cs)   Fluent ContentDialog for the per-row Delete
                                       affordance on cloned voices (main-026).
+      Controls\
+        BrandHeroControl.xaml(.cs)    Reusable hero block (main-030) — 88x88
+                                      logo badge + "Mockingbird" 40pt ExtraBold
+                                      + version tag in BrandDeepMutedBrush +
+                                      optional `Tagline` DependencyProperty
+                                      (collapsed when null/empty). Reads version
+                                      from AppInfo.Version. Used by Speak page
+                                      (no tagline) and About page in main-032.
     ViewModels\
       EngineStatusViewModel.cs        Backs the persistent footer (HTTP +
                                       Engine state, live via SidecarHost.StateChanged)
@@ -140,6 +148,14 @@ src\
                                       (SidecarState, healthy) to a frozen brush for
                                       the 10x10 status pip (green/amber/red/neutral).
     Services\
+      AppInfo.cs                      Static helper (main-030) — `AppInfo.Version`
+                                      returns the user-facing version string
+                                      (`AssemblyInformationalVersionAttribute`
+                                      with any `+sha` stripped, fallback to
+                                      `AssemblyName.Version` 3-part, then
+                                      `"unknown"`). Single-app, no DI seam.
+                                      main-032 will move AboutPageViewModel's
+                                      inline lookup over to this helper.
       Navigation\PageService.cs       Thin IPageService → IServiceProvider adapter (ADR 0009)
       Tts\
         ITtsEngine.cs                 the seam every TTS engine plugs into
@@ -383,12 +399,23 @@ The "stub-engine plays a 440 Hz tone" note from the skeleton is now superseded.
 ## Speak page
 
 As of main-013 the Speak page replaces the main-020 stub with the real daily-use
-surface — the page mirrors WhisperHeim's TTS section A:
+surface — the page mirrors WhisperHeim's TTS section A. main-030 reordered the
+rows: the page now opens with `<controls:BrandHeroControl />` (no tagline) at
+the top, followed by a single horizontal controls row (voice picker + Play +
+Stop + Save in WhisperHeim TTS order, no separator gap), then the dominant
+multi-line `ui:TextBox` filling the remaining vertical space, then the status
+`TextBlock` at the bottom. The page chrome matches the styleguide
+(40,36,40,32 outer margin, MaxWidth=900, centered); the page root is a
+4-row `Grid` (not a `ScrollViewer`) so the `*` row can actually expand and
+the textbox dominates.
 
-- A four-row Grid with a 16 px outer margin: dominant multi-line `ui:TextBox`
-  (`AcceptsReturn`, `MinHeight=200`, internal scrollbar), a left-aligned
-  `ComboBox` voice picker, a horizontal Play / Stop / Save button row, and a
-  status `TextBlock` under it.
+- A four-row layout per main-030: hero (`controls:BrandHeroControl` with
+  no `Tagline`), controls row (voice `ComboBox` MinWidth=240 + Play
+  Primary + Stop Secondary + Save Secondary, all in one `StackPanel`),
+  dominant multi-line `ui:TextBox` (`AcceptsReturn`, `MinHeight=240`,
+  internal scrollbar) filling the `*` row, and a status `TextBlock` under
+  it. Save retains its inline `ui:ProgressRing` driven by the command's
+  `IsRunning`.
 - View-model `SpeakPageViewModel` (`CommunityToolkit.Mvvm`,
   `[ObservableProperty]` + `[RelayCommand]` per ADR 0010). `Play`'s and
   `Save`'s `CanExecute` reactivities come from
@@ -542,13 +569,16 @@ the code-behind also forces a refresh so the list populates without
 re-navigation. **No `library.json` file watcher** — the catalog is the
 single source of truth (main-015 will fire `VoicesChanged` on save / delete).
 
-### Cloning panel (main-025)
+### Cloning panel (main-025, relocated by main-030)
 
-As of main-025 the Voices page grows a third row beneath the list:
-**Clone a new voice**. The panel is always visible (no collapse / expand in
-v1), separated from the list above by a thin top border and a `SemiBold`
-heading. Its view-model is `VoiceCloningViewModel` — composed into
-`VoicesPageViewModel.Cloning`, **not** a separate page.
+As of main-025 the Voices page grows a **Clone a new voice** sub-panel; main-030
+moved it to sit **above** the voice library list (clone first, browse second)
+and re-skinned its outer container as a single WhisperHeim card (`Border`,
+`CornerRadius=12`, `Padding=24` per styleguide §Card spec) with a `SemiBold`
+heading on the card itself. The panel is always visible while the engine is
+running (no collapse / expand in v1). Its view-model is
+`VoiceCloningViewModel` — composed into `VoicesPageViewModel.Cloning`,
+**not** a separate page.
 
 - **Source toggle** — two `RadioButton`s side by side: Microphone (`Mic24`)
   and System Audio (`Speaker224`). Two-way bound through
