@@ -75,7 +75,13 @@ public sealed class PocketTtsEngine : ITtsEngine
         _logger.LogInformation("PocketTtsEngine synthesising {Chars} chars for voice '{Voice}'",
             text.Length, voice);
 
-        using var response = await _http.PostAsync(url, content, ct).ConfigureAwait(false);
+        // ResponseHeadersRead is load-bearing: the default ResponseContentRead buffers the
+        // entire WAV before the awaited Task returns, throwing away the StreamingResponse on
+        // the Python side. Per main-023's diagnosis (H4 confirmed), this is the difference
+        // between input-length-independent ~200–500 ms first audio and ~20 ms/char buffering.
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+        using var response = await _http.SendAsync(
+            request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);

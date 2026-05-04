@@ -30,7 +30,7 @@ From the vision's seed glossary, plus terms that surfaced during boundary analys
 | **Speak queue** | FIFO of pending speak requests. Head plays; tail is appended. Advances on completion or stop. |
 | **Stop signal** | A user action (double-tap LCtrl) that halts current playback. Drain-vs-keep semantics is an open question (see vision). |
 | **Loopback capture** | Recording the system output device via WASAPI loopback. The "record what I'm hearing" source for voice cloning. |
-| **First-chunk latency** | Time from speak request to first audio sample at the speakers. Target ≤2 s; pocket-tts ~200 ms. |
+| **First-chunk latency** | Time from speak request to first audio sample at the speakers. Target ≤2 s; measured ~190 ms warm / ~320 ms cold (median, alba) and input-length-independent after main-024 / ADR 0013. |
 | **Streaming synthesis** | Producing audio in chunks during generation so playback starts before the full utterance is rendered. |
 | **Capture session** | An interactive recording episode that produces (or rejects) a single sample clip. |
 | **Engine** | The TTS implementation behind a profile. v1 has one engine (pocket-tts). A profile records its engine so future multi-engine selection is possible. |
@@ -159,7 +159,11 @@ As of main-011 the **real pocket-tts engine is wired in**:
 
 - `PocketTtsEngine` posts text to the Python sidecar's `POST /tts` form endpoint and
   streams 24 kHz mono 16-bit PCM chunks (after stripping the WAV header) straight to
-  `AudioPlayer` via the existing `IAsyncEnumerable<byte[]>` path.
+  `AudioPlayer` via the existing `IAsyncEnumerable<byte[]>` path. The HTTP call uses
+  `HttpCompletionOption.ResponseHeadersRead` per ADR 0013 — the default
+  `ResponseContentRead` would buffer the entire WAV, scaling first-chunk latency
+  linearly with input size and breaking the ≤2 s budget on anything beyond a short
+  sentence.
 - `SidecarHost` owns the `python.exe -m pocket_tts serve --host 127.0.0.1 --port 0`
   process: parses the assigned port from Uvicorn's startup banner, polls `/health`,
   redirects stdout/stderr into Serilog under a `sidecar` source, terminates on host
