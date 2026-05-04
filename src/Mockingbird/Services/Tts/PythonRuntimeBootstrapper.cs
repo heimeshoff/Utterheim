@@ -199,7 +199,15 @@ public sealed class PythonRuntimeBootstrapper
         // dependencies of its own (everything it imports is satisfied by
         // pocket-tts above). Copy-from-bundled-files is the simplest install
         // shape per the ADR's "v1" recommendation.
-        if (!state.MockingbirdSidecarInstalled || !MockingbirdSidecarActuallyInstalled())
+        //
+        // The guard also re-installs on version drift (main-027 follow-up):
+        // IsBootstrapped's launch-time gate already fails on bundled vs.
+        // installed __version__ mismatch, but without checking the same here
+        // the install path would skip step 3b (files physically present!)
+        // and the stale wrapper would survive a "successful" bootstrap run.
+        if (!state.MockingbirdSidecarInstalled
+            || !MockingbirdSidecarActuallyInstalled()
+            || !BundledSidecarMatchesInstalled())
         {
             progress.Report(new BootstrapProgress(
                 BootstrapStep.InstallPocketTts, 0.95, "Installing mockingbird sidecar wrapper…"));
