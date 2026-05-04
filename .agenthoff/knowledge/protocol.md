@@ -5,13 +5,23 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 21:30 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 2 (main-016 Settings page, main-017 About page)
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 2 (eeb5192, 435d059)
+
+---
+
 ## 2026-05-04 21:25 -- Task completed: main-017 - About page
 
 **Type:** Work / Task completion
 **Task:** main-017 - About page (logo, tagline, version, engine status, retry)
 **Summary:** About page wired up with brand mark, "Local voices for Claude Code" tagline, assembly-version readout, in-process engine status panel (subscribed to SidecarHost.StateChanged, re-seeded via GetStatus on navigate-to), Restart Engine button backed by new SidecarHost.RestartAsync, View logs HyperlinkButton, and the pocket-tts credits line. Shared FormatState helper extracted to SidecarStateLabels so footer + About can't drift apart.
-**Commit:** (pending)
-**Files changed:** ~10
+**Commit:** 435d059
+**Files changed:** 14
 **ADRs written:** 0018-about-page-engine-status-in-process.md
 
 ---
