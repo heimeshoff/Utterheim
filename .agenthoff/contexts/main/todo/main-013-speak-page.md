@@ -1,7 +1,7 @@
 ---
 id: main-013
 title: Speak page — primary daily-use UI
-status: backlog
+status: todo
 type: feature
 context: main
 created: 2026-05-01
@@ -31,14 +31,47 @@ reusing the navigation shell, the page abstraction
 
 ### Layout (per styleguide § Reusable component map → "Speak section composition")
 
-A single page laid out top-to-bottom:
+A `Grid` with four rows: the **textbox is the dominant element and fills all
+remaining vertical space**; the other three rows are compact (`Height="Auto"`).
+The page uses an outer `Margin="16"` (or grid `Padding`) so the textbox is
+never flush against the window chrome — small breathing room on every side
+without wasting space.
+
+Concretely:
+
+```xml
+<Grid Margin="16">
+  <Grid.RowDefinitions>
+    <RowDefinition Height="*" />     <!-- 1. text input — fills -->
+    <RowDefinition Height="Auto" />  <!-- 2. voice picker -->
+    <RowDefinition Height="Auto" />  <!-- 3. button row -->
+    <RowDefinition Height="Auto" />  <!-- 4. status line -->
+  </Grid.RowDefinitions>
+  ...
+</Grid>
+```
+
+Row gap is achieved with per-row `Margin="0,0,0,12"` (or a uniform `12px`
+spacing convention from the styleguide).
 
 1. **Multi-line text input** — Fluent `ui:TextBox` with `AcceptsReturn="True"`,
-   `TextWrapping="Wrap"`, comfortable height (~6 visible lines), placeholder
-   text "Type something for Mockingbird to say...".
+   `TextWrapping="Wrap"`,
+   `VerticalAlignment="Stretch"`,
+   `HorizontalAlignment="Stretch"`,
+   `AcceptsTab="False"` (Tab moves focus, doesn't insert),
+   `VerticalScrollBarVisibility="Auto"` (long pastes scroll inside the box,
+   not the page),
+   `MinHeight="200"` so the box is still substantial when the window is at
+   its minimum size; **no `MaxHeight`** — it grows to fill the window.
+   Placeholder text: "Type or paste something for Mockingbird to say...".
+   The intent: the user can paste a multi-paragraph article, see most of it
+   without scrolling on a normal-sized window, and edit comfortably.
 2. **Voice picker** — `ui:ComboBox` (or `ComboBox` themed by wpfui) bound to
    `SpeakPageViewModel.Voices` (an `ObservableCollection<VoiceDescriptor>`).
-3. **Button row** — three `ui:Button` instances side-by-side:
+   `HorizontalAlignment="Left"`, `MinWidth="200"` — does not stretch full
+   width; the textbox is the page's hero, not the picker.
+3. **Button row** — three `ui:Button` instances side-by-side
+   (`StackPanel Orientation="Horizontal"`, child `Margin="0,0,8,0"`):
    - **Play** (`Mic24` or `Play24` icon, `Appearance="Primary"`).
    - **Stop** (`Stop24` icon, `Appearance="Secondary"`,
      `IsEnabled` bound to "playing OR queued").
@@ -220,6 +253,17 @@ restart.
   is replaced with the real content).
 - [ ] Multi-line text input accepts Enter for newlines (`AcceptsReturn=True`)
   and wraps long text without horizontal scroll.
+- [ ] The text input is the dominant element on the page: it fills all
+  vertical space not consumed by the voice picker, button row, and status
+  line. There is a small uniform margin (~16 px) on all sides so the box
+  is not flush against the window chrome, but it is otherwise as large as
+  the window allows. Resizing the window grows/shrinks the textbox; the
+  other rows stay fixed-height. A multi-paragraph paste fits without
+  visually cramped scroll on a normal-sized window; longer content scrolls
+  inside the textbox via its own scrollbar (page does not scroll).
+- [ ] `MinHeight` on the textbox keeps it substantial (~200 px / ~10 visible
+  lines) even at the window's minimum size — never collapsed to a one-line
+  field.
 - [ ] Voice picker shows the eight pocket-tts built-ins
   (`alba`, `marius`, `javert`, `jean`, `fantine`, `cosette`, `eponine`,
   `azelma`) once the engine reports them. Initial selection is
@@ -297,14 +341,23 @@ restart.
     `INavigableView<SpeakPageViewModel>` and `INavigationAware`, per
     main-020's spec). Editorial fix applied 2026-05-01: prior wording
     incorrectly named the method as living on `INavigableView<T>`.
-- **New ADRs written for this refinement:**
+- **ADRs that govern this task:**
   - **ADR 0009** — `.agenthoff/knowledge/decisions/0009-navigation-shell-wpfui.md`
     — rationale for splitting the navigation shell out of main-013 into
     main-020 and using `ui:NavigationView` + `INavigableView<T>`.
+  - **ADR 0010** — `.agenthoff/knowledge/decisions/0010-mvvm-via-inotifypropertychanged.md`
+    — formalises the `CommunityToolkit.Mvvm` choice this spec assumes.
+    `SpeakPageViewModel` derives from `ObservableObject` (or `[ObservableObject] partial class`);
+    use `[ObservableProperty]` for `Text` / `SelectedVoice` / `Voices` /
+    `Status` and `[RelayCommand]` for Play / Stop / Save. Use
+    `[NotifyCanExecuteChangedFor(nameof(PlayCommand))]` on `Text` and
+    `SelectedVoice` so Play's `CanExecute` recomputes as the user types
+    or picks a voice. `[RelayCommand]` on the async Save method gives
+    `IsRunning` for the inline `ProgressRing` for free.
 - **New tasks created:**
-  - **main-020** — `.agenthoff/contexts/main/todo/main-020-navigation-shell.md`
-    — promoted directly to `todo/` since it has no open questions and its
-    only dependency (main-010) is `done`.
+  - **main-020** — `.agenthoff/contexts/main/done/main-020-navigation-shell.md`
+    — landed; the navigation shell exists with a Speak stub for this task to
+    replace.
 - **References:**
   - `docs/styleguide.md` § Reusable component map → "Speak section composition".
   - WhisperHeim `design.md` § 6 Section A.
@@ -328,6 +381,6 @@ restart.
   - Editing voice metadata from this page.
   - Audio editing / trimming on the saved `.wav`.
   - Priority lanes / barge-to-front (deferred per ADR 0007 to v1.5).
-- **Status:** Remains `backlog`. Cannot promote to `todo/` yet because
-  main-020 (navigation shell) is its hard dependency and lives in `todo/` but
-  is not `done`. Promote after main-020 lands.
+- **Status:** Promoted to `todo/` on 2026-05-04. All dependencies
+  (main-010 styleguide, main-011 pocket-tts bootstrap, main-020 navigation
+  shell) are in `done/`; ready for a worker to pick up.

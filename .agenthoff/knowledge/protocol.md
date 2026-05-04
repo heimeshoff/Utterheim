@@ -5,6 +5,45 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 10:10 -- Model / Promoted: main-013 - Speak page
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+
+---
+
+## 2026-05-04 10:05 -- Model / Refined: main-013 - Speak page (layout amend)
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (still promote-ready)
+**Summary:** User clarification — the textbox should be the page's hero,
+filling all available vertical space with only a small breathing-room
+margin (~16 px) on each side. Updated layout to a 4-row Grid with `*` row
+for the textbox and `Auto` rows for picker/buttons/status; added explicit
+sizing rules (`MinHeight=200`, `VerticalAlignment=Stretch`, no `MaxHeight`,
+`VerticalScrollBarVisibility=Auto`); added two acceptance criteria covering
+"textbox dominates the page" and "min-height never collapses".
+
+---
+
+## 2026-05-04 10:00 -- Model / Refined: main-013 - Speak page
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (now promote-ready)
+**Summary:** Editorial pass — the task was already deeply refined (all 8 Q's
+resolved, ADR 0009 written, main-020 spun off). Cleared the stale "cannot
+promote, main-020 in todo/" status note (main-020 is now `done`); linked
+ADR 0010 (CTK.Mvvm) explicitly with worker guidance on `[ObservableProperty]`
+/ `[RelayCommand]` / `[NotifyCanExecuteChangedFor]` usage. Verified
+ADR 0013 (HttpClient streaming) does not affect the Speak UI path.
+**Split into:** —
+**ADRs written:** —
+
+---
+
 ## 2026-05-04 09:50 -- Work session ended
 
 **Type:** Work / Session end
