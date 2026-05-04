@@ -5,6 +5,38 @@ Newest entries on top.
 
 ---
 
+## 2026-05-05 -- Task completed: main-030 - Speak page hero + button row above text; Voices clone card above list
+
+**Type:** Work / Task completion
+**Task:** main-030 - Speak page hero + button row above text; Voices clone card above list
+**Summary:** Shipped reusable BrandHeroControl + AppInfo helper, restructured Speak page into hero / single controls row / dominant text input / status, and moved the Voices "Clone a new voice" card above the voice library list.
+**Commit:** b0b3314
+**Files changed:** 6
+**ADRs written:** none
+
+---
+
+## 2026-05-05 -- Batch started: [main-030]
+
+**Type:** Work / Batch start
+**Tasks:** main-030 - Speak page hero + button row above text; Voices clone card above list
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-05 -- Model / Promoted: main-030 + main-032 (visual + nav redesign pair)
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo (both)
+**Summary:** Dependencies (main-010, main-028, main-029) all in done/ as of the
+preceding work session. main-032 still depends on main-030 — both promoted
+together since the worker loop will pick main-030 first and main-032 once
+main-030 lands. Both tasks carry concrete acceptance criteria from the
+2026-05-05 refinement entry below.
+
+---
+
 ## 2026-05-05 -- Model / Refined: main-030 + main-032 (visual + nav redesign pair)
 
 **Type:** Model / Refine

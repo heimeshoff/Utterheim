@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-04
 completed: 2026-05-05
-commit:
+commit: b0b3314
 depends_on: [main-010, main-028, main-029]
 blocks: [main-032]
 tags: [speak, voices, layout, ui]
