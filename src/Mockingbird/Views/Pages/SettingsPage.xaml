@@ -191,14 +191,14 @@
                 </DockPanel>
             </Border>
 
-            <!-- Data path (last card in Diagnostics — 40-px bottom margin; stacked-content card) -->
+            <!-- Data path (last card in Diagnostics — 40-px bottom margin; stacked-content card; main-031) -->
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                     CornerRadius="12" Padding="24" Margin="0,0,0,40">
                 <StackPanel>
                     <TextBlock Text="Data path"
                                FontSize="15" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                    <TextBlock Text="Where voices and settings are stored (per bootstrap.json, ADR 0005)."
+                    <TextBlock Text="Where voices are stored (per bootstrap.json, ADR 0005). Existing voices stay at the old location."
                                FontSize="13"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                Margin="0,4,0,16"
@@ -209,11 +209,16 @@
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                Margin="0,0,0,12"
                                TextWrapping="Wrap" />
-                    <ui:Button Content="Open in Explorer"
-                               Appearance="Secondary"
-                               Icon="{ui:SymbolIcon FolderOpen24}"
-                               Command="{Binding ViewModel.OpenDataPathCommand}"
-                               HorizontalAlignment="Left" />
+                    <StackPanel Orientation="Horizontal">
+                        <ui:Button Content="Browse..."
+                                   Appearance="Primary"
+                                   Icon="{ui:SymbolIcon Folder24}"
+                                   Command="{Binding ViewModel.BrowseDataPathCommand}"
+                                   Margin="0,0,8,0" />
+                        <ui:Button Content="Reset"
+                                   Appearance="Secondary"
+                                   Command="{Binding ViewModel.ResetDataPathCommand}" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

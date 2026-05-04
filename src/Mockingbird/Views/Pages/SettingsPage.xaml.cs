@@ -55,6 +55,10 @@ public partial class SettingsPage : Page, INavigableView<SettingsPageViewModel>,
         _logger.LogInformation("Navigated to {PageName}", nameof(SettingsPage));
 
         HighlightActiveAppearanceTile();
+        // Subscribe to DataPathChanged so the diagnostics card stays live if any
+        // surface (Browse… / Reset, or a future external mutation) calls
+        // SetDataPath while this page is visible (main-031).
+        ViewModel.Attach();
 
         var cts = new CancellationTokenSource();
         _loadCts = cts;
@@ -70,6 +74,8 @@ public partial class SettingsPage : Page, INavigableView<SettingsPageViewModel>,
 
     public void OnNavigatedFrom()
     {
+        ViewModel.Detach();
+
         var cts = Interlocked.Exchange(ref _loadCts, null);
         if (cts is not null)
         {

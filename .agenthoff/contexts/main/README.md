@@ -118,13 +118,17 @@ src\
         VoicesPageConverters.cs       NullOrEmptyToVisibilityConverter +
                                       CloningSourceToBoolConverter for the cloning
                                       panel (main-025).
-        SettingsPageViewModel.cs      Settings page VM (main-016) — Voices / OutputDevices /
-                                      SelectedDefaultVoice / SelectedOutputDevice /
-                                      StartMinimised / LaunchAtStartup + read-only diagnostics
-                                      (HttpEndpoint / StopHotkeyLabel / DataPath) +
-                                      OpenDataPath command. Persists to UserSettings except
-                                      LaunchAtStartup which writes HKCU\…\Run directly
-                                      (ADR 0017).
+        SettingsPageViewModel.cs      Settings page VM (main-016 / main-031) — Voices /
+                                      OutputDevices / SelectedDefaultVoice /
+                                      SelectedOutputDevice / StartMinimised /
+                                      LaunchAtStartup + diagnostics (HttpEndpoint /
+                                      StopHotkeyLabel / DataPath, the last live-bound
+                                      to DataPathService.DataPathChanged) +
+                                      BrowseDataPath / ResetDataPath commands
+                                      (folder-picker dialog, writability validation,
+                                      restart-required MessageBox per main-031 / ADR 0020).
+                                      Persists to UserSettings except LaunchAtStartup which
+                                      writes HKCU\…\Run directly (ADR 0017).
         AboutPageViewModel.cs         About page VM (main-017) — Version /
                                       EngineState / Healthy / Port / LastError /
                                       EngineStateLabel / PortLabel / IsRetryEnabled
@@ -195,7 +199,11 @@ src\
                                       LibraryChanged event for the catalog.
         VoiceLibraryStartup.cs        Hosted-service shim: runs LoadAsync once on
                                       host start so the catalog has cloned rows
-                                      before page VMs resolve.
+                                      before page VMs resolve. main-031: also
+                                      subscribes to DataPathService.DataPathChanged
+                                      and re-runs LoadAsync on each event so a
+                                      runtime data-path swap repopulates the
+                                      catalog live.
         VoiceCloningClient.cs         HTTP client wrapping the sidecar's POST
                                       /export-voice endpoint (ADR 0015) — uploads
                                       a sample WAV, receives .safetensors bytes
@@ -225,7 +233,10 @@ src\
         NativeMethods.cs              copied from WhisperHeim @ 911bff0
         DoubleTapDetector.cs          mockingbird-specific LCtrl gesture (ADR 0006)
       Settings\
-        DataPathService.cs            ADR 0005 path layout (adapted from WhisperHeim)
+        DataPathService.cs            ADR 0005 path layout (adapted from WhisperHeim).
+                                      main-031: ValidatePath + SetDataPath + DataPathChanged
+                                      event for runtime data-path swap (pointer-only per
+                                      ADR 0020); bootstrap.json writes via temp+rename.
         UserSettings.cs               Typed wrapper over %LOCALAPPDATA%\Mockingbird\
                                       settings.json — DefaultVoiceId (main-013),
                                       OutputDeviceId, StartMinimised (main-016).
@@ -715,10 +726,20 @@ re-skinned every existing card from `ui:CardControl` to the WhisperHeim
 - **Stop hotkey** — displays "Double-tap Left Ctrl". Read-only per
   ADR 0006 (no rebinding UI in v1).
 - **Data path** — displays the active path from `DataPathService.DataPath`
-  (which reads `bootstrap.json` per ADR 0005), with an
-  `Open in Explorer` button next to it that calls
-  `Process.Start("explorer.exe", path)`. Changing the path requires a
-  migration flow and is **out of scope** for v1.
+  (which reads `bootstrap.json` per ADR 0005). Editable as of main-031:
+  a `Browse...` button opens `Microsoft.Win32.OpenFolderDialog`, the
+  selection is writability-validated (`DataPathService.ValidatePath`)
+  before the pointer in `bootstrap.json` is flipped via temp+rename, and
+  a MessageBox info reminds the user to restart for full effect. A
+  `Reset` button (no MessageBox) clears the override back to
+  `%APPDATA%\Mockingbird\`. **Pointer-swap only** — old voices at the
+  previous path are not moved, copied, or deleted (ADR 0020). Only
+  `<dataPath>\voices\` follows the swap; `runtime/`, `models/`,
+  `cache/`, `logs/`, `bootstrap-state.json`, `settings.json` stay
+  anchored to `LocalRoot`. `VoiceLibraryService` re-runs `LoadAsync` on
+  `DataPathChanged` so the Voices page rows reflect the new path's
+  `library.json` live, without page re-navigation. The previous v1
+  `Open in Explorer` affordance was dropped with this change.
 
 ### Refresh behaviour
 
@@ -750,11 +771,13 @@ launch with no Light → Dark flicker.
 
 Captured in main-016's spec — repeated here so future tasks see the
 boundary: HTTP port editing with auto-restart, stop-hotkey rebinding UI,
-data-path change with migration flow, language / update-check toggles,
-per-Claude-session voice routing UI (env-var-only via
-`examples/claude-hooks/`), output-device level meter / test-tone button,
-engine status panel (main-017's About page owns it). The theme toggle that
-was on this list is **lifted as of main-029** — see §Appearance above.
+language / update-check toggles, per-Claude-session voice routing UI
+(env-var-only via `examples/claude-hooks/`), output-device level meter /
+test-tone button, engine status panel (main-017's About page owns it).
+The theme toggle that was on this list is **lifted as of main-029** —
+see §Appearance above. The data-path change-with-migration entry is
+**lifted as of main-031** — see §Diagnostics above; pointer-swap only
+per ADR 0020, no migration ever in v1.
 
 ## About page
 

@@ -1,8 +1,7 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -15,7 +14,7 @@ using Mockingbird.Services.Tts;
 namespace Mockingbird.ViewModels.Pages;
 
 /// <summary>
-/// View-model for the Settings page (main-016). Three sections:
+/// View-model for the Settings page (main-016 / main-029 / main-031). Sections:
 ///
 /// - <b>Audio</b>: Default voice (writes <see cref="UserSettings.DefaultVoiceId"/>)
 ///   and Output device (writes <see cref="UserSettings.OutputDeviceId"/>;
@@ -24,8 +23,12 @@ namespace Mockingbird.ViewModels.Pages;
 ///   and Launch at startup (writes <c>HKCU\…\Run\Mockingbird</c> via
 ///   <see cref="StartupRegistration"/> — registry IS the source of truth, so the
 ///   toggle re-reads on every <c>OnNavigatedTo</c>).
-/// - <b>Diagnostics</b> (read-only in v1): HTTP port, Stop hotkey, Data path
-///   (with an "Open in Explorer" button).
+/// - <b>Diagnostics</b>: HTTP port and Stop hotkey are read-only in v1. Data path
+///   is editable via Browse… + Reset (main-031) — a folder-picker dialog with
+///   writability validation; persists through <see cref="DataPathService.SetDataPath"/>
+///   (pointer-swap, no migration of existing voices), refreshes the displayed
+///   path live via <see cref="DataPathService.DataPathChanged"/>, and surfaces a
+///   restart-required MessageBox on a successful swap.
 ///
 /// Per ADR 0010 the bindable surface is generated from <c>[ObservableProperty]</c>
 /// and <c>[RelayCommand]</c>.
@@ -59,8 +62,9 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         _speakServer = speakServer;
         _logger = logger;
 
-        // Diagnostics labels are stable for the lifetime of the host (v1 makes
-        // them read-only). Compute them once at construction.
+        // Diagnostics labels are stable for the lifetime of the host (HTTP port +
+        // stop hotkey are read-only in v1). Data path is a live mirror — see
+        // OnDataPathChanged for the runtime-swap path.
         HttpEndpoint = $"{_speakServer.Host}:{_speakServer.Port}";
         StopHotkeyLabel = "Double-tap Left Ctrl";
         DataPath = _dataPathService.DataPath;
@@ -102,7 +106,11 @@ public sealed partial class SettingsPageViewModel : ObservableObject
     [ObservableProperty]
     private string _stopHotkeyLabel = "Double-tap Left Ctrl";
 
-    /// <summary>Active data path from <c>bootstrap.json</c> per ADR 0005.</summary>
+    /// <summary>
+    /// Active data path from <c>bootstrap.json</c> per ADR 0005. Editable via
+    /// the Browse… and Reset commands (main-031) — re-read live from
+    /// <see cref="DataPathService.DataPathChanged"/>.
+    /// </summary>
     [ObservableProperty]
     private string _dataPath = string.Empty;
 
@@ -110,7 +118,10 @@ public sealed partial class SettingsPageViewModel : ObservableObject
     /// Refresh every dynamic field from its source of truth — the catalog, the
     /// registry, and the persisted settings file. Called by <c>OnNavigatedTo</c>
     /// so the registry-backed Launch-at-startup toggle stays accurate after
-    /// external mutations between page visits.
+    /// external mutations between page visits. Also wires the
+    /// <see cref="DataPathService.DataPathChanged"/> subscription so
+    /// <see cref="DataPath"/> stays in sync if any other surface ever calls
+    /// <see cref="DataPathService.SetDataPath"/>.
     /// </summary>
     public async Task LoadAsync(CancellationToken ct = default)
     {
@@ -121,11 +132,43 @@ public sealed partial class SettingsPageViewModel : ObservableObject
             RefreshOutputDevices();
             StartMinimised = _userSettings.StartMinimised;
             LaunchAtStartup = _startupRegistration.IsRegistered;
+            DataPath = _dataPathService.DataPath;
         }
         finally
         {
             _suspendPersist = false;
         }
+    }
+
+    /// <summary>
+    /// Subscribe to <see cref="DataPathService.DataPathChanged"/>. Idempotent —
+    /// the event raiser tolerates duplicate handlers but we detach first to be
+    /// explicit. Called by the page's <c>OnNavigatedTo</c>.
+    /// </summary>
+    public void Attach()
+    {
+        _dataPathService.DataPathChanged -= OnDataPathChanged;
+        _dataPathService.DataPathChanged += OnDataPathChanged;
+    }
+
+    /// <summary>Detach the <see cref="DataPathService.DataPathChanged"/> handler.</summary>
+    public void Detach()
+    {
+        _dataPathService.DataPathChanged -= OnDataPathChanged;
+    }
+
+    private void OnDataPathChanged(object? sender, string newResolvedPath)
+    {
+        // The event may be raised from any thread; SetDataPath is invoked from
+        // the UI dispatcher in v1 but the contract is "thread-agnostic". Hop
+        // back to the dispatcher so the bound TextBlock updates safely.
+        var app = Application.Current;
+        if (app?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            dispatcher.BeginInvoke(new Action(() => DataPath = newResolvedPath));
+            return;
+        }
+        DataPath = newResolvedPath;
     }
 
     private async Task RefreshVoicesAsync(CancellationToken ct)
@@ -249,28 +292,67 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         }
     }
 
-    /// <summary>Open the active data path in Explorer (read-only diagnostic action).</summary>
+    /// <summary>
+    /// Open <see cref="Microsoft.Win32.OpenFolderDialog"/> seeded at the current
+    /// data path. On a writable selection persist via
+    /// <see cref="DataPathService.SetDataPath"/> and surface a restart-required
+    /// info dialog; on an unwritable selection surface a warning and leave
+    /// bootstrap.json unchanged. Mirrors WhisperHeim's <c>BrowseDataPath_Click</c>.
+    /// </summary>
     [RelayCommand]
-    private void OpenDataPath()
+    private void BrowseDataPath()
     {
         try
         {
-            var path = DataPath;
-            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            var dialog = new Microsoft.Win32.OpenFolderDialog
             {
-                _logger.LogWarning("Settings: data path does not exist on disk: {Path}", path);
+                Title = "Select data folder for Mockingbird",
+                InitialDirectory = _dataPathService.DataPath,
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            var newPath = dialog.FolderName;
+            if (!DataPathService.ValidatePath(newPath))
+            {
+                MessageBox.Show(
+                    $"The selected folder is not writable:\n\n{newPath}\n\nPlease choose a different folder.",
+                    "Invalid folder",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
-            Process.Start(new ProcessStartInfo
+
+            if (_dataPathService.SetDataPath(newPath))
             {
-                FileName = "explorer.exe",
-                Arguments = $"\"{path}\"",
-                UseShellExecute = true,
-            });
+                MessageBox.Show(
+                    "Data folder changed. Please restart Mockingbird for the change to take full effect.",
+                    "Restart required",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Settings: OpenDataPath failed.");
+            _logger.LogWarning(ex, "Settings: BrowseDataPath failed.");
+        }
+    }
+
+    /// <summary>
+    /// Clear the data-path override and fall back to <see cref="DataPathService.RoamingRoot"/>.
+    /// No confirmation, no MessageBox — the on-page display refresh is the visible
+    /// signal (matches WhisperHeim).
+    /// </summary>
+    [RelayCommand]
+    private void ResetDataPath()
+    {
+        try
+        {
+            _dataPathService.SetDataPath(null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Settings: ResetDataPath failed.");
         }
     }
 }
