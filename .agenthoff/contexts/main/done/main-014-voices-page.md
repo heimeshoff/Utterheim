@@ -8,7 +8,7 @@ created: 2026-05-01
 completed: 2026-05-04
 commit: 3d763f58e0ebc5e78d5b2816e0254a424382b0a0
 depends_on: [main-010, main-011, main-020]
-blocks: [main-015]
+blocks: [main-015, main-025, main-026]
 tags: [frontend, page, voice-library]
 ---
 
