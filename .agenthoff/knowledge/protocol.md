@@ -5,6 +5,25 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 09:50 -- Task completed: main-024 - Implement first-chunk latency fix to meet ≤2s budget
+
+**Type:** Work / Task completion
+**Task:** main-024 - Implement first-chunk latency fix to meet ≤2s budget
+**Summary:** Switched PocketTtsEngine's HTTP call to HttpCompletionOption.ResponseHeadersRead, restoring streaming first-chunk delivery from the pocket-tts sidecar. Measured warm first-chunk latency drops from 22,968 ms / 139,000 ms to 192 ms / 193 ms on medium / long inputs — input-length-independent, ~10× under the 2 s budget.
+**Commit:** 0f9a96d
+**Files changed:** 3
+**ADRs written:** 0013-httpclient-streaming-completion-for-sidecar.md
+
+---
+
+## 2026-05-04 09:49 -- Batch started: [main-024]
+
+**Type:** Work / Batch start
+**Tasks:** main-024 - Implement first-chunk latency fix to meet ≤2s budget
+**Parallel:** no (1 worker)
+
+---
+
 ## 2026-05-04 01:30 -- Model / Promoted: main-024 - Implement first-chunk latency fix
 
 **Type:** Model / Promote

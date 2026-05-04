@@ -6,7 +6,7 @@ type: bug
 context: main
 created: 2026-05-04
 completed: 2026-05-04
-commit:
+commit: 0f9a96d
 depends_on: [main-023]
 blocks: []
 tags: [bug, performance, sidecar, streaming]
