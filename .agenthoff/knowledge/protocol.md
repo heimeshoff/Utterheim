@@ -5,6 +5,17 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 10:35 -- Model / Refined: main-014 - Voices page — voice library list with preview
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog
+**Summary:** Resolved Q1–Q10. Preview routes through `SpeakService.Enqueue` (single queue arbiter, ADR 0014). Two sections (built-ins first, cloned), `VoiceCatalog.VoicesChanged` for live refresh, no `library.json` reading in this task (deferred to main-015). Engine-state-bound loading/error/empty states. FIFO preview with stop hotkey draining. Delete affordance scope-moved to main-015 (dead-code in v1 here); `blocks: [main-015]` added.
+**Split into:** none (scope adjustment, not split — delete moved to main-015)
+**ADRs written:** 0014 (Voices page preview routes through SpeakService.Enqueue, status: proposed)
+
+---
+
 ## 2026-05-04 10:34 -- Task completed: main-013 - Speak page — primary daily-use UI
 
 **Type:** Work / Task completion
