@@ -36,6 +36,13 @@ public sealed partial class VoicesPageViewModel : ObservableObject
     private bool _refreshing;
     private string? _activeRequestVoiceId;
 
+    /// <summary>
+    /// Cloning sub-flow VM (main-025). Composed here per the task spec — the
+    /// "Clone a new voice" panel is a third row beneath the list, not a
+    /// separate page.
+    /// </summary>
+    public VoiceCloningViewModel Cloning { get; }
+
     /// <summary>Built-in voices (those shipped with pocket-tts). Always populated when engine is running.</summary>
     public ObservableCollection<VoiceRowViewModel> BuiltInVoices { get; } = new();
 
@@ -68,11 +75,13 @@ public sealed partial class VoicesPageViewModel : ObservableObject
     public VoicesPageViewModel(
         SpeakService speakService,
         VoiceCatalog voiceCatalog,
+        VoiceCloningViewModel cloning,
         ILogger<VoicesPageViewModel> logger)
     {
         _speakService = speakService;
         _voiceCatalog = voiceCatalog;
         _logger = logger;
+        Cloning = cloning;
     }
 
     /// <summary>

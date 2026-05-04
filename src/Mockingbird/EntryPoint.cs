@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Mockingbird.Services.Audio;
 using Mockingbird.Services.Hotkey;
 using Mockingbird.Services.Http;
 using Mockingbird.Services.Navigation;
@@ -135,6 +136,12 @@ public static class EntryPoint
                 services.AddSingleton<SpeakService>();
                 services.AddSingleton<UserSettings>();
 
+                // Audio capture services (main-025) — adapted from WhisperHeim per ADR 0006.
+                // Registered transient so each cloning session is a fresh capture instance;
+                // the page VM resolves them per recording session.
+                services.AddTransient<IAudioCaptureService, AudioCaptureService>();
+                services.AddTransient<IHighQualityLoopbackService, HighQualityLoopbackService>();
+
                 services.AddSingleton(sp => new SpeakServer(
                     sp.GetRequiredService<SpeakQueue>(),
                     sp.GetRequiredService<SpeakService>(),
@@ -163,6 +170,7 @@ public static class EntryPoint
                 // Pages registered transient so each navigation gets a fresh
                 // instance (the wpfui-canonical model). View-models match.
                 services.AddTransient<SpeakPageViewModel>();
+                services.AddTransient<VoiceCloningViewModel>();
                 services.AddTransient<VoicesPageViewModel>();
                 services.AddTransient<SettingsPageViewModel>();
                 services.AddTransient<AboutPageViewModel>();

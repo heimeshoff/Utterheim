@@ -92,7 +92,19 @@ src\
         VoicesPageViewModel.cs        Voices page VM (main-014) — BuiltInVoices /
                                       ClonedVoices / per-row PreviewCommand routed
                                       through SpeakService.Enqueue (ADR 0014); plus a
-                                      VoiceRowViewModel inner class for each list row
+                                      VoiceRowViewModel inner class for each list row.
+                                      Composes a VoiceCloningViewModel for the cloning
+                                      sub-panel (main-025).
+        VoiceCloningViewModel.cs      Cloning sub-VM (main-025) — drives the source
+                                      toggle (Microphone | System Audio), device
+                                      selectors, level meter, duration / progress,
+                                      voice-name validation, and the Save flow
+                                      (render WAV → POST /export-voice →
+                                      VoiceLibraryService.AddAsync). Minimum 5 s,
+                                      soft cap 30 s, hard cap 60 s auto-stop.
+        VoicesPageConverters.cs       NullOrEmptyToVisibilityConverter +
+                                      CloningSourceToBoolConverter for the cloning
+                                      panel (main-025).
         SettingsPageViewModel.cs      Empty ObservableObject stub (main-016 fills)
         AboutPageViewModel.cs         Empty ObservableObject stub (main-017 fills)
     Services\
@@ -150,6 +162,22 @@ src\
       Http\SpeakServer.cs             Kestrel minimal API on 127.0.0.1:7223 (ADR 0003).
                                       /speak and /voices route through SpeakService /
                                       VoiceCatalog (main-013).
+      Audio\                            Mic + WASAPI loopback capture for voice
+                                        cloning (main-025). Adapted from
+                                        WhisperHeim @ 911bff0 per ADR 0006.
+        IAudioCaptureService.cs       Mic capture interface (16 kHz mono 16-bit).
+        AudioCaptureService.cs        NAudio WaveInEvent implementation.
+        IHighQualityLoopbackService.cs WASAPI loopback interface (native format,
+                                        no resampling — pocket-tts handles it).
+                                        SaveAsVoice removed — persistence routes
+                                        through VoiceLibraryService per ADR 0005.
+        HighQualityLoopbackService.cs WasapiLoopbackCapture impl writing the
+                                        captured audio to a temp WAV under
+                                        %TEMP%\Mockingbird\.
+        AudioDeviceInfo.cs            Shared device-info record.
+        AudioDeviceResolver.cs        WaveIn enumeration + Core Audio name resolution.
+        AudioRingBuffer.cs            Thread-safe lock-free ring buffer used by
+                                        AudioCaptureService.
       Hotkey\
         NativeMethods.cs              copied from WhisperHeim @ 911bff0
         DoubleTapDetector.cs          mockingbird-specific LCtrl gesture (ADR 0006)
@@ -439,12 +467,87 @@ the code-behind also forces a refresh so the list populates without
 re-navigation. **No `library.json` file watcher** — the catalog is the
 single source of truth (main-015 will fire `VoicesChanged` on save / delete).
 
+### Cloning panel (main-025)
+
+As of main-025 the Voices page grows a third row beneath the list:
+**Clone a new voice**. The panel is always visible (no collapse / expand in
+v1), separated from the list above by a thin top border and a `SemiBold`
+heading. Its view-model is `VoiceCloningViewModel` — composed into
+`VoicesPageViewModel.Cloning`, **not** a separate page.
+
+- **Source toggle** — two `RadioButton`s side by side: Microphone (`Mic24`)
+  and System Audio (`Speaker224`). Two-way bound through
+  `CloningSourceToBoolConverter` so the radios stay in sync with
+  `Cloning.SelectedSource`. Flipping the toggle swaps the device selector
+  and the tip line; the recording controls beneath are identical.
+- **Mic mode** uses `IAudioCaptureService` (16 kHz mono 16-bit PCM —
+  pocket-tts resamples internally per main-015 Q6, so no client-side
+  resampling). Default device is `-1` (system default, NAudio maps to 0).
+- **System Audio mode** uses `IHighQualityLoopbackService` (WASAPI loopback
+  at the native render-endpoint format, typically 48 kHz IEEE-float stereo).
+  Capture writes a temp WAV under `%TEMP%\Mockingbird\` for the duration of
+  the session; the path is consumed by Save and deleted on success.
+- **Recording controls** (shared, identical in both modes per styleguide
+  Reusable component map):
+  - Audio level meter — horizontal `ProgressBar` driven by the capture
+    service's RMS event, dispatched at ~30 Hz.
+  - Duration display — `mm:ss` `TextBlock`, updated by a
+    `DispatcherTimer` ticking every 33 ms.
+  - Progress bar — fills 0..100% across the first 5 s; stays at 100%
+    after that (visible "you have enough sample" cue).
+  - Voice name input — `MaxLength=40`, validated on every keystroke
+    against the same rules as `VoiceLibraryService.AddAsync` (empty,
+    >40 chars, sanitised collision with one of the eight built-in ids).
+    Inline error under the input.
+  - Start / Stop / Cancel / Save Voice buttons. Cancel is only visible
+    while capturing; Save is enabled only when **all four** of (capture
+    not running) AND (≥5 s captured) AND (name valid) AND (no save in
+    flight) hold.
+- **Sample length policy**: minimum 5 s (Save disabled until reached),
+  soft cap 30 s (status message "You have plenty of audio. You can stop
+  now." — capture continues), hard cap 60 s (auto-stop with status
+  "Capture auto-stopped at 60 s.").
+- **Stop before 5 s** — buffer discarded, status "Recording too short —
+  at least 5 s needed." **Cancel** at any point — buffer discarded
+  unconditionally.
+- **Save flow** (in `SaveAsync`):
+  1. Re-validate name client-side (mirror of `VoiceLibraryService` rules).
+  2. Render to a temp WAV — mic mode writes float→16-bit PCM to a fresh
+     file under `%TEMP%\Mockingbird\`; loopback mode reuses the file the
+     capture service already wrote.
+  3. Quiet-buffer guard — peak RMS < 0.01 short-circuits with
+     "Recording was very quiet. Try again closer to the mic." (no POST).
+  4. POST to `/export-voice` via `VoiceCloningClient` (per ADR 0015).
+     4xx surfaces as "Pocket-tts couldn't read the recording. …" with the
+     response body in dim detail text; 5xx / network as "Voice profile
+     encoding failed. See the engine status footer or About page."
+  5. Hand the `.safetensors` bytes (and the WAV bytes) to
+     `VoiceLibraryService.AddAsync` so the sample lands at
+     `<dataPath>\voices\<id>\sample.wav` per ADR 0005.
+  6. `LibraryChanged` → `VoicesChanged` → main-014's existing subscription
+     refreshes the rows; the new voice appears in the **Cloned** section
+     **without page re-navigation**. Form clears, status reads
+     "Voice 'Marco' saved."
+- **Failure UX** — every error type renders inline above the Save button
+  (no toasts, no modals). The captured buffer is **preserved** through
+  every failure type; only an explicit Cancel or a successful Save
+  clears it, so the user can fix the cause and re-Save without
+  re-recording.
+
+The audio-capture services (`IAudioCaptureService`,
+`IHighQualityLoopbackService`) are registered **transient** in DI — each
+cloning session gets a fresh capture instance.
+
 ### Out-of-scope reminders for v1
 
 - No delete affordance — main-026 wires it on top of main-015's `DeleteAsync`.
 - No search / filter / tags — vision-deferred until ~15 voices.
 - No per-session voice routing UI — env-var-only per main-019.
 - No per-row preview error toasts — footer + log file is sufficient signal.
+- No "import existing clip from disk" cloning source — backend supports it,
+  no UI in v1 (deferred per main-015 Q11).
+- No editing of voice metadata (rename, retag), no per-voice quality /
+  temperature controls, no de-duplication, no marketplace / sharing.
 
 ## Voice library
 

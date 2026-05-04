@@ -65,6 +65,10 @@ public partial class VoicesPage : Page, INavigableView<VoicesPageViewModel>, INa
         ViewModel.ApplyEngineState(initialState);
         ViewModel.ApplyStatus(_speakService.CurrentStatus);
 
+        // Refresh cloning device lists (mic + loopback) — main-025.
+        try { ViewModel.Cloning.RefreshDevices(); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Cloning device refresh failed."); }
+
         var cts = new CancellationTokenSource();
         _refreshCts = cts;
         try
