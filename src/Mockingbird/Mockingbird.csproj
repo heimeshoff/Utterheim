@@ -24,6 +24,10 @@
          Tools\RasteriseLogo. -->
     <Resource Include="..\..\assets\branding\mockingbird.ico"
               Link="Resources\mockingbird.ico" />
+    <!-- About page brand mark (main-017). 256-px raster scaled down to 128 by
+         the page; HighQuality bitmap scaling keeps it crisp on 100/200% DPI. -->
+    <Resource Include="..\..\assets\branding\mockingbird-logo-256.png"
+              Link="assets\branding\mockingbird-logo-256.png" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,6 +5,36 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 21:25 -- Task completed: main-017 - About page
+
+**Type:** Work / Task completion
+**Task:** main-017 - About page (logo, tagline, version, engine status, retry)
+**Summary:** About page wired up with brand mark, "Local voices for Claude Code" tagline, assembly-version readout, in-process engine status panel (subscribed to SidecarHost.StateChanged, re-seeded via GetStatus on navigate-to), Restart Engine button backed by new SidecarHost.RestartAsync, View logs HyperlinkButton, and the pocket-tts credits line. Shared FormatState helper extracted to SidecarStateLabels so footer + About can't drift apart.
+**Commit:** (pending)
+**Files changed:** ~10
+**ADRs written:** 0018-about-page-engine-status-in-process.md
+
+---
+
+## 2026-05-04 21:11 -- Batch started: [main-017]
+
+**Type:** Work / Batch start
+**Tasks:** main-017 - About page (logo, tagline, version, engine status, retry)
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-04 21:10 -- Task completed: main-016 - Settings page
+
+**Type:** Work / Task completion
+**Task:** main-016 - Settings page — output device, default voice, startup, read-only diagnostics
+**Summary:** Three Fluent setting-card sections wired up: Audio (default voice + output device persisted on UserSettings, output device consumed per-utterance by AudioPlayer), App (Start minimised honoured at EntryPoint, Launch at startup managed via HKCU\…\Run with the registry as source of truth — ADR 0017), Diagnostics (HTTP port / Stop hotkey / data path read-only, Open in Explorer button).
+**Commit:** eeb5192
+**Files changed:** 13
+**ADRs written:** 0017-launch-at-startup-registry-as-source-of-truth.md
+
+---
+
 ## 2026-05-04 21:00 -- Batch started: [main-016]
 
 **Type:** Work / Batch start

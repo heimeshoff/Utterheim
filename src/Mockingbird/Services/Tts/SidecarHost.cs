@@ -134,6 +134,70 @@ public sealed class SidecarHost : IHostedService, IDisposable
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// User-initiated restart cycle (main-017): cancel the current supervisor,
+    /// terminate the running python process, reset internal state, and start
+    /// the supervisor again. Distinct from <see cref="StopAsync"/> — this path
+    /// does <em>not</em> dispose the JobObject (the host is still alive and
+    /// will spawn a new sidecar into it).
+    ///
+    /// The transition is announced as <see cref="SidecarState.Restarting"/> so
+    /// subscribers (footer + About page) see the lifecycle hop, and the
+    /// returned task completes once <see cref="StartAsync"/> has handed control
+    /// to the new supervisor task. Readiness is observable via
+    /// <see cref="EnsureReadyAsync"/> or the next <see cref="StateChanged"/>
+    /// hop into <see cref="SidecarState.Running"/>.
+    /// </summary>
+    public async Task RestartAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("SidecarHost.RestartAsync requested by user.");
+
+        // Surface the transition for subscribers before tearing anything down.
+        SetState(SidecarState.Restarting);
+
+        // Cancel the supervisor so its loop exits even if it's mid-backoff.
+        Task? supervisor;
+        CancellationTokenSource? cts;
+        lock (_stateLock)
+        {
+            supervisor = _supervisorTask;
+            cts = _supervisorCts;
+        }
+        try { cts?.Cancel(); } catch { /* tolerate */ }
+
+        if (supervisor is not null)
+        {
+            try
+            {
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+                await Task.WhenAny(supervisor, Task.Delay(Timeout.Infinite, timeoutCts.Token))
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { /* timeout — fall through to TerminateProcess */ }
+        }
+
+        // Make sure the python process is gone before we start a new one.
+        // The JobObject stays alive — the next sidecar joins it.
+        TerminateProcess();
+
+        // Reset supervisor handles so StartAsync's "already started" guard lets
+        // us spin a fresh supervisor task. _shuttingDown is already false (only
+        // StopAsync sets it), but reset defensively in case a future caller
+        // flips it.
+        lock (_stateLock)
+        {
+            try { _supervisorCts?.Dispose(); } catch { /* tolerate */ }
+            _supervisorCts = null;
+            _supervisorTask = null;
+            _shuttingDown = false;
+            _port = 0;
+            _lastHealthCheckSucceeded = false;
+        }
+
+        await StartAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         // Order matters per main-022:

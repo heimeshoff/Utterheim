@@ -84,7 +84,10 @@ src\
         VoicesPage.xaml(.cs)          Voice library list with per-row preview (main-014)
                                       and per-row Delete on cloned rows (main-026)
         SettingsPage.xaml(.cs)        Audio / App / Diagnostics setting cards (main-016)
-        AboutPage.xaml(.cs)           Stub in main-020 — main-017 fills it
+        AboutPage.xaml(.cs)           Brand mark + tagline + version + engine
+                                      status panel (state pip / port / healthy /
+                                      last error) + Restart Engine + View logs +
+                                      credits (main-017)
       Dialogs\
         DeleteVoiceDialog.xaml(.cs)   Fluent ContentDialog for the per-row Delete
                                       affordance on cloned voices (main-026).
@@ -122,7 +125,16 @@ src\
                                       OpenDataPath command. Persists to UserSettings except
                                       LaunchAtStartup which writes HKCU\…\Run directly
                                       (ADR 0017).
-        AboutPageViewModel.cs         Empty ObservableObject stub (main-017 fills)
+        AboutPageViewModel.cs         About page VM (main-017) — Version /
+                                      EngineState / Healthy / Port / LastError /
+                                      EngineStateLabel / PortLabel / IsRetryEnabled
+                                      + RestartEngine / OpenLogs commands. Reads
+                                      sidecar status in-process via
+                                      SidecarHost.GetStatus + StateChanged (ADR 0018);
+                                      RestartEngine calls SidecarHost.RestartAsync.
+        AboutPageConverters.cs        EngineStateToPipBrushConverter — multi-binds
+                                      (SidecarState, healthy) to a frozen brush for
+                                      the 10x10 status pip (green/amber/red/neutral).
     Services\
       Navigation\PageService.cs       Thin IPageService → IServiceProvider adapter (ADR 0009)
       Tts\
@@ -133,6 +145,15 @@ src\
                                       `python -m mockingbird_sidecar serve`
                                       (per ADR 0015) — same uvicorn banner so
                                       port discovery is unchanged from pocket_tts.
+                                      RestartAsync (main-017 / ADR 0018) is the
+                                      user-initiated cycle: cancel supervisor +
+                                      kill child + reset handles + StartAsync.
+                                      JobObject preserved across restart.
+        SidecarStateLabels.cs         Static Format(SidecarState) → friendly
+                                      label (e.g. Running → "pocket-tts").
+                                      Shared by EngineStatusViewModel (footer)
+                                      and AboutPageViewModel so the two
+                                      surfaces can't drift (main-017).
         PocketTtsEngine.cs            Real engine: built-in voices route /tts
                                       with voice_url; cloned voices resolve to
                                       profile.safetensors via VoiceLibraryService
@@ -277,8 +298,10 @@ A persistent **status footer** below the navigation area shows
 `failed` → `stopping`). When the stub engine is selected
 (`MOCKINGBIRD_USE_STUB_ENGINE=1`) the label reads `stub` and never changes.
 The four feature pages (main-013/014/016/017) replace each stub with real
-content; main-017 may surface a richer status panel and remove the footer
-at that point.
+content. Per main-017 Q2 the persistent footer **stays** alongside the
+About page's richer status panel — both consume the same
+`SidecarHost.StateChanged` event via `SidecarStateLabels.Format` so they
+cannot drift. Revisit if the dual surface feels redundant after live use.
 
 ## Engine status
 
@@ -707,6 +730,83 @@ data-path change with migration flow, theme / language / update-check
 toggles, per-Claude-session voice routing UI (env-var-only via
 `examples/claude-hooks/`), output-device level meter / test-tone button,
 engine status panel (main-017's About page owns it).
+
+## About page
+
+As of main-017 the About page replaces the main-020 stub with the canonical
+final-page surface — top-to-bottom in a single-column ScrollViewer with a 16 px
+outer margin, matching the styleguide's Fluent / Mica / Segoe UI Variable look:
+
+1. **Brand mark + identity** — 128x128 raster of `mockingbird-logo-256.png`
+   (added as `<Resource>` in the .csproj; `RenderOptions.BitmapScalingMode=
+   "HighQuality"`), `Mockingbird` page title (`FontWeight="Light"`), tagline
+   `Local voices for Claude Code` (signed off in styleguide §Sign-off).
+2. **Version** — `Version {value}` from
+   `Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()` with
+   any `+sha` suffix stripped, falling back to `AssemblyName.Version` (3-part)
+   then `"unknown"`. No `v` prefix.
+3. **Engine status panel** (`ui:CardControl`) — coloured 10x10 pip + state
+   label (state mapping shared with the footer via `SidecarStateLabels`),
+   port (`127.0.0.1:{port}` or em-dash), Healthy icon (green
+   `CheckmarkCircle24` / red `DismissCircle24`, only visible while Running),
+   Last error block (`SystemFillColorCriticalBackgroundBrush`, monospace
+   wrap-enabled `TextBlock`, only when `LastError` non-null), and a
+   `Restart Engine` `ui:Button` (`Appearance="Primary"`, disabled during
+   `Starting` / `Restarting` / `Stopping`).
+4. **View logs** — `ui:HyperlinkButton` opening
+   `%LOCALAPPDATA%\Mockingbird\logs\` via Explorer. Falls back to the parent
+   directory (`LocalRoot`) if the logs folder doesn't exist yet.
+5. **Credits** — `Synthesis powered by pocket-tts (Kyutai Labs).` Minimal
+   per main-017 Q4.
+
+### In-process status data flow (ADR 0018)
+
+The page subscribes to `SidecarHost.StateChanged` and re-seeds via
+`SidecarHost.GetStatus()` on `OnNavigatedTo`. It does **not** call
+`GET /status` — that endpoint is the contract for outside callers; the page
+reads in-process to stay event-driven and dispatcher-thread-safe (same
+pattern `EngineStatusViewModel.OnSidecarStateChanged` established).
+`AboutPageViewModel.Attach()` / `Detach()` is invoked by the page's
+`INavigationAware` hooks; `Attach` defensively removes the prior handler
+before re-adding so navigating in-out-in cannot leak.
+
+### Restart semantics (ADR 0018)
+
+`Restart Engine` calls a new `SidecarHost.RestartAsync()`:
+
+1. Surface `SidecarState.Restarting` for subscribers.
+2. Cancel `_supervisorCts` (5 s timeout for the supervisor task to unwind).
+3. `TerminateProcess()` to kill the python child.
+4. Reset `_supervisorTask` / `_supervisorCts` / `_shuttingDown` / `_port`
+   under `_stateLock` so `StartAsync`'s "already started" guard doesn't
+   short-circuit.
+5. `await StartAsync(ct)` — fresh supervisor, same JobObject (anti-zombie
+   invariant from ADR 0012 / main-022 preserved across the cycle).
+
+The button is **enabled** on `Running`, `Failed`, `NotStarted` (so a stuck
+running engine can be cycled), **disabled** on `Starting`, `Restarting`,
+`Stopping` so the user can't double-fire mid-transition.
+`[NotifyCanExecuteChangedFor]` on `EngineState` fires the
+`CanExecuteChanged` re-evaluation automatically.
+
+### Out of scope for v1
+
+Captured in main-017's spec, repeated here so future tasks see the boundary:
+bootstrap-style retry that re-runs `PythonRuntimeBootstrapper` on `Failed`
+(could come if Restart-the-engine alone proves insufficient), ADR /
+changelog text on the About page, update-check / auto-update infrastructure
+(vision non-goal in v1), per-engine status when a second engine ships,
+"Copy logs path" / "Open log file" affordances (the folder shortcut is
+enough for v1), localisation.
+
+### Verification note
+
+The build is clean (`dotnet build mockingbird.sln -c Debug` → 0 errors,
+0 warnings). The interactive UI behaviours — pip-flicker on live state
+transitions, `Restart Engine` cycling a running engine, View logs opening
+Explorer at the logs folder, page subscribe / unsubscribe on navigation —
+are **not interactively re-tested** in this pass; the code is in place per
+the main-017 spec and any regression will surface during the next manual run.
 
 ## Voice library
 

@@ -39,13 +39,13 @@ public sealed partial class EngineStatusViewModel : ObservableObject, IDisposabl
         }
 
         // Seed with whatever the sidecar already reports, then track changes.
-        EngineState = FormatState(_sidecar.GetStatus().State);
+        EngineState = SidecarStateLabels.Format(_sidecar.GetStatus().State);
         _sidecar.StateChanged += OnSidecarStateChanged;
     }
 
     private void OnSidecarStateChanged(object? sender, SidecarStatus status)
     {
-        var label = FormatState(status.State);
+        var label = SidecarStateLabels.Format(status.State);
         // The supervisor task raises on its own thread; marshal to the UI dispatcher.
         var dispatcher = Application.Current?.Dispatcher;
         if (dispatcher is null || dispatcher.CheckAccess())
@@ -53,17 +53,6 @@ public sealed partial class EngineStatusViewModel : ObservableObject, IDisposabl
         else
             dispatcher.BeginInvoke(() => EngineState = label);
     }
-
-    private static string FormatState(SidecarState state) => state switch
-    {
-        SidecarState.NotStarted => "not started",
-        SidecarState.Starting => "starting",
-        SidecarState.Running => "pocket-tts",
-        SidecarState.Restarting => "restarting",
-        SidecarState.Failed => "failed",
-        SidecarState.Stopping => "stopping",
-        _ => state.ToString().ToLowerInvariant(),
-    };
 
     public void Dispose()
     {
