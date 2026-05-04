@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-04
 completed: 2026-05-05
-commit:
+commit: 90dfe39
 depends_on: [main-010, main-028, main-029, main-030]
 blocks: []
 tags: [about, settings, navigation, ui, branding]

@@ -5,6 +5,35 @@ Newest entries on top.
 
 ---
 
+## 2026-05-05 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 2 (main-030, main-032)
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 4 (2 feature commits + 2 metadata commits)
+
+---
+
+## 2026-05-05 -- Task completed: main-032 - Relocate engine diagnostics; redesign About to match WhisperHeim
+
+**Type:** Work / Task completion
+**Task:** main-032 - Relocate engine diagnostics; redesign About to match WhisperHeim
+**Summary:** Relocated engine diagnostics from About to Settings (state pip / port / healthy / last error / Restart Engine + View logs, bound through a new composed EngineStatusCardViewModel sub-VM mirroring the cloning pattern); rebuilt About as a pure WhisperHeim-style identity surface (BrandHeroControl + profile/contact card with Marco's portrait and Get-in-Touch links + Ko-fi / GitHub support card + credits) and moved its nav item to FooterMenuItems; consolidated the duplicate NullOrEmptyToVisibilityConverter and EngineStateToPipBrushConverter into Views/Converters/SharedConverters.cs registered at App.xaml scope.
+**Commit:** 90dfe39
+**Files changed:** 19
+**ADRs written:** 0021-engine-diagnostics-on-settings-not-about.md
+
+---
+
+## 2026-05-05 -- Batch started: [main-032]
+
+**Type:** Work / Batch start
+**Tasks:** main-032 - Relocate engine diagnostics; redesign About to match WhisperHeim
+**Parallel:** no (1 worker)
+
+---
+
 ## 2026-05-05 -- Task completed: main-030 - Speak page hero + button row above text; Voices clone card above list
 
 **Type:** Work / Task completion
