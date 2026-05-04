@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-01
 completed: 2026-05-04
-commit:
+commit: a480d58
 depends_on: [main-010, main-011, main-020]
 blocks: []
 tags: [frontend, page]

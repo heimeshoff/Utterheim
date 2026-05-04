@@ -5,6 +5,16 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 10:36 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1 (main-013)
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 3 (f77fdfa promote prep, a480d58 main-013 work, 3949301 main-014 chore + ADR 0014; SHA-record commit follows)
+
+---
+
 ## 2026-05-04 10:35 -- Model / Refined: main-014 - Voices page — voice library list with preview
 
 **Type:** Model / Refine
@@ -21,7 +31,7 @@ Newest entries on top.
 **Type:** Work / Task completion
 **Task:** main-013 - Speak page — primary daily-use UI
 **Summary:** Replaced the Speak page stub with the real daily-use surface (multi-line text, voice picker, Play / Stop / Save, four-state status line) and extracted VoiceCatalog + SpeakService + UserSettings as in-process seams shared by the HTTP API and the page.
-**Commit:** TBD
+**Commit:** a480d58
 **Files changed:** 9
 **ADRs written:** none
 
