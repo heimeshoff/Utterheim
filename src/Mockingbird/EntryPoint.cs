@@ -120,9 +120,17 @@ public static class EntryPoint
                 services.AddSingleton<SpeakQueue>();
                 services.AddHostedService(sp => sp.GetRequiredService<SpeakQueue>());
 
+                // main-013 in-process seams: VoiceCatalog (shared by HTTP /voices
+                // and the page picker), SpeakService (shared by HTTP /speak and
+                // the Play button), and UserSettings (Default voice id storage).
+                services.AddSingleton<VoiceCatalog>();
+                services.AddSingleton<SpeakService>();
+                services.AddSingleton<UserSettings>();
+
                 services.AddSingleton(sp => new SpeakServer(
                     sp.GetRequiredService<SpeakQueue>(),
-                    sp.GetRequiredService<ITtsEngine>(),
+                    sp.GetRequiredService<SpeakService>(),
+                    sp.GetRequiredService<VoiceCatalog>(),
                     sp.GetRequiredService<ILogger<SpeakServer>>(),
                     sp.GetService<SidecarHost>(),
                     httpHost,

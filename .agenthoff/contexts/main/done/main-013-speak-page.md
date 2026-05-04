@@ -1,11 +1,11 @@
 ---
 id: main-013
 title: Speak page — primary daily-use UI
-status: todo
+status: done
 type: feature
 context: main
 created: 2026-05-01
-completed:
+completed: 2026-05-04
 commit:
 depends_on: [main-010, main-011, main-020]
 blocks: []
@@ -384,3 +384,38 @@ restart.
 - **Status:** Promoted to `todo/` on 2026-05-04. All dependencies
   (main-010 styleguide, main-011 pocket-tts bootstrap, main-020 navigation
   shell) are in `done/`; ready for a worker to pick up.
+
+## Outcome
+
+Speak page shipped per spec. Three new singletons:
+`Services\Speak\VoiceCatalog.cs` (the `/voices` + picker single source of
+truth — Q4), `Services\Speak\SpeakService.cs` (request construction +
+status state-machine + off-queue `RenderToFileAsync` for Save — Q2 / Q5 /
+Q6), and `Services\Settings\UserSettings.cs` (typed wrapper over
+`%LOCALAPPDATA%\Mockingbird\settings.json` with `DefaultVoiceId` only in v1,
+forward-compatible JSON shape — Q7). `SpeakQueue` gained two events
+(`RequestStarted` / `RequestCompleted`) which `SpeakService` listens to
+for the four-label state machine (idle / synthesising / playing / stopped).
+`SpeakServer.MapPost("/speak", …)` now routes through `SpeakService.Enqueue`,
+`MapPost("/stop", …)` through `SpeakService.StopAndDrain`, and
+`MapGet("/voices", …)` through `VoiceCatalog.ListAsync` — same call sites
+as the page. The Speak page (`Views\Pages\SpeakPage.xaml`+`.cs`) is a
+four-row Grid with the dominant `ui:TextBox`, voice `ComboBox`, Play / Stop /
+Save button row (Save shows an inline `ui:ProgressRing` via the
+`[RelayCommand]`-generated `IsRunning`), and a status `TextBlock`.
+`SpeakPageViewModel` uses `[ObservableProperty]` /
+`[NotifyCanExecuteChangedFor]` / `[RelayCommand]` per ADR 0010. DI
+registrations added in `EntryPoint.cs`. Build clean: `dotnet build
+mockingbird.sln -c Debug` → 0 errors, 0 warnings. Interactive UI
+behaviours (textbox dominates, dialog opens, status transitions visibly)
+were assume-passed — code is in place per spec.
+
+Key files:
+- `src\Mockingbird\Services\Speak\VoiceCatalog.cs` (new)
+- `src\Mockingbird\Services\Speak\SpeakService.cs` (new)
+- `src\Mockingbird\Services\Settings\UserSettings.cs` (new)
+- `src\Mockingbird\Services\Speak\SpeakQueue.cs` (added two events)
+- `src\Mockingbird\Services\Http\SpeakServer.cs` (refactored to use the new seams)
+- `src\Mockingbird\Views\Pages\SpeakPage.xaml`+`.cs` (real Speak surface)
+- `src\Mockingbird\ViewModels\Pages\SpeakPageViewModel.cs` (real VM)
+- `src\Mockingbird\EntryPoint.cs` (DI registrations)

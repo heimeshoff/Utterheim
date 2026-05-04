@@ -26,7 +26,8 @@ namespace Mockingbird.Services.Http;
 public sealed class SpeakServer : IHostedService
 {
     private readonly SpeakQueue _queue;
-    private readonly ITtsEngine _engine;
+    private readonly SpeakService _speakService;
+    private readonly VoiceCatalog _voiceCatalog;
     private readonly SidecarHost? _sidecar;
     private readonly ILogger<SpeakServer> _logger;
     private readonly string _host;
@@ -36,14 +37,16 @@ public sealed class SpeakServer : IHostedService
 
     public SpeakServer(
         SpeakQueue queue,
-        ITtsEngine engine,
+        SpeakService speakService,
+        VoiceCatalog voiceCatalog,
         ILogger<SpeakServer> logger,
         SidecarHost? sidecar = null,
         string host = "127.0.0.1",
         int port = 7223)
     {
         _queue = queue;
-        _engine = engine;
+        _speakService = speakService;
+        _voiceCatalog = voiceCatalog;
         _sidecar = sidecar;
         _logger = logger;
         _host = host;
@@ -70,28 +73,26 @@ public sealed class SpeakServer : IHostedService
             if (string.IsNullOrWhiteSpace(body.Text))
                 return Results.BadRequest(new { error = "text is required" });
 
+            // Same call site as the Speak page's Play command — main-013 (Q2)
+            // routes both surfaces through SpeakService.
             var voiceId = string.IsNullOrWhiteSpace(body.Voice) ? "test-voice" : body.Voice!;
-            var request = new SpeakRequest
-            {
-                RequestId = Guid.NewGuid().ToString("N"),
-                Text = body.Text!,
-                VoiceId = voiceId,
-            };
-
-            int position = _queue.Enqueue(request);
-            return Results.Accepted($"/status?id={request.RequestId}",
-                new SpeakAccepted(request.RequestId, position));
+            var (requestId, position) = _speakService.Enqueue(body.Text!, voiceId);
+            return Results.Accepted($"/status?id={requestId}",
+                new SpeakAccepted(requestId, position));
         });
 
         app.MapPost("/stop", () =>
         {
-            int dropped = _queue.StopAndDrain();
+            int dropped = _speakService.StopAndDrain();
             return Results.Ok(new { stopped = true, dropped });
         });
 
         app.MapGet("/voices", async (CancellationToken ct) =>
         {
-            var voices = await _engine.ListVoicesAsync(ct);
+            // Same call site as the Speak page's voice picker — main-013 (Q4)
+            // routes both surfaces through VoiceCatalog so cloned voices added
+            // by main-015 land in both places at once.
+            var voices = await _voiceCatalog.ListAsync(ct);
             return Results.Ok(voices);
         });
 

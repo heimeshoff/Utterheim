@@ -5,6 +5,25 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 10:34 -- Task completed: main-013 - Speak page — primary daily-use UI
+
+**Type:** Work / Task completion
+**Task:** main-013 - Speak page — primary daily-use UI
+**Summary:** Replaced the Speak page stub with the real daily-use surface (multi-line text, voice picker, Play / Stop / Save, four-state status line) and extracted VoiceCatalog + SpeakService + UserSettings as in-process seams shared by the HTTP API and the page.
+**Commit:** TBD
+**Files changed:** 9
+**ADRs written:** none
+
+---
+
+## 2026-05-04 10:27 -- Batch started: [main-013]
+
+**Type:** Work / Batch start
+**Tasks:** main-013 - Speak page — primary daily-use UI
+**Parallel:** no (1 worker)
+
+---
+
 ## 2026-05-04 10:10 -- Model / Promoted: main-013 - Speak page
 
 **Type:** Model / Promote

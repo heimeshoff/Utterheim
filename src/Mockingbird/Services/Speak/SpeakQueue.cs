@@ -38,6 +38,20 @@ public sealed class SpeakQueue : BackgroundService
 
     public string? CurrentRequestId => _current?.RequestId;
 
+    /// <summary>
+    /// Fired after a request is dequeued and assigned to <c>_current</c>, before
+    /// the engine is invoked. <see cref="SpeakService"/> uses this to surface the
+    /// <c>synthesising</c> status label (main-013, Q6).
+    /// </summary>
+    public event EventHandler<SpeakRequest>? RequestStarted;
+
+    /// <summary>
+    /// Fired in the worker's <c>finally</c> block once a request is fully done
+    /// (completed, cancelled, or failed). Pairs with <see cref="RequestStarted"/>
+    /// to drive the status state-machine.
+    /// </summary>
+    public event EventHandler<SpeakRequest>? RequestCompleted;
+
     /// <summary>Enqueue a request. Returns the queue position (1 = playing now after dequeue).</summary>
     public int Enqueue(SpeakRequest request)
     {
@@ -93,6 +107,9 @@ public sealed class SpeakQueue : BackgroundService
                 while (_channel.Reader.TryRead(out var request))
                 {
                     _current = request;
+                    try { RequestStarted?.Invoke(this, request); }
+                    catch (Exception ex) { _logger.LogWarning(ex, "RequestStarted handler threw."); }
+
                     using var linked = CancellationTokenSource.CreateLinkedTokenSource(
                         stoppingToken, request.Cts.Token);
 
@@ -108,7 +125,8 @@ public sealed class SpeakQueue : BackgroundService
                     }
                     catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                     {
-                        // App shutting down — exit the loop.
+                        // App shutting down — exit the loop. The finally block below
+                        // still runs and fires RequestCompleted before we return.
                         return;
                     }
                     catch (Exception ex)
@@ -120,6 +138,8 @@ public sealed class SpeakQueue : BackgroundService
                         _inFlight.TryRemove(request.RequestId, out _);
                         request.Cts.Dispose();
                         _current = null;
+                        try { RequestCompleted?.Invoke(this, request); }
+                        catch (Exception ex) { _logger.LogWarning(ex, "RequestCompleted handler threw."); }
                     }
                 }
             }

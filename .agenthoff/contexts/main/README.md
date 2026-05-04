@@ -83,7 +83,8 @@ src\
       EngineStatusViewModel.cs        Backs the persistent footer (HTTP +
                                       Engine state, live via SidecarHost.StateChanged)
       Pages\
-        SpeakPageViewModel.cs         Empty ObservableObject stub (main-013 fills)
+        SpeakPageViewModel.cs         Speak page VM — Text / Voices / SelectedVoice /
+                                      StatusLabel + Play / Stop / Save commands (main-013)
         VoicesPageViewModel.cs        Empty ObservableObject stub (main-014 fills)
         SettingsPageViewModel.cs      Empty ObservableObject stub (main-016 fills)
         AboutPageViewModel.cs         Empty ObservableObject stub (main-017 fills)
@@ -99,13 +100,28 @@ src\
                                       from outliving the host (main-022)
       Speak\
         SpeakRequest.cs               unit of work
-        SpeakQueue.cs                 Channel<T> worker (ADR 0007, 0004)
+        SpeakQueue.cs                 Channel<T> worker (ADR 0007, 0004) +
+                                      RequestStarted / RequestCompleted events (main-013)
         AudioPlayer.cs                NAudio WaveOutEvent wrapper
-      Http\SpeakServer.cs             Kestrel minimal API on 127.0.0.1:7223 (ADR 0003)
+        VoiceCatalog.cs               Single source of truth for the voice list —
+                                      shared by HTTP /voices and the Speak page
+                                      picker (main-013, Q4)
+        SpeakService.cs               In-process seam shared by HTTP /speak and the
+                                      Speak page Play button. Owns request construction,
+                                      surfaces the four-label status state-machine, and
+                                      provides off-queue RenderToFileAsync for Save
+                                      (main-013, Q2 / Q5 / Q6)
+      Http\SpeakServer.cs             Kestrel minimal API on 127.0.0.1:7223 (ADR 0003).
+                                      /speak and /voices route through SpeakService /
+                                      VoiceCatalog (main-013).
       Hotkey\
         NativeMethods.cs              copied from WhisperHeim @ 911bff0
         DoubleTapDetector.cs          mockingbird-specific LCtrl gesture (ADR 0006)
-      Settings\DataPathService.cs     ADR 0005 path layout (adapted from WhisperHeim)
+      Settings\
+        DataPathService.cs            ADR 0005 path layout (adapted from WhisperHeim)
+        UserSettings.cs               Typed wrapper over %LOCALAPPDATA%\Mockingbird\
+                                      settings.json — v1 stores DefaultVoiceId only;
+                                      forward-compatible JSON shape for main-016 (main-013)
     appsettings.json                  default port + hotkey window
   Mockingbird.Cli\                    mockingbird-speak — single-file CLI wrapper
 assets\branding\                      brand mark + raster outputs
@@ -127,6 +143,7 @@ Path layout at runtime (per ADR 0005):
   models\pocket-tts\                    (main-011 will populate this)
   cache\
   bootstrap-state.json                  first-run completion marker
+  settings.json                         UserSettings — DefaultVoiceId in v1 (main-013)
 <dataPath>\voices\library.json          empty list in v1 skeleton
 ```
 
@@ -194,6 +211,87 @@ As of main-011 the **real pocket-tts engine is wired in**:
   / failed / stopping), `sidecar.healthy`, `sidecar.port`, and `sidecar.lastError`.
 
 The "stub-engine plays a 440 Hz tone" note from the skeleton is now superseded.
+
+## Speak page
+
+As of main-013 the Speak page replaces the main-020 stub with the real daily-use
+surface — the page mirrors WhisperHeim's TTS section A:
+
+- A four-row Grid with a 16 px outer margin: dominant multi-line `ui:TextBox`
+  (`AcceptsReturn`, `MinHeight=200`, internal scrollbar), a left-aligned
+  `ComboBox` voice picker, a horizontal Play / Stop / Save button row, and a
+  status `TextBlock` under it.
+- View-model `SpeakPageViewModel` (`CommunityToolkit.Mvvm`,
+  `[ObservableProperty]` + `[RelayCommand]` per ADR 0010). `Play`'s and
+  `Save`'s `CanExecute` reactivities come from
+  `[NotifyCanExecuteChangedFor]` on `Text` and `SelectedVoice`. Save uses
+  `[RelayCommand]` async, which yields `IsRunning` for the inline
+  `ui:ProgressRing`.
+- The page implements both `INavigableView<SpeakPageViewModel>` (typed VM) and
+  `INavigationAware` (`OnNavigatedTo` / `OnNavigatedFrom`); on navigated-to it
+  refreshes voices, applies the latest `SpeakStatus`, and subscribes to
+  `SpeakService.StatusChanged` + `VoiceCatalog.VoicesChanged`. On
+  navigated-from it unsubscribes and cancels in-flight refreshes.
+
+### In-process seams (Q2 + Q4)
+
+Both the HTTP API and the page are routed through the same singletons so
+adding cloned voices (main-015) or augmenting request construction lands in
+both surfaces in one place:
+
+- `VoiceCatalog.ListAsync(ct)` is the single source of truth for the voice
+  list. v1 delegates to `ITtsEngine.ListVoicesAsync` and fires
+  `VoicesChanged` once on first population. main-015 will fold cloned voices
+  into the same return.
+- `SpeakService.Enqueue(text, voiceId)` constructs the `SpeakRequest`
+  (Guid, voice-id fallback, validation) and calls `SpeakQueue.Enqueue`.
+  `SpeakService.StopAndDrain()` is a thin pass-through to the queue.
+  `SpeakService.RenderToFileAsync(...)` is the off-queue Save path: it
+  streams `ITtsEngine` output directly into a `NAudio.Wave.WaveFileWriter`
+  and never touches `SpeakQueue` or `AudioPlayer` — Save can never interrupt
+  a live playback request.
+- `SpeakServer.MapPost("/speak", ...)` calls `SpeakService.Enqueue`,
+  `MapPost("/stop", ...)` calls `SpeakService.StopAndDrain`,
+  `MapGet("/voices", ...)` calls `VoiceCatalog.ListAsync`.
+
+### Status state-machine (Q6)
+
+`SpeakService` exposes a `StatusChanged` event carrying a `SpeakStatus`
+record `(Kind, VoiceId)` with four `Kind` values:
+
+- `Idle` — no `_current` request, queue empty.
+- `Synthesising` — `RequestStarted` fired, no PCM has hit the device yet.
+- `Playing` — `AudioPlayer.IsPlaying` flipped to true (poll loop, 100 ms).
+- `Stopped` — transient label after `StopAndDrain`; auto-clears to `Idle`
+  after 2000 ms via a Task.Delay timer (cancelled / replaced if a new
+  Stop arrives in the window).
+
+The label format is `{kind}` for `idle` / `stopped`, `{kind} — {voiceId}`
+for `synthesising` / `playing`. `synthesising` may be invisibly brief
+because pocket-tts streams chunks with ~200 ms first-chunk latency — the
+poll catches `Playing` quickly. `RequestStarted` and `RequestCompleted`
+were added on `SpeakQueue` to drive the machine.
+
+### UserSettings (Q7)
+
+The voice picker pre-selects `UserSettings.DefaultVoiceId` if it is set and
+present in the catalog; otherwise it falls back to the alphabetically-first
+voice (`alba` for the eight pocket-tts built-ins). `UserSettings` reads /
+writes `%LOCALAPPDATA%\Mockingbird\settings.json` with an atomic
+temp+replace; unknown JSON fields are ignored so main-016 can extend the
+schema without breaking v1 reads. v1 ships only the storage layer — UI to
+mutate the default voice is main-016's responsibility. The HTTP `/speak`
+endpoint is unaffected (callers always specify a voice explicitly).
+
+### Verification note
+
+The build is clean (`dotnet build mockingbird.sln -c Debug` → 0 errors,
+0 warnings). The interactive UI behaviours — textbox dominates the layout,
+SaveFileDialog opens with the correct filter, Stop drains the queue,
+status line transitions visibly, picker refreshes on navigation — are
+**not interactively re-tested** in this pass; the code is in place per
+the main-013 spec and any regression will surface during the next
+manual run.
 
 ## Claude Code integration kit
 
