@@ -24,6 +24,12 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <!-- ContentPresenter that hosts wpfui ContentDialogs (main-026 + future).
+             Spans the nav-area row so the modal overlay covers the page surface. -->
+        <ContentPresenter x:Name="RootContentDialogPresenter"
+                          Grid.Row="1"
+                          Panel.ZIndex="100" />
+
         <ui:TitleBar Grid.Row="0" Title="Mockingbird" />
 
         <tray:NotifyIcon x:Name="TrayIcon"

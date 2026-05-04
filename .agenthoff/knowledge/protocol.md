@@ -5,6 +5,26 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 17:50 -- Batch started: [main-026]
+
+**Type:** Work / Batch start
+**Tasks:** main-026 — Voices page per-row delete affordance for cloned voices
+**Parallel:** no (1 worker; main-027 deferred — same BC README conflict)
+
+---
+
+## 2026-05-04 17:35 -- Model / Promoted: main-026, main-027
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+**Tasks:**
+- main-026 — Voices page per-row delete affordance for cloned voices
+- main-027 — Bootstrapper self-heal for stale/partial mockingbird_sidecar
+**Readiness:** both verified — concrete acceptance criteria, dependencies (main-014, main-015) already done, scope and worker tips in place.
+
+---
+
 ## 2026-05-04 17:09 -- Work session ended
 
 **Type:** Work / Session end

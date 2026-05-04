@@ -129,7 +129,10 @@
                                     BorderThickness="0,0,0,1">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
+                                        <!-- main-026: 4-column layout for cloned rows.
+                                             name+meta | Preview | Delete | active indicator -->
                                         <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
@@ -151,7 +154,15 @@
                                                Margin="8,0,8,0"
                                                VerticalAlignment="Center" />
 
-                                    <ui:SymbolIcon Grid.Column="2"
+                                    <ui:Button Grid.Column="2"
+                                               Appearance="Secondary"
+                                               Icon="{ui:SymbolIcon Delete24}"
+                                               Command="{Binding DeleteCommand}"
+                                               ToolTip="Delete voice"
+                                               Margin="0,0,8,0"
+                                               VerticalAlignment="Center" />
+
+                                    <ui:SymbolIcon Grid.Column="3"
                                                    Symbol="Speaker224"
                                                    FontSize="16"
                                                    VerticalAlignment="Center"

@@ -161,6 +161,12 @@ public static class EntryPoint
                 services.AddSingleton<IPageService, PageService>();
                 services.AddSingleton<INavigationService>(sp => new Wpf.Ui.NavigationService(sp));
 
+                // ContentDialog host service (main-026) — owns the singleton
+                // ContentPresenter where in-window confirm/error dialogs render.
+                // MainWindow wires the presenter at Loaded; consumers (page VMs)
+                // resolve the service and call ShowAsync.
+                services.AddSingleton<IContentDialogService, ContentDialogService>();
+
                 // Status-footer view-model — singleton so it survives navigation
                 // between pages and keeps tracking sidecar state changes.
                 services.AddSingleton(sp => new EngineStatusViewModel(
@@ -219,10 +225,11 @@ public static class EntryPoint
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
         var pageService = host.Services.GetRequiredService<IPageService>();
         var engineStatus = host.Services.GetRequiredService<EngineStatusViewModel>();
+        var contentDialogService = host.Services.GetRequiredService<IContentDialogService>();
 
         Action exitAction = () => app.Dispatcher.BeginInvoke(() => app.Shutdown());
 
-        var window = new MainWindow(queue, exitAction, pageService, engineStatus);
+        var window = new MainWindow(queue, exitAction, pageService, engineStatus, contentDialogService);
         window.Show();
 
         hotkey.DoubleTapped += (_, _) =>

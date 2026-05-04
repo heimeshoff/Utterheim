@@ -76,16 +76,26 @@ src\
     Views\
       MainWindow.xaml(.cs)            Mica FluentWindow + ui:NavigationView shell
                                       (sidebar + four-page set + status footer) +
-                                      tray:NotifyIcon menu
+                                      tray:NotifyIcon menu + RootContentDialogPresenter
+                                      that hosts in-window ContentDialogs (main-026)
       BootstrapDialog.xaml(.cs)       first-run dialog (placeholder in v1)
       Pages\
         SpeakPage.xaml(.cs)           Stub in main-020 — main-013 fills it
         VoicesPage.xaml(.cs)          Voice library list with per-row preview (main-014)
+                                      and per-row Delete on cloned rows (main-026)
         SettingsPage.xaml(.cs)        Stub in main-020 — main-016 fills it
         AboutPage.xaml(.cs)           Stub in main-020 — main-017 fills it
+      Dialogs\
+        DeleteVoiceDialog.xaml(.cs)   Fluent ContentDialog for the per-row Delete
+                                      affordance on cloned voices (main-026).
     ViewModels\
       EngineStatusViewModel.cs        Backs the persistent footer (HTTP +
                                       Engine state, live via SidecarHost.StateChanged)
+      Dialogs\
+        DeleteVoiceDialogViewModel.cs Backs DeleteVoiceDialog (main-026) — voice id
+                                      + display name, IsDeleting / ErrorMessage flags,
+                                      Delete / Cancel commands; on success hides itself,
+                                      on IO failure surfaces an inline error and stays open.
       Pages\
         SpeakPageViewModel.cs         Speak page VM — Text / Voices / SelectedVoice /
                                       StatusLabel + Play / Stop / Save commands (main-013)
@@ -538,9 +548,57 @@ The audio-capture services (`IAudioCaptureService`,
 `IHighQualityLoopbackService`) are registered **transient** in DI — each
 cloning session gets a fresh capture instance.
 
+### Per-row delete affordance (main-026)
+
+Cloned voice rows ship with a per-row Delete button between Preview and the
+active-request indicator (built-in rows keep the 3-column layout — Delete is
+never offered for the eight pocket-tts built-ins). The button is icon-only
+(`Delete24`, `Appearance="Secondary"`, `ToolTip="Delete voice"`), always
+visible (not hover-only) per WhisperHeim's consistency rule — the user always
+knows the affordance exists.
+
+Click → Fluent **`ui:ContentDialog`** opens via `IContentDialogService`
+(registered singleton in DI; MainWindow binds the host `ContentPresenter`
+on Loaded). Visual composition matches WhisperHeim's
+`DeleteConfirmationDialog`: 40×40 rounded red-tinted icon block (`#20E81224`
+background, `#FFE81224` icon), "Delete voice?" title (`Bold`, 16pt), "This
+action cannot be undone." subtitle, voice-name card, right-aligned Cancel
+(`Secondary`) + Delete (solid `#FFE81224`, white text) buttons. The
+ContentDialog `IsFooterVisible="False"` — the dialog body owns its own
+button row so we can style the destructive button as red. Cancel / Esc /
+click-outside dismiss with no action.
+
+On confirm: `DeleteVoiceDialogViewModel.DeleteAsync` calls
+`VoiceLibraryService.DeleteAsync(voiceId, ct)`. On success the dialog hides
+itself and the row vanishes via the `LibraryChanged` → `VoicesChanged`
+chain that main-014 already wires. On `IOException` (file lock, sidecar
+still mmap'ing the `.safetensors` from a just-finished preview) the dialog
+**stays open** with an inline red error: "File is locked. Stop playback
+and try again." `UnauthorizedAccessException` surfaces the analogous
+permission message; any other exception falls through to its `.Message`.
+The user can retry Delete or hit Cancel — the dialog is sticky on failure
+by design (per task spec, no toast, no auto-dismiss).
+
+Per main-015's delete ordering, `library.json` is pruned **before** the
+folder is deleted, so a file-locked folder still removes the row from the
+catalog; the orphan folder is cleaned up by `VoiceLibraryStartup`'s
+reconciliation on the next launch. Active-playback during delete is **not**
+guarded — the synthesis request continues; if the sidecar errors mid-stream
+on a now-missing `.safetensors`, the existing `SpeakService` error path
+flips the row indicator off and surfaces the error in the status footer.
+
+The page VM's `RequestDelete` constructs a fresh
+`DeleteVoiceDialogViewModel` per click (cheap; no shared state to leak),
+attaches the dialog instance via `AttachDialog`, and `await`s
+`IContentDialogService.ShowAsync`. The Delete column is only allocated on
+cloned-row templates (separate `ItemsControl.ItemTemplate` from the
+built-in section), so built-in rows keep their original 3-column layout
+unmodified.
+
 ### Out-of-scope reminders for v1
 
-- No delete affordance — main-026 wires it on top of main-015's `DeleteAsync`.
+- No bulk delete / multi-select — single-row only in v1 (main-026).
+- No undo — modal confirm is the only safety net.
 - No search / filter / tags — vision-deferred until ~15 voices.
 - No per-session voice routing UI — env-var-only per main-019.
 - No per-row preview error toasts — footer + log file is sufficient signal.

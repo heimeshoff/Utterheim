@@ -20,6 +20,7 @@ public partial class MainWindow : FluentWindow
     private readonly SpeakQueue? _queue;
     private readonly Action? _exitAction;
     private readonly IPageService? _pageService;
+    private readonly IContentDialogService? _contentDialogService;
 
     public MainWindow()
     {
@@ -30,11 +31,13 @@ public partial class MainWindow : FluentWindow
         SpeakQueue queue,
         Action exitAction,
         IPageService pageService,
-        EngineStatusViewModel engineStatus) : this()
+        EngineStatusViewModel engineStatus,
+        IContentDialogService contentDialogService) : this()
     {
         _queue = queue;
         _exitAction = exitAction;
         _pageService = pageService;
+        _contentDialogService = contentDialogService;
         StatusFooter.DataContext = engineStatus;
 
         // wpfui's NavigationView uses IPageService to resolve page instances
@@ -48,6 +51,11 @@ public partial class MainWindow : FluentWindow
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        // Bind the ContentDialog host (main-026) — the per-row Delete dialog
+        // on the Voices page renders into this presenter as a Mica-friendly
+        // in-window modal rather than a secondary Window subclass.
+        _contentDialogService?.SetDialogHost(RootContentDialogPresenter);
+
         if (RootNavigation.SelectedItem is null)
         {
             RootNavigation.Navigate(typeof(SpeakPage));

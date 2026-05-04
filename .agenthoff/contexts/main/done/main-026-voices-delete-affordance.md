@@ -1,11 +1,11 @@
 ---
 id: main-026
 title: Voices page — per-row delete affordance for cloned voices
-status: backlog
+status: done
 type: feature
 context: main
 created: 2026-05-04
-completed:
+completed: 2026-05-04
 commit:
 depends_on: [main-014, main-015]
 blocks: []
@@ -219,3 +219,51 @@ against active playback. Per main-015 Q10:
   `PrimaryButtonAppearance` property — set to `Danger` (or
   equivalent) if wpfui has it; otherwise template the button with
   the `#FFE81224` background as WhisperHeim does.
+
+## Outcome
+
+Cloned voice rows on the Voices page now show a per-row Delete button
+between Preview and the active-request indicator. Click → Fluent
+`ui:ContentDialog` opens (in-window, hosted by `RootContentDialogPresenter`
+in `MainWindow.xaml`) with WhisperHeim's destructive styling: red-tinted
+icon block, "Delete voice?" title, "This action cannot be undone."
+subtitle, voice-name card, Cancel + red Delete buttons. Confirm calls
+`VoiceLibraryService.DeleteAsync`; on success the dialog hides and the
+row vanishes via `VoicesChanged`. On IO / permission failure the dialog
+stays open with an inline red error message; the user can retry or cancel.
+
+Built-in rows are unmodified — they keep the original 3-column layout (no
+Delete column allocated) because the cloned + built-in sections live in
+separate `ItemsControl.ItemTemplate`s. Build is clean (`dotnet build
+mockingbird.sln -c Debug` → 0 errors, 0 warnings).
+
+### Key files
+
+- `src/Mockingbird/ViewModels/Dialogs/DeleteVoiceDialogViewModel.cs` — new
+  VM; holds voice id + name, drives `IsDeleting` / `ErrorMessage`, exposes
+  Delete / Cancel commands.
+- `src/Mockingbird/Views/Dialogs/DeleteVoiceDialog.xaml(.cs)` — new
+  ContentDialog view (`IsFooterVisible="False"`, custom button row with
+  `#FFE81224` Delete button template).
+- `src/Mockingbird/ViewModels/Pages/VoicesPageViewModel.cs` — added
+  `VoiceLibraryService` + `IContentDialogService` dependencies, wired
+  `RequestDelete(VoiceRowViewModel)` that constructs the dialog VM and
+  shows the dialog. `VoiceRowViewModel` gained `DeleteCommand` +
+  `IsCloned` and a nullable delete-action ctor parameter.
+- `src/Mockingbird/Views/Pages/VoicesPage.xaml` — cloned `ItemsControl`
+  template extended to a 4-column grid (name+meta | Preview | Delete |
+  active indicator).
+- `src/Mockingbird/Views/MainWindow.xaml(.cs)` — added
+  `RootContentDialogPresenter` and `IContentDialogService` ctor param;
+  `OnLoaded` calls `SetDialogHost`.
+- `src/Mockingbird/EntryPoint.cs` — registered `IContentDialogService` as
+  singleton; passed it to `MainWindow`.
+
+### Verification note
+
+The build is clean. The interactive UI behaviours — clicking Delete opens
+the dialog, Cancel / Esc dismisses with no action, Confirm calls the
+service and removes the row, IO failure keeps the dialog open with an
+inline error — are **not interactively re-tested** in this pass; the code
+is in place per the main-026 spec and any regression will surface during
+the next manual run.

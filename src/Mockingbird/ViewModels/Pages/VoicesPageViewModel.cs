@@ -7,6 +7,10 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Mockingbird.Services.Speak;
 using Mockingbird.Services.Tts;
+using Mockingbird.Services.Voices;
+using Mockingbird.ViewModels.Dialogs;
+using Wpf.Ui;
+using Wpf.Ui.Controls;
 
 namespace Mockingbird.ViewModels.Pages;
 
@@ -31,6 +35,8 @@ public sealed partial class VoicesPageViewModel : ObservableObject
 {
     private readonly SpeakService _speakService;
     private readonly VoiceCatalog _voiceCatalog;
+    private readonly VoiceLibraryService _voiceLibrary;
+    private readonly IContentDialogService _dialogService;
     private readonly ILogger<VoicesPageViewModel> _logger;
 
     private bool _refreshing;
@@ -75,11 +81,15 @@ public sealed partial class VoicesPageViewModel : ObservableObject
     public VoicesPageViewModel(
         SpeakService speakService,
         VoiceCatalog voiceCatalog,
+        VoiceLibraryService voiceLibrary,
+        IContentDialogService dialogService,
         VoiceCloningViewModel cloning,
         ILogger<VoicesPageViewModel> logger)
     {
         _speakService = speakService;
         _voiceCatalog = voiceCatalog;
+        _voiceLibrary = voiceLibrary;
+        _dialogService = dialogService;
         _logger = logger;
         Cloning = cloning;
     }
@@ -102,7 +112,10 @@ public sealed partial class VoicesPageViewModel : ObservableObject
 
             foreach (var v in voices)
             {
-                var row = new VoiceRowViewModel(v, EnqueuePreview);
+                var row = new VoiceRowViewModel(
+                    v,
+                    EnqueuePreview,
+                    deleteAction: v.IsBuiltIn ? null : RequestDelete);
                 row.CanPreview = EngineState == SidecarState.Running;
                 if (v.IsBuiltIn) BuiltInVoices.Add(row);
                 else ClonedVoices.Add(row);
@@ -171,20 +184,57 @@ public sealed partial class VoicesPageViewModel : ObservableObject
             _logger.LogError(ex, "Voices page Preview failed for {VoiceId}.", row.VoiceId);
         }
     }
+
+    /// <summary>
+    /// Open the delete-confirmation dialog for a cloned voice (main-026).
+    /// On Primary (Delete) the dialog VM calls
+    /// <see cref="VoiceLibraryService.DeleteAsync"/>; on success the dialog
+    /// closes and the row vanishes via <see cref="VoiceCatalog.VoicesChanged"/>.
+    /// On IO failure the dialog stays open with an inline error message
+    /// (per task spec) — the user can retry or cancel.
+    /// </summary>
+    private async void RequestDelete(VoiceRowViewModel row)
+    {
+        try
+        {
+            var dialogVm = new DeleteVoiceDialogViewModel(row.VoiceId, row.DisplayName, _voiceLibrary, _logger);
+            var dialog = new Views.Dialogs.DeleteVoiceDialog(_dialogService.GetDialogHost())
+            {
+                DataContext = dialogVm,
+            };
+            dialogVm.AttachDialog(dialog);
+
+            await _dialogService.ShowAsync(dialog, CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open delete confirmation dialog for {VoiceId}.", row.VoiceId);
+        }
+    }
 }
 
 /// <summary>
 /// One row in the voices list. Trim view-model — display name, meta line,
 /// preview command, and the active-request indicator. Lives here rather than
 /// in its own file per the worker tip in main-014's spec.
+///
+/// main-026 adds the Delete affordance for cloned voices. Built-in rows
+/// expose <see cref="IsBuiltIn"/> = true and the page template binds the
+/// Delete column's visibility to <c>!IsBuiltIn</c>; <see cref="DeleteCommand"/>
+/// is wired regardless but never invoked on a built-in row from the UI.
 /// </summary>
 public sealed partial class VoiceRowViewModel : ObservableObject
 {
     private readonly Action<VoiceRowViewModel> _previewAction;
+    private readonly Action<VoiceRowViewModel>? _deleteAction;
 
-    public VoiceRowViewModel(VoiceDescriptor descriptor, Action<VoiceRowViewModel> previewAction)
+    public VoiceRowViewModel(
+        VoiceDescriptor descriptor,
+        Action<VoiceRowViewModel> previewAction,
+        Action<VoiceRowViewModel>? deleteAction = null)
     {
         _previewAction = previewAction;
+        _deleteAction = deleteAction;
         VoiceId = descriptor.Id;
         DisplayName = string.IsNullOrEmpty(descriptor.Name) ? descriptor.Id : descriptor.Name;
         IsBuiltIn = descriptor.IsBuiltIn;
@@ -207,6 +257,9 @@ public sealed partial class VoiceRowViewModel : ObservableObject
     /// <summary>True for engine built-ins (alba, marius, …); false for cloned voices.</summary>
     public bool IsBuiltIn { get; }
 
+    /// <summary>Inverse of <see cref="IsBuiltIn"/>. Drives the Delete column's visibility on cloned-row templates.</summary>
+    public bool IsCloned => !IsBuiltIn;
+
     /// <summary>True when this row's preview is the active speak request — drives the speaker indicator.</summary>
     [ObservableProperty]
     private bool _isActiveRequest;
@@ -218,4 +271,17 @@ public sealed partial class VoiceRowViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanPreview))]
     private void Preview() => _previewAction(this);
+
+    /// <summary>
+    /// Open the delete confirmation dialog for this row (main-026). No-op for
+    /// built-in rows (the Delete column is collapsed via <see cref="IsCloned"/>
+    /// binding, but the command is wired uniformly so the row template can be
+    /// shared if needed).
+    /// </summary>
+    [RelayCommand]
+    private void Delete()
+    {
+        if (IsBuiltIn) return;
+        _deleteAction?.Invoke(this);
+    }
 }
