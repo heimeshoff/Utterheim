@@ -92,10 +92,25 @@ def _get_resident_tts_model():
 
 
 def _import_state_helpers():
-    """Pull export_model_state / import_model_state out of pocket-tts."""
-    # pocket-tts 2.x re-exports these from the top-level package (per the
-    # snippets in kyutai-tts-2026-05-01.md research).
-    from pocket_tts import export_model_state, import_model_state
+    """Pull export_model_state / import_model_state out of pocket-tts.
+
+    pocket-tts 2.x re-exports `export_model_state` from the top-level
+    package (see its `__all__`) but ships the reverse helper only as the
+    private `_import_model_state` inside `pocket_tts.models.tts_model`.
+    The kyutai-tts-2026-05-01 research note's snippet (`from pocket_tts
+    import ... import_model_state`) does not match the released package.
+    Try the public top-level name first so a future pocket-tts release
+    that promotes the helper "just works"; fall back to the private name
+    on the currently-shipping versions.
+    """
+    from pocket_tts import export_model_state
+
+    try:
+        from pocket_tts import import_model_state  # type: ignore[attr-defined]
+    except ImportError:
+        from pocket_tts.models.tts_model import (
+            _import_model_state as import_model_state,
+        )
 
     return export_model_state, import_model_state
 
