@@ -5,6 +5,55 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 16:40 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1 (main-015)
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 1 feature + 1 chore
+
+---
+
+## 2026-05-04 16:40 -- Task completed: main-015 - Voice cloning backend
+
+**Type:** Work / Task completion
+**Task:** main-015 - Voice cloning backend — VoiceLibraryService + sidecar /export-voice
+**Summary:** Voice cloning backend landed end-to-end — `mockingbird_sidecar` Python wrapper adds `/export-voice` and `/tts-with-state` on the resident pocket-tts model, `VoiceLibraryService` persists `<dataPath>\voices\<id>\` per ADR 0005 with temp+rename and startup reconciliation, and `PocketTtsEngine` routes built-in vs cloned voices to the correct endpoint via the catalog union. No UI in this task.
+**Commit:** f299df5
+**Files changed:** 15
+**ADRs written:** 0015-mockingbird-sidecar-wrapper.md (accepted as drafted)
+
+---
+
+## 2026-05-04 16:25 -- Batch started: [main-015]
+
+**Type:** Work / Batch start
+**Tasks:** main-015 - Voice cloning backend — VoiceLibraryService + sidecar /export-voice
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-04 -- Model / Promoted: main-015 - Voice cloning backend
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+**ADR 0015 status:** proposed → accepted (Mockingbird-owned Python sidecar wrapper)
+
+---
+
+## 2026-05-04 -- Model / Refined: main-015 - Voice cloning (split 3-way)
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (all three children); main-015 promote-blocked on ADR 0015 acceptance
+**Summary:** Resolved Q1–Q13. Split main-015 from one bundled task into three: main-015 (backend — `VoiceLibraryService` + sidecar `POST /export-voice` + schema), main-025 (cloning UI — recording controls, source toggle, WhisperHeim audio-capture copy per ADR 0006), main-026 (per-row delete affordance on Voices page). Ratified `meta.json` / `library.json` schema with `schemaVersion: 1`, slim master index, transactional write order (profile → meta → library). Confirmed C# ↔ pocket-tts integration via mockingbird-owned Python wrapper module that imports `pocket_tts.main:web_app` and adds `/export-voice` (ADR 0015). Active-playback delete guard rejected; reconciler heals orphans on next launch. Import-existing-clip path deferred post-v1 (`source: "import"` reserved). main-014 in `done/` had `blocks` updated to `[main-015, main-025, main-026]`.
+**Split into:** main-025 (Voice cloning UI), main-026 (Voices delete affordance)
+**ADRs written:** 0015 (Mockingbird-owned Python sidecar wrapper, status: proposed — awaits user acceptance before main-015 can promote)
+
+---
+
 ## 2026-05-04 -- Work session ended
 
 **Type:** Work / Session end

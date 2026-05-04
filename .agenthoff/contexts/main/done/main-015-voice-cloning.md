@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-01
 completed: 2026-05-04
-commit:
+commit: f299df5
 depends_on: [main-010, main-011, main-014]
 blocks: [main-025, main-026]
 tags: [backend, core, voice-library, sidecar]
