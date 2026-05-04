@@ -65,6 +65,16 @@ logger = logging.getLogger("mockingbird_sidecar")
 app = typer.Typer(add_completion=False)
 
 
+@app.callback()
+def _root() -> None:
+    # No-op root callback. Typer collapses single-command apps into a
+    # command-less CLI when no callback is registered, which would make
+    # `python -m mockingbird_sidecar serve ...` fail with "Got unexpected
+    # extra argument (serve)". The callback's presence keeps Typer in
+    # multi-command mode so the C# SidecarHost's invocation works unchanged.
+    return None
+
+
 def _get_resident_tts_model():
     """Return the pocket-tts resident TTSModel that `serve` loaded once at startup."""
     from pocket_tts import main as pocket_main
