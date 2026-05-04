@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-04
 completed: 2026-05-04
-commit:
+commit: a69b59a
 depends_on: [main-014, main-015]
 blocks: []
 tags: [frontend, page, voice-library]

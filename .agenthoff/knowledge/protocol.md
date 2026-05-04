@@ -5,6 +5,27 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 18:05 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 2
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 2 (plus follow-up chore for SHA recording)
+
+---
+
+## 2026-05-04 18:04 -- Task completed: main-027 - Bootstrapper self-heal
+
+**Type:** Work / Task completion
+**Task:** main-027 — Bootstrapper self-heal for stale/partial mockingbird_sidecar
+**Summary:** IsBootstrapped now delegates to the install-path file-presence helpers and additionally compares bundled vs. installed wrapper __version__, so half-installed and stale wrappers self-heal at next launch.
+**Commit:** d57a6a9
+**Files changed:** 6
+**ADRs written:** 0016-bootstrapper-strict-launch-gate.md
+
+---
+
 ## 2026-05-04 17:59 -- Batch started: [main-027]
 
 **Type:** Work / Batch start

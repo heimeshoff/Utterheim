@@ -6,7 +6,7 @@ type: bug
 context: main
 created: 2026-05-04
 completed: 2026-05-04
-commit:
+commit: d57a6a9
 depends_on: [main-015]
 blocks: []
 tags: [bootstrapper, sidecar, python-runtime, robustness]
