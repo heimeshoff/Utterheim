@@ -1,31 +1,20 @@
 using System.Globalization;
-using System.Windows;
 using System.Windows.Data;
 
 namespace Mockingbird.ViewModels.Pages;
-
-/// <summary>
-/// Maps a nullable / possibly-empty string to <see cref="Visibility"/> —
-/// non-empty → Visible, null/empty/whitespace → Collapsed. Used by the
-/// cloning panel's inline error + status surfaces (main-025).
-/// </summary>
-public sealed class NullOrEmptyToVisibilityConverter : IValueConverter
-{
-    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        var s = value as string;
-        return string.IsNullOrWhiteSpace(s) ? Visibility.Collapsed : Visibility.Visible;
-    }
-
-    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}
 
 /// <summary>
 /// Two-way bridge between a <see cref="CloningSource"/> property and a
 /// <see cref="System.Windows.Controls.RadioButton"/>'s <c>IsChecked</c> bool.
 /// ConverterParameter is the source name ("Microphone" / "SystemAudio") this
 /// radio represents — the converter compares against it.
+///
+/// <para>
+/// <c>NullOrEmptyToVisibilityConverter</c> previously also lived in this file —
+/// main-032 moved it to <see cref="Mockingbird.Views.Converters.NullOrEmptyToVisibilityConverter"/>
+/// (registered as an <see cref="App.xaml"/> resource) so the About / Voices /
+/// Delete dialog / Settings surfaces all reference one instance.
+/// </para>
 /// </summary>
 public sealed class CloningSourceToBoolConverter : IValueConverter
 {

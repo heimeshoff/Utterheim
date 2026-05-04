@@ -180,9 +180,14 @@ public static class EntryPoint
 
                 // Pages registered transient so each navigation gets a fresh
                 // instance (the wpfui-canonical model). View-models match.
+                // EngineStatusCardViewModel (main-032) is composed onto the
+                // SettingsPageViewModel and registered transient for the same
+                // reason — fresh sub-VM per Settings-page resolution, mirroring
+                // the VoiceCloningViewModel pattern.
                 services.AddTransient<SpeakPageViewModel>();
                 services.AddTransient<VoiceCloningViewModel>();
                 services.AddTransient<VoicesPageViewModel>();
+                services.AddTransient<EngineStatusCardViewModel>();
                 services.AddTransient<SettingsPageViewModel>();
                 services.AddTransient<AboutPageViewModel>();
                 services.AddTransient<SpeakPage>();

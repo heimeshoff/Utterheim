@@ -1,14 +1,40 @@
 using System.Globalization;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 using Mockingbird.Services.Tts;
 
-namespace Mockingbird.ViewModels.Pages;
+namespace Mockingbird.Views.Converters;
+
+/// <summary>
+/// Maps a nullable / possibly-empty string to <see cref="Visibility"/> —
+/// non-empty → <see cref="Visibility.Visible"/>, null/empty/whitespace →
+/// <see cref="Visibility.Collapsed"/>. Consolidated here in main-032 so the
+/// About page (engine-card last-error block + GitHub URL helpers), the Voices
+/// page (cloning panel inline error + status surfaces, main-025), the Delete
+/// dialog (inline error block, main-026), and the new Settings engine card all
+/// reference a single instance via <see cref="App.xaml"/>.
+///
+/// Previously duplicated in <c>AboutPageConverters.cs</c> and
+/// <c>VoicesPageConverters.cs</c>; both copies are gone as of main-032.
+/// </summary>
+public sealed class NullOrEmptyToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var s = value as string;
+        return string.IsNullOrWhiteSpace(s) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
 
 /// <summary>
 /// Maps the engine status pip — driven by <see cref="SidecarState"/> + the
 /// healthy flag — to a fill <see cref="Brush"/> for the small 10x10 ellipse
-/// next to the state label on the About page (main-017).
+/// next to the state label on the engine-status card (originally on About per
+/// main-017; relocated to Settings in main-032).
 ///
 /// Colours:
 /// <list type="bullet">

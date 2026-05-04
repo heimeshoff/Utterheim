@@ -1,255 +1,38 @@
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
-using Mockingbird.Services.Settings;
-using Mockingbird.Services.Tts;
+using Mockingbird.Services;
 
 namespace Mockingbird.ViewModels.Pages;
 
 /// <summary>
-/// View-model for the About page (main-017). Surfaces the brand mark, the app
-/// version, a richer engine-status panel (state pip + port + healthy + last
-/// error + Restart Engine), a "View logs" shortcut, and the credits line.
+/// View-model for the About page. As of main-032 the page is a pure identity
+/// surface (hero + Marco's profile / contact card + Ko-fi / GitHub support
+/// card + credits) mirroring WhisperHeim's About — the engine-status panel,
+/// Restart Engine button, and View-logs link that main-017 originally placed
+/// here have moved to Settings → Diagnostics, surfaced through
+/// <see cref="EngineStatusCardViewModel"/> composed on
+/// <see cref="SettingsPageViewModel.EngineStatus"/>.
 ///
 /// <para>
-/// <b>Engine status data flow</b>: subscribes to
-/// <see cref="SidecarHost.StateChanged"/> (the same event the footer
-/// <see cref="EngineStatusViewModel"/> consumes) and re-seeds via
-/// <see cref="SidecarHost.GetStatus"/> on navigate-to. Per main-017 Q1 the
-/// page does <em>not</em> call <c>GET /status</c> — that endpoint is the
-/// contract for outside callers, while in-process subscribers stay
-/// event-driven and dispatcher-thread-safe.
-/// </para>
-///
-/// <para>
-/// <b>Restart Engine</b> calls <see cref="SidecarHost.RestartAsync"/> —
-/// composed of <c>StopAsync</c>-equivalent teardown + <c>StartAsync</c> —
-/// which surfaces the lifecycle as Restarting → Stopping → NotStarted →
-/// Starting → Running. The button is disabled while the engine is in a
-/// transitional state so the user can't double-fire mid-cycle.
+/// What remains: a single <see cref="Version"/> property sourced from
+/// <see cref="AppInfo.Version"/> (the same helper <c>BrandHeroControl</c>
+/// reads from). The page no longer needs <see cref="SidecarHost"/>,
+/// <see cref="DataPathService"/>, <c>Attach</c>, <c>Detach</c>, or any
+/// command — the hero composes the version inline; the support links resolve
+/// to <see cref="AppInfo.KofiUrl"/> + <see cref="AppInfo.GithubUrl"/> from
+/// the page code-behind.
 /// </para>
 /// </summary>
 public sealed partial class AboutPageViewModel : ObservableObject
 {
-    private readonly SidecarHost? _sidecar;
-    private readonly DataPathService _paths;
-    private readonly ILogger<AboutPageViewModel> _logger;
-
     /// <summary>Tagline signed off in the styleguide (2026-05-01).</summary>
     public const string Tagline = "Local voices for Claude Code";
 
-    /// <summary>Credits line — minimal per main-017 Q4.</summary>
+    /// <summary>Credits line — minimal per main-017 Q4, retained for the page footer.</summary>
     public const string CreditsLine = "Synthesis powered by pocket-tts (Kyutai Labs).";
 
-    public AboutPageViewModel(
-        DataPathService paths,
-        ILogger<AboutPageViewModel> logger,
-        SidecarHost? sidecar = null)
-    {
-        _paths = paths;
-        _logger = logger;
-        _sidecar = sidecar;
-
-        Version = ResolveVersion();
-    }
-
-    // ─── Brand / version ────────────────────────────────────────────────────
-
-    /// <summary>Bare version string (no <c>v</c> prefix), per main-017.</summary>
-    [ObservableProperty]
-    private string _version = "unknown";
-
-    // ─── Engine status panel ────────────────────────────────────────────────
-
-    /// <summary>Coarse engine state — drives the pip brush and the friendly label.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(EngineStateLabel))]
-    [NotifyPropertyChangedFor(nameof(IsRunning))]
-    [NotifyPropertyChangedFor(nameof(IsRetryEnabled))]
-    [NotifyCanExecuteChangedFor(nameof(RestartEngineCommand))]
-    private SidecarState _engineState = SidecarState.NotStarted;
-
-    /// <summary>True iff the most recent <c>/health</c> probe succeeded — drives the green check / red dismiss icon.</summary>
-    [ObservableProperty]
-    private bool _healthy;
-
-    /// <summary>Bound HTTP port of the sidecar, or 0 when not yet listening.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PortLabel))]
-    private int _port;
-
-    /// <summary>Most recent error surfaced by the sidecar, or null. Wraps in the inline error block.</summary>
-    [ObservableProperty]
-    private string? _lastError;
-
-    /// <summary>Friendly state label — same mapping as the persistent footer (<see cref="SidecarStateLabels"/>).</summary>
-    public string EngineStateLabel => SidecarStateLabels.Format(EngineState);
-
-    /// <summary>True iff state is <c>Running</c> — drives Healthy icon visibility (in non-running states the state label already covers the signal).</summary>
-    public bool IsRunning => EngineState == SidecarState.Running;
-
-    /// <summary><c>127.0.0.1:{port}</c> when listening, em-dash otherwise.</summary>
-    public string PortLabel => Port > 0 ? $"127.0.0.1:{Port}" : "—";
-
     /// <summary>
-    /// True when the Restart button should be enabled. Allowed on terminal
-    /// states (<c>Running</c>, <c>Failed</c>, <c>NotStarted</c>) so the user
-    /// can also restart a stuck running engine; disabled mid-transition so
-    /// the user can't double-fire while the supervisor is already churning.
+    /// Bare version string (no <c>v</c> prefix). Sourced from
+    /// <see cref="AppInfo.Version"/> — single source of truth across the app.
     /// </summary>
-    public bool IsRetryEnabled => EngineState is SidecarState.Running
-        or SidecarState.Failed
-        or SidecarState.NotStarted;
-
-    // ─── Lifecycle ──────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Re-seed engine state from the host's current snapshot and subscribe to
-    /// <see cref="SidecarHost.StateChanged"/>. Called by the page's
-    /// <c>OnNavigatedTo</c>; idempotent if already subscribed.
-    /// </summary>
-    public void Attach()
-    {
-        if (_sidecar is null)
-        {
-            // Stub-engine path — no live updates. Show a sensible static label.
-            EngineState = SidecarState.NotStarted;
-            Healthy = false;
-            Port = 0;
-            LastError = null;
-            return;
-        }
-
-        ApplyStatus(_sidecar.GetStatus());
-
-        // Defensive: remove any prior subscription before re-adding to avoid
-        // double-fires if Attach is called twice without an intervening Detach.
-        _sidecar.StateChanged -= OnSidecarStateChanged;
-        _sidecar.StateChanged += OnSidecarStateChanged;
-    }
-
-    /// <summary>Unsubscribe from sidecar updates. Called by <c>OnNavigatedFrom</c>.</summary>
-    public void Detach()
-    {
-        if (_sidecar is null) return;
-        _sidecar.StateChanged -= OnSidecarStateChanged;
-    }
-
-    private void OnSidecarStateChanged(object? sender, SidecarStatus status)
-    {
-        var dispatcher = Application.Current?.Dispatcher;
-        if (dispatcher is null || dispatcher.CheckAccess())
-            ApplyStatus(status);
-        else
-            dispatcher.BeginInvoke(() => ApplyStatus(status));
-    }
-
-    private void ApplyStatus(SidecarStatus status)
-    {
-        EngineState = status.State;
-        Healthy = status.Healthy;
-        Port = status.Port;
-        LastError = status.LastError;
-    }
-
-    // ─── Commands ───────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Restart the engine: <c>StopAsync</c>-equivalent teardown plus a fresh
-    /// supervisor task per <see cref="SidecarHost.RestartAsync"/>. Disabled
-    /// while the engine is in a transitional state.
-    /// </summary>
-    [RelayCommand(CanExecute = nameof(CanRestartEngine))]
-    private async Task RestartEngineAsync(CancellationToken ct)
-    {
-        if (_sidecar is null)
-        {
-            _logger.LogInformation("Restart Engine pressed but no SidecarHost is registered (stub-engine mode).");
-            return;
-        }
-
-        try
-        {
-            await _sidecar.RestartAsync(ct).ConfigureAwait(true);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "About: SidecarHost.RestartAsync failed.");
-        }
-    }
-
-    private bool CanRestartEngine() => IsRetryEnabled;
-
-    /// <summary>
-    /// Open <c>%LOCALAPPDATA%\Mockingbird\logs\</c> in Explorer. If the directory
-    /// doesn't exist (first launch before the first roll) open its parent
-    /// instead, never throw.
-    /// </summary>
-    [RelayCommand]
-    private void OpenLogs()
-    {
-        try
-        {
-            var logsPath = _paths.LogsPath;
-            string target;
-            if (Directory.Exists(logsPath))
-            {
-                target = logsPath;
-            }
-            else
-            {
-                // Fall back to the parent (LocalRoot) so the user always lands
-                // somewhere familiar.
-                var parent = Directory.GetParent(logsPath)?.FullName;
-                target = parent is not null && Directory.Exists(parent) ? parent : DataPathService.LocalRoot;
-                Directory.CreateDirectory(target);
-                _logger.LogInformation("About: logs folder not yet present at {Path}; opening parent {Parent}.", logsPath, target);
-            }
-
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "explorer.exe",
-                Arguments = $"\"{target}\"",
-                UseShellExecute = true,
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "About: OpenLogs failed.");
-        }
-    }
-
-    // ─── Helpers ────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Resolve the user-facing version string. Prefers
-    /// <see cref="AssemblyInformationalVersionAttribute"/> (set via
-    /// <c>&lt;InformationalVersion&gt;</c> in the .csproj), falls back to
-    /// <see cref="AssemblyName.Version"/> (3-part), and finally to
-    /// <c>"unknown"</c> for unconfigured dev builds.
-    /// </summary>
-    private static string ResolveVersion()
-    {
-        var asm = Assembly.GetExecutingAssembly();
-
-        var info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        if (!string.IsNullOrWhiteSpace(info))
-        {
-            // Strip the +sha suffix MSBuild appends when SourceLink is enabled —
-            // a bare semver reads cleaner on the About page.
-            var plus = info.IndexOf('+');
-            return plus >= 0 ? info[..plus] : info;
-        }
-
-        var ver = asm.GetName().Version;
-        if (ver is not null) return ver.ToString(3);
-
-        return "unknown";
-    }
+    public string Version { get; } = AppInfo.Version;
 }

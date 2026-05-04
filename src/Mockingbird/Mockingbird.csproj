@@ -28,6 +28,11 @@
          the page; HighQuality bitmap scaling keeps it crisp on 100/200% DPI. -->
     <Resource Include="..\..\assets\branding\mockingbird-logo-256.png"
               Link="assets\branding\mockingbird-logo-256.png" />
+    <!-- Marco's portrait for the About page profile card (main-032). Sourced
+         from WhisperHeim's identical portrait so the two apps stay in sync;
+         rendered as a 140x140 ringed Border via ImageBrush. -->
+    <Resource Include="..\..\assets\people\heimeshoff.jpg"
+              Link="assets\people\heimeshoff.jpg" />
   </ItemGroup>
 
   <ItemGroup>

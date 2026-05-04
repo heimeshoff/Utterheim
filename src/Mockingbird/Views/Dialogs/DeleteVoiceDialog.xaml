@@ -2,14 +2,13 @@
                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                   xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-                  xmlns:vm="clr-namespace:Mockingbird.ViewModels.Pages"
                   Title=""
                   IsFooterVisible="False"
                   DialogWidth="420">
-    <ui:ContentDialog.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <vm:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter" />
-    </ui:ContentDialog.Resources>
+    <!-- BoolToVisibilityConverter + NullOrEmptyToVisibilityConverter are
+         registered once in App.xaml as of main-032 — no local Resources
+         block needed any more. -->
+
 
     <StackPanel Margin="8">
         <!-- Icon + Title row (matches WhisperHeim's DeleteConfirmationDialog) -->

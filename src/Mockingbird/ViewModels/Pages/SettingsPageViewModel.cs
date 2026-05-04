@@ -47,12 +47,24 @@ public sealed partial class SettingsPageViewModel : ObservableObject
 
     private bool _suspendPersist;
 
+    /// <summary>
+    /// Engine-status card (state pip / port / healthy / last error / Restart
+    /// Engine / View logs) surfaced at the end of Settings → Diagnostics.
+    /// Composed sub-VM mirroring <c>VoicesPageViewModel.Cloning</c>; the page's
+    /// <c>OnNavigatedTo</c> / <c>OnNavigatedFrom</c> drive its <see cref="EngineStatusCardViewModel.Attach"/>
+    /// / <see cref="EngineStatusCardViewModel.Detach"/> lifecycle so the
+    /// <see cref="SidecarHost.StateChanged"/> subscription cannot leak.
+    /// Relocated from About in main-032.
+    /// </summary>
+    public EngineStatusCardViewModel EngineStatus { get; }
+
     public SettingsPageViewModel(
         UserSettings userSettings,
         VoiceCatalog voiceCatalog,
         StartupRegistration startupRegistration,
         DataPathService dataPathService,
         SpeakServer speakServer,
+        EngineStatusCardViewModel engineStatus,
         ILogger<SettingsPageViewModel> logger)
     {
         _userSettings = userSettings;
@@ -61,6 +73,8 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         _dataPathService = dataPathService;
         _speakServer = speakServer;
         _logger = logger;
+
+        EngineStatus = engineStatus;
 
         // Diagnostics labels are stable for the lifetime of the host (HTTP port +
         // stop hotkey are read-only in v1). Data path is a live mirror — see
@@ -141,20 +155,24 @@ public sealed partial class SettingsPageViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Subscribe to <see cref="DataPathService.DataPathChanged"/>. Idempotent —
-    /// the event raiser tolerates duplicate handlers but we detach first to be
-    /// explicit. Called by the page's <c>OnNavigatedTo</c>.
+    /// Subscribe to <see cref="DataPathService.DataPathChanged"/> and forward
+    /// the lifecycle to the composed <see cref="EngineStatus"/> card so its
+    /// <see cref="SidecarHost.StateChanged"/> subscription is bounded by the
+    /// page's lifetime. Idempotent — both subscriptions detach-then-attach so
+    /// duplicate calls are safe. Called by the page's <c>OnNavigatedTo</c>.
     /// </summary>
     public void Attach()
     {
         _dataPathService.DataPathChanged -= OnDataPathChanged;
         _dataPathService.DataPathChanged += OnDataPathChanged;
+        EngineStatus.Attach();
     }
 
-    /// <summary>Detach the <see cref="DataPathService.DataPathChanged"/> handler.</summary>
+    /// <summary>Detach the <see cref="DataPathService.DataPathChanged"/> handler and the engine-status subscription.</summary>
     public void Detach()
     {
         _dataPathService.DataPathChanged -= OnDataPathChanged;
+        EngineStatus.Detach();
     }
 
     private void OnDataPathChanged(object? sender, string newResolvedPath)

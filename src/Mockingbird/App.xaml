@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:converters="clr-namespace:Mockingbird.Views.Converters"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <ResourceDictionary>
@@ -19,6 +20,20 @@
             <SolidColorBrush x:Key="BrandAccentBrush" Color="#FFff8b00" />
             <SolidColorBrush x:Key="BrandDeepBrush" Color="#FF005FAA" />
             <SolidColorBrush x:Key="BrandDeepMutedBrush" Color="#66005FAA" />
+
+            <!-- main-032: shared converters consolidated under Views/Converters/.
+                 NullOrEmptyToVisibilityConverter previously lived in both
+                 AboutPageConverters.cs AND VoicesPageConverters.cs;
+                 EngineStateToPipBrushConverter only in AboutPageConverters.cs.
+                 Both are now registered once at app scope so any Page can
+                 reference them via {StaticResource ...} without per-page
+                 namespace imports. The framework-built-in
+                 BoolToVisibilityConverter is registered alongside so the new
+                 Settings engine card and any other page can rely on a single
+                 shared key without redeclaring per Page.Resources. -->
+            <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <converters:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter" />
+            <converters:EngineStateToPipBrushConverter x:Key="EngineStateToPipBrushConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

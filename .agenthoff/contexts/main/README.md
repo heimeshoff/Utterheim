@@ -75,19 +75,26 @@ src\
     App.xaml(.cs)                     WPF Application + WPF-UI theme dictionary
     Views\
       MainWindow.xaml(.cs)            Mica FluentWindow + ui:NavigationView shell
-                                      (sidebar + four-page set + status footer) +
-                                      tray:NotifyIcon menu + RootContentDialogPresenter
-                                      that hosts in-window ContentDialogs (main-026)
+                                      (sidebar + Speak/Voices/Settings in MenuItems +
+                                      About in FooterMenuItems per main-032 + status
+                                      footer) + tray:NotifyIcon menu +
+                                      RootContentDialogPresenter that hosts in-window
+                                      ContentDialogs (main-026)
       BootstrapDialog.xaml(.cs)       first-run dialog (placeholder in v1)
       Pages\
         SpeakPage.xaml(.cs)           Stub in main-020 — main-013 fills it
         VoicesPage.xaml(.cs)          Voice library list with per-row preview (main-014)
                                       and per-row Delete on cloned rows (main-026)
         SettingsPage.xaml(.cs)        Audio / App / Diagnostics setting cards (main-016)
-        AboutPage.xaml(.cs)           Brand mark + tagline + version + engine
-                                      status panel (state pip / port / healthy /
-                                      last error) + Restart Engine + View logs +
-                                      credits (main-017)
+        AboutPage.xaml(.cs)           main-032 redesign: pure identity surface
+                                      mirroring WhisperHeim's About — BrandHeroControl
+                                      with the "Local voices for Claude Code" tagline,
+                                      profile-and-contact card (140x140 ringed
+                                      heimeshoff.jpg + bio + heimeshoff.de / Bluesky /
+                                      LinkedIn rows), Support & GitHub card (Ko-fi
+                                      gradient button → AppInfo.KofiUrl + GitHub link →
+                                      AppInfo.GithubUrl), credits. Engine diagnostics
+                                      moved to Settings (per ADR 0021).
       Dialogs\
         DeleteVoiceDialog.xaml(.cs)   Fluent ContentDialog for the per-row Delete
                                       affordance on cloned voices (main-026).
@@ -99,9 +106,28 @@ src\
                                       (collapsed when null/empty). Reads version
                                       from AppInfo.Version. Used by Speak page
                                       (no tagline) and About page in main-032.
+      Converters\
+        SharedConverters.cs           NullOrEmptyToVisibilityConverter +
+                                      EngineStateToPipBrushConverter consolidated
+                                      under one file (main-032). Both registered
+                                      as App.xaml resources alongside the WPF
+                                      built-in BoolToVisibilityConverter so any
+                                      Page can reference them via {StaticResource}
+                                      without per-page namespace imports. Replaces
+                                      the deleted ViewModels/Pages/AboutPageConverters.cs
+                                      and the duplicate copy in VoicesPageConverters.cs.
     ViewModels\
       EngineStatusViewModel.cs        Backs the persistent footer (HTTP +
                                       Engine state, live via SidecarHost.StateChanged)
+      EngineStatusCardViewModel.cs    Engine-status card sub-VM (main-032) — extracted
+                                      from the former AboutPageViewModel; carries
+                                      EngineState / Healthy / Port / LastError /
+                                      EngineStateLabel / PortLabel / IsRetryEnabled +
+                                      RestartEngine / OpenLogs commands. Composed onto
+                                      SettingsPageViewModel.EngineStatus; Attach() /
+                                      Detach() drive the SidecarHost.StateChanged
+                                      subscription on Settings page lifecycle.
+                                      Registered transient (per ADR 0021).
       Dialogs\
         DeleteVoiceDialogViewModel.cs Backs DeleteVoiceDialog (main-026) — voice id
                                       + display name, IsDeleting / ErrorMessage flags,
@@ -123,39 +149,44 @@ src\
                                       (render WAV → POST /export-voice →
                                       VoiceLibraryService.AddAsync). Minimum 5 s,
                                       soft cap 30 s, hard cap 60 s auto-stop.
-        VoicesPageConverters.cs       NullOrEmptyToVisibilityConverter +
-                                      CloningSourceToBoolConverter for the cloning
-                                      panel (main-025).
-        SettingsPageViewModel.cs      Settings page VM (main-016 / main-031) — Voices /
-                                      OutputDevices / SelectedDefaultVoice /
+        VoicesPageConverters.cs       CloningSourceToBoolConverter for the cloning
+                                      panel (main-025). NullOrEmptyToVisibilityConverter
+                                      moved to Views/Converters/SharedConverters.cs in
+                                      main-032 (registered as App.xaml resource).
+        SettingsPageViewModel.cs      Settings page VM (main-016 / main-031 / main-032) —
+                                      Voices / OutputDevices / SelectedDefaultVoice /
                                       SelectedOutputDevice / StartMinimised /
                                       LaunchAtStartup + diagnostics (HttpEndpoint /
                                       StopHotkeyLabel / DataPath, the last live-bound
                                       to DataPathService.DataPathChanged) +
                                       BrowseDataPath / ResetDataPath commands
                                       (folder-picker dialog, writability validation,
-                                      restart-required MessageBox per main-031 / ADR 0020).
-                                      Persists to UserSettings except LaunchAtStartup which
-                                      writes HKCU\…\Run directly (ADR 0017).
-        AboutPageViewModel.cs         About page VM (main-017) — Version /
-                                      EngineState / Healthy / Port / LastError /
-                                      EngineStateLabel / PortLabel / IsRetryEnabled
-                                      + RestartEngine / OpenLogs commands. Reads
-                                      sidecar status in-process via
-                                      SidecarHost.GetStatus + StateChanged (ADR 0018);
-                                      RestartEngine calls SidecarHost.RestartAsync.
-        AboutPageConverters.cs        EngineStateToPipBrushConverter — multi-binds
-                                      (SidecarState, healthy) to a frozen brush for
-                                      the 10x10 status pip (green/amber/red/neutral).
+                                      restart-required MessageBox per main-031 / ADR 0020) +
+                                      composed EngineStatus sub-VM
+                                      (EngineStatusCardViewModel) for the relocated
+                                      engine-status card + View logs link per main-032 /
+                                      ADR 0021. Persists to UserSettings except
+                                      LaunchAtStartup which writes HKCU\…\Run directly
+                                      (ADR 0017). Attach() / Detach() drive both the
+                                      data-path-changed subscription and the engine-status
+                                      sub-VM's SidecarHost.StateChanged subscription.
+        AboutPageViewModel.cs         About page VM (main-032 redesign) — collapsed to a
+                                      single Version property sourced from AppInfo.Version.
+                                      No commands, no sidecar subscriptions. The Ko-fi /
+                                      GitHub / hyperlink handlers live in the page
+                                      code-behind because the URLs are app-wide constants
+                                      on AppInfo.
     Services\
-      AppInfo.cs                      Static helper (main-030) — `AppInfo.Version`
-                                      returns the user-facing version string
-                                      (`AssemblyInformationalVersionAttribute`
+      AppInfo.cs                      Static helper (main-030 / main-032) —
+                                      `AppInfo.Version` returns the user-facing
+                                      version string (`AssemblyInformationalVersionAttribute`
                                       with any `+sha` stripped, fallback to
-                                      `AssemblyName.Version` 3-part, then
-                                      `"unknown"`). Single-app, no DI seam.
-                                      main-032 will move AboutPageViewModel's
-                                      inline lookup over to this helper.
+                                      `AssemblyName.Version` 3-part, then `"unknown"`);
+                                      `AppInfo.KofiUrl` = "https://ko-fi.com/heimeshoff"
+                                      and `AppInfo.GithubUrl` =
+                                      "https://github.com/heimeshoff/mockingbird" are
+                                      the support links the About page surfaces
+                                      (main-032). Single-app, no DI seam.
       Navigation\PageService.cs       Thin IPageService → IServiceProvider adapter (ADR 0009)
       Tts\
         ITtsEngine.cs                 the seam every TTS engine plugs into
@@ -283,6 +314,11 @@ assets\branding\                      brand mark + raster outputs
   mockingbird-logo-{16..512}.png      rasterised PNGs (rasteriser from main-012;
                                       regenerated from the final SVG by main-028)
   mockingbird.ico                     multi-resolution tray + taskbar icon (final)
+assets\people\                        portraits used by identity surfaces
+  heimeshoff.jpg                      Marco's portrait (main-032) — copied verbatim
+                                      from WhisperHeim's Assets/heimeshoff.jpg so the
+                                      About profile card stays in sync across the two
+                                      apps. Rendered as a 140x140 ringed ImageBrush.
 Tools\RasteriseLogo\                  one-shot helper that produces the PNG/ICO
                                       from the source SVG. Outside mockingbird.sln.
 README.md
@@ -313,6 +349,10 @@ Path layout at runtime (per ADR 0005):
 
 As of main-020 the tray window hosts a **wpfui `NavigationView`** with the
 canonical four-page set (Speak / Voices / Settings / About) per ADR 0009.
+main-032 split the placement: Speak / Voices / Settings sit in
+`MenuItems` (the regular sidebar list); About sits in `FooterMenuItems`
+(bottom-left of the nav pane), mirroring WhisperHeim and visually
+separating the everyday workflow from the identity / credits surface.
 Pages are real WPF `Page` subclasses, registered transient in DI, and
 implement both `Wpf.Ui.Controls.INavigableView<TViewModel>` (typed VM
 accessor) and `Wpf.Ui.Controls.INavigationAware` (`OnNavigatedTo` /
@@ -330,9 +370,11 @@ A persistent **status footer** below the navigation area shows
 (`MOCKINGBIRD_USE_STUB_ENGINE=1`) the label reads `stub` and never changes.
 The four feature pages (main-013/014/016/017) replace each stub with real
 content. Per main-017 Q2 the persistent footer **stays** alongside the
-About page's richer status panel — both consume the same
-`SidecarHost.StateChanged` event via `SidecarStateLabels.Format` so they
-cannot drift. Revisit if the dual surface feels redundant after live use.
+richer status panel — main-032 / ADR 0021 relocated the panel from About
+to the end of Settings → Diagnostics, but the dual surface invariant is
+unchanged: both consume the same `SidecarHost.StateChanged` event via
+`SidecarStateLabels.Format` so they cannot drift. Revisit if the dual
+surface feels redundant after live use.
 
 ## Engine status
 
@@ -770,6 +812,19 @@ re-skinned every existing card from `ui:CardControl` to the WhisperHeim
   `DataPathChanged` so the Voices page rows reflect the new path's
   `library.json` live, without page re-navigation. The previous v1
   `Open in Explorer` affordance was dropped with this change.
+- **Engine status** (relocated from About by main-032 / ADR 0021) —
+  state pip + label, port, healthy indicator (only while Running),
+  last-error block, Restart Engine button. Bound through
+  `SettingsPageViewModel.EngineStatus` (an `EngineStatusCardViewModel`
+  composed sub-VM mirroring the cloning-panel pattern). Subscribes to
+  `SidecarHost.StateChanged` on `SettingsPage.OnNavigatedTo` →
+  `EngineStatus.Attach()`; unsubscribes on `OnNavigatedFrom` →
+  `EngineStatus.Detach()`. `Restart Engine` calls
+  `SidecarHost.RestartAsync`; disabled mid-transition.
+- **View logs** — `ui:HyperlinkButton` underneath the engine card, opens
+  `%LOCALAPPDATA%\Mockingbird\logs\` in Explorer (falls back to
+  `LocalRoot` if the directory hasn't been created yet). Bound to
+  `EngineStatus.OpenLogsCommand`.
 
 ### Refresh behaviour
 
@@ -811,80 +866,78 @@ per ADR 0020, no migration ever in v1.
 
 ## About page
 
-As of main-017 the About page replaces the main-020 stub with the canonical
-final-page surface — top-to-bottom in a single-column ScrollViewer with a 16 px
-outer margin, matching the styleguide's Fluent / Mica / Segoe UI Variable look:
+As of main-032 the About page is a **pure identity / credits surface** that
+mirrors WhisperHeim's About section-for-section. Engine diagnostics
+(state pip, port, healthy indicator, last-error block, Restart Engine,
+View logs) moved to Settings → Diagnostics per ADR 0021. About also moved
+to `ui:NavigationView.FooterMenuItems` so it sits at the bottom-left of
+the nav pane like WhisperHeim, separating "everyday workflow" from
+"about this app".
 
-1. **Brand mark + identity** — 128x128 raster of `mockingbird-logo-256.png`
-   (added as `<Resource>` in the .csproj; `RenderOptions.BitmapScalingMode=
-   "HighQuality"`), `Mockingbird` page title (`FontWeight="Light"`), tagline
-   `Local voices for Claude Code` (signed off in styleguide §Sign-off).
-2. **Version** — `Version {value}` from
-   `Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()` with
-   any `+sha` suffix stripped, falling back to `AssemblyName.Version` (3-part)
-   then `"unknown"`. No `v` prefix.
-3. **Engine status panel** (`ui:CardControl`) — coloured 10x10 pip + state
-   label (state mapping shared with the footer via `SidecarStateLabels`),
-   port (`127.0.0.1:{port}` or em-dash), Healthy icon (green
-   `CheckmarkCircle24` / red `DismissCircle24`, only visible while Running),
-   Last error block (`SystemFillColorCriticalBackgroundBrush`, monospace
-   wrap-enabled `TextBlock`, only when `LastError` non-null), and a
-   `Restart Engine` `ui:Button` (`Appearance="Primary"`, disabled during
-   `Starting` / `Restarting` / `Stopping`).
-4. **View logs** — `ui:HyperlinkButton` opening
-   `%LOCALAPPDATA%\Mockingbird\logs\` via Explorer. Falls back to the parent
-   directory (`LocalRoot`) if the logs folder doesn't exist yet.
-5. **Credits** — `Synthesis powered by pocket-tts (Kyutai Labs).` Minimal
-   per main-017 Q4.
+The composition, top to bottom in a single-column ScrollViewer with the
+styleguide's 40,36,40,32 page chrome and MaxWidth=900:
 
-### In-process status data flow (ADR 0018)
+1. **Hero** — `<controls:BrandHeroControl Tagline="Local voices for Claude
+   Code" />` from main-030. 88x88 brand-blue badge with the main-028
+   mockingbird mark inside, "Mockingbird" 40pt ExtraBold, version tag in
+   `BrandDeepMutedBrush`, and the signed-off tagline beneath.
+2. **Profile & Contact card** — `Border` with
+   `CardBackgroundFillColorSecondaryBrush`, `CornerRadius=12`, `Padding=28`.
+   Inside: a 140x140 ringed (`#FF25abfe` 3-px border) portrait of Marco
+   sourced from `assets/people/heimeshoff.jpg` (verbatim copy of
+   WhisperHeim's), Marco's two-paragraph bio (paragraph 1 verbatim from
+   WhisperHeim about DDD + collaborative modeling, paragraph 2
+   mockingbird-specific: *"I built Mockingbird so my Claude Code sessions
+   could speak in different voices — local, offline, with whatever voices I
+   want to clone."*), divider, and the "Get in Touch" rows
+   (heimeshoff.de Globe, Bluesky butterfly @Heimeshoff.de,
+   linkedin.com/in/heimeshoff). Glyph paths and hyperlinks are lifted
+   verbatim from WhisperHeim.
+3. **Support & GitHub card** — `Border` with the same card chrome as the
+   profile card. Contains the "If you enjoy Mockingbird and want to support
+   my open-source work…" line, a Ko-fi gradient button (`#FF25abfe →
+   #FF005FAA`, `CornerRadius=10`, "Buy me a coffee on Ko-fi" white text)
+   that opens `AppInfo.KofiUrl` in the default browser, the closing
+   "Otherwise, just enjoy using Mockingbird for free" line, and a
+   "View on GitHub" link routed through `AppInfo.GithubUrl` (=
+   `https://github.com/heimeshoff/mockingbird`, distinct from
+   WhisperHeim's repo).
+4. **Credits** — `Synthesis powered by pocket-tts (Kyutai Labs).` Minimal,
+   unchanged from main-017.
 
-The page subscribes to `SidecarHost.StateChanged` and re-seeds via
-`SidecarHost.GetStatus()` on `OnNavigatedTo`. It does **not** call
-`GET /status` — that endpoint is the contract for outside callers; the page
-reads in-process to stay event-driven and dispatcher-thread-safe (same
-pattern `EngineStatusViewModel.OnSidecarStateChanged` established).
-`AboutPageViewModel.Attach()` / `Detach()` is invoked by the page's
-`INavigationAware` hooks; `Attach` defensively removes the prior handler
-before re-adding so navigating in-out-in cannot leak.
+The Bento grid (Philosophy + AI Models) at the bottom of WhisperHeim's
+About is **not** copied — it's WhisperHeim-specific and overlaps with
+mockingbird's Settings → Engine status.
 
-### Restart semantics (ADR 0018)
+### Code shape
 
-`Restart Engine` calls a new `SidecarHost.RestartAsync()`:
-
-1. Surface `SidecarState.Restarting` for subscribers.
-2. Cancel `_supervisorCts` (5 s timeout for the supervisor task to unwind).
-3. `TerminateProcess()` to kill the python child.
-4. Reset `_supervisorTask` / `_supervisorCts` / `_shuttingDown` / `_port`
-   under `_stateLock` so `StartAsync`'s "already started" guard doesn't
-   short-circuit.
-5. `await StartAsync(ct)` — fresh supervisor, same JobObject (anti-zombie
-   invariant from ADR 0012 / main-022 preserved across the cycle).
-
-The button is **enabled** on `Running`, `Failed`, `NotStarted` (so a stuck
-running engine can be cycled), **disabled** on `Starting`, `Restarting`,
-`Stopping` so the user can't double-fire mid-transition.
-`[NotifyCanExecuteChangedFor]` on `EngineState` fires the
-`CanExecuteChanged` re-evaluation automatically.
+`AboutPageViewModel` carries only `Version` (sourced from
+`AppInfo.Version`); no commands, no event subscriptions, no
+`Attach()` / `Detach()`. The page code-behind handles the static external
+links — `Hyperlink_RequestNavigate` opens `e.Uri.AbsoluteUri` via
+`Process.Start { UseShellExecute = true }`; `KofiButton_Click` does the
+same with `AppInfo.KofiUrl`. URLs are app-wide constants on
+`AppInfo`, not per-instance VM values, so the code-behind shortcut is the
+right shape.
 
 ### Out of scope for v1
 
 Captured in main-017's spec, repeated here so future tasks see the boundary:
-bootstrap-style retry that re-runs `PythonRuntimeBootstrapper` on `Failed`
-(could come if Restart-the-engine alone proves insufficient), ADR /
-changelog text on the About page, update-check / auto-update infrastructure
-(vision non-goal in v1), per-engine status when a second engine ships,
-"Copy logs path" / "Open log file" affordances (the folder shortcut is
-enough for v1), localisation.
+ADR / changelog text on the About page, update-check / auto-update
+infrastructure (vision non-goal in v1), localisation. The engine-status
+boundaries (bootstrap-style retry, per-engine status when a second engine
+ships, "Copy logs path" / "Open log file") moved with the panel — see
+§Settings page → Diagnostics → Engine status.
 
 ### Verification note
 
 The build is clean (`dotnet build mockingbird.sln -c Debug` → 0 errors,
-0 warnings). The interactive UI behaviours — pip-flicker on live state
-transitions, `Restart Engine` cycling a running engine, View logs opening
-Explorer at the logs folder, page subscribe / unsubscribe on navigation —
-are **not interactively re-tested** in this pass; the code is in place per
-the main-017 spec and any regression will surface during the next manual run.
+0 warnings). The interactive UI behaviours — Ko-fi / GitHub / hyperlink
+navigation, About appearing in the nav footer rather than the main menu,
+the engine-status card on Settings → Diagnostics responding to live state
+transitions — are **not interactively re-tested** in this pass; the code
+is in place per the main-032 spec and any regression will surface during
+the next manual run.
 
 ## Voice library
 

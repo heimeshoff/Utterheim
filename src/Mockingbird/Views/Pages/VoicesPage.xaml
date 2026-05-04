@@ -5,8 +5,9 @@
       xmlns:vm="clr-namespace:Mockingbird.ViewModels.Pages"
       Title="Voices">
     <Page.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <vm:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter" />
+        <!-- BoolToVisibilityConverter + NullOrEmptyToVisibilityConverter are
+             registered once in App.xaml as of main-032; only the local
+             cloning-source converter stays here. -->
         <vm:CloningSourceToBoolConverter x:Key="CloningSourceToBoolConverter" />
     </Page.Resources>
 

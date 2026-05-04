@@ -113,13 +113,19 @@
                         <ui:SymbolIcon Symbol="Settings24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+
+            <!-- About sits in the footer menu (bottom-left of the nav pane)
+                 like WhisperHeim — main-032 separates identity / credits from
+                 the everyday speak / voices / settings flow. -->
+            <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem Content="About"
                                        TargetPageType="{x:Type pages:AboutPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Info24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-            </ui:NavigationView.MenuItems>
+            </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
 
         <Border x:Name="StatusFooter"

@@ -1,22 +1,24 @@
+using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Navigation;
 using Microsoft.Extensions.Logging;
-using Mockingbird.Services.Tts;
+using Mockingbird.Services;
 using Mockingbird.ViewModels.Pages;
 using Wpf.Ui.Controls;
 
 namespace Mockingbird.Views.Pages;
 
 /// <summary>
-/// About page (main-017) — brand mark, tagline, version, engine status panel,
-/// "View logs" shortcut, credits. Implements <see cref="INavigableView{T}"/>
-/// (typed VM accessor) and <see cref="INavigationAware"/> (lifecycle hooks)
-/// per ADR 0009.
+/// About page (main-032 redesign) — hero + profile/contact card + support /
+/// GitHub card + credits, mirroring WhisperHeim's About. Pure identity
+/// surface; engine diagnostics moved to Settings.
 ///
-/// On <c>OnNavigatedTo</c>: ask the VM to seed engine state from
-/// <see cref="SidecarHost.GetStatus"/> and subscribe to
-/// <see cref="SidecarHost.StateChanged"/>. On <c>OnNavigatedFrom</c>:
-/// unsubscribe so the VM (transient) doesn't leak a handler when the next
-/// instance attaches.
+/// Implements <see cref="INavigableView{T}"/> (typed VM accessor) and
+/// <see cref="INavigationAware"/> (lifecycle hooks) per ADR 0009. The
+/// lifecycle hooks no longer touch the VM — there is nothing to subscribe
+/// to — but the contract stays in place so the navigation shell logs
+/// transitions consistently.
 /// </summary>
 public partial class AboutPage : Page, INavigableView<AboutPageViewModel>, INavigationAware
 {
@@ -35,11 +37,48 @@ public partial class AboutPage : Page, INavigableView<AboutPageViewModel>, INavi
     public void OnNavigatedTo()
     {
         _logger.LogInformation("Navigated to {PageName}", nameof(AboutPage));
-        ViewModel.Attach();
     }
 
     public void OnNavigatedFrom()
     {
-        ViewModel.Detach();
+    }
+
+    /// <summary>
+    /// Open an external <c>http(s)</c> hyperlink in the user's default browser.
+    /// Used by the heimeshoff.de / Bluesky / LinkedIn / GitHub links and the
+    /// Ko-fi support button. Lifted verbatim from WhisperHeim's About page so
+    /// behaviour is identical across the two apps.
+    /// </summary>
+    private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "About: failed to open hyperlink {Url}.", e.Uri.AbsoluteUri);
+        }
+        finally
+        {
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Ko-fi support button click — opens <see cref="AppInfo.KofiUrl"/> in the
+    /// default browser. Bound directly in code-behind (no command) because the
+    /// URL is an app-wide constant, not a per-instance VM value.
+    /// </summary>
+    private void KofiButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(AppInfo.KofiUrl) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "About: failed to open Ko-fi URL {Url}.", AppInfo.KofiUrl);
+        }
     }
 }
