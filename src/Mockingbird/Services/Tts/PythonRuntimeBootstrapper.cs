@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Mockingbird.Services.Settings;
 
@@ -47,7 +48,14 @@ public sealed class PythonRuntimeBootstrapper
     /// <summary>Path the sidecar process will execute (`python.exe`).</summary>
     public string PythonExePath => Path.Combine(_paths.PythonRuntimePath, "python.exe");
 
-    /// <summary>True if a complete runtime is already installed and verified.</summary>
+    /// <summary>True if a complete runtime is already installed and verified.
+    /// Delegates to the same helpers the install path uses
+    /// (<see cref="PocketTtsActuallyInstalled"/>, <see cref="MockingbirdSidecarActuallyInstalled"/>,
+    /// <see cref="BundledSidecarMatchesInstalled"/>) so the launch-time gate
+    /// and the install-time guard cannot drift out of sync — main-027.
+    /// Returning false here triggers the bootstrap dialog on next launch,
+    /// which then heals partial / stale installs by re-running the install
+    /// step (its `File.Copy(overwrite: true)` overwrites stale wrapper bytes).</summary>
     public bool IsBootstrapped
     {
         get
@@ -55,8 +63,9 @@ public sealed class PythonRuntimeBootstrapper
             var state = LoadState();
             return state.RuntimeReady
                    && File.Exists(PythonExePath)
-                   && File.Exists(Path.Combine(_paths.PythonRuntimePath, "Lib", "site-packages", "pocket_tts", "__init__.py"))
-                   && File.Exists(Path.Combine(_paths.PythonRuntimePath, "Lib", "site-packages", "mockingbird_sidecar", "__init__.py"));
+                   && PocketTtsActuallyInstalled()
+                   && MockingbirdSidecarActuallyInstalled()
+                   && BundledSidecarMatchesInstalled();
         }
     }
 
@@ -270,6 +279,89 @@ public sealed class PythonRuntimeBootstrapper
             && File.Exists(Path.Combine(
                 _paths.PythonRuntimePath, "Lib", "site-packages", "mockingbird_sidecar", "main.py"));
     }
+
+    /// <summary>
+    /// True iff the installed <c>mockingbird_sidecar/__init__.py</c>'s
+    /// <c>__version__</c> matches the bundled wrapper's version (main-027).
+    /// Drives the launch-time staleness check: bumping the bundled
+    /// <c>__version__</c> forces a re-install on the next launch, which
+    /// overwrites the on-disk wrapper bytes with the bundled ones.
+    /// Returns false on any read / parse failure — "unknown version" must
+    /// trigger re-install rather than silently skip it. The mismatch
+    /// (or parse failure) is logged at Warning so a real parse bug
+    /// doesn't hide forever behind a perpetual re-install.
+    /// </summary>
+    private bool BundledSidecarMatchesInstalled()
+    {
+        var installedPath = Path.Combine(
+            _paths.PythonRuntimePath, "Lib", "site-packages",
+            "mockingbird_sidecar", "__init__.py");
+        var bundledRoot = LocateBundledSidecarRoot();
+        if (bundledRoot is null)
+        {
+            // No bundled package next to the .exe — we can't compare. Treat
+            // as "needs install"; the install step will throw a clearer
+            // error if the bundle is genuinely missing.
+            _logger.LogWarning(
+                "Bundled mockingbird_sidecar package not found next to mockingbird.exe — forcing re-install attempt.");
+            return false;
+        }
+
+        var bundledPath = Path.Combine(bundledRoot, "__init__.py");
+
+        var installed = ReadVersion(installedPath);
+        var bundled = ReadVersion(bundledPath);
+
+        if (installed is null || bundled is null)
+        {
+            _logger.LogWarning(
+                "mockingbird_sidecar __version__ unreadable (installed={Installed}, bundled={Bundled}) — forcing re-install.",
+                installed ?? "<null>", bundled ?? "<null>");
+            return false;
+        }
+
+        if (!string.Equals(installed, bundled, StringComparison.Ordinal))
+        {
+            _logger.LogInformation(
+                "mockingbird_sidecar version drift: installed={Installed}, bundled={Bundled} — re-install will run.",
+                installed, bundled);
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Parse the <c>__version__ = "1.2.3"</c> line from a Python source file.
+    /// Returns null on any failure (file missing, IO error, no version line) —
+    /// caller treats null as "version unknown, force re-install" (safe default
+    /// per main-027). Tolerant of single / double quotes and surrounding
+    /// whitespace; deliberately not a Python parser.
+    /// </summary>
+    private static string? ReadVersion(string pyPath)
+    {
+        if (!File.Exists(pyPath)) return null;
+        try
+        {
+            foreach (var line in File.ReadLines(pyPath))
+            {
+                var match = VersionRegex.Match(line);
+                if (match.Success) return match.Groups[1].Value;
+            }
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        return null;
+    }
+
+    private static readonly Regex VersionRegex =
+        new(@"^\s*__version__\s*=\s*[""']([^""']+)[""']", RegexOptions.Compiled);
 
     // ---- private helpers ----
 

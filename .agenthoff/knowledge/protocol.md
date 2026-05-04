@@ -5,6 +5,25 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 17:59 -- Batch started: [main-027]
+
+**Type:** Work / Batch start
+**Tasks:** main-027 — Bootstrapper self-heal for stale/partial mockingbird_sidecar
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-04 17:58 -- Task completed: main-026 - Voices delete affordance
+
+**Type:** Work / Task completion
+**Task:** main-026 — Voices page per-row delete affordance for cloned voices
+**Summary:** Cloned voice rows gained an icon-only Delete button; click opens a Fluent ContentDialog (WhisperHeim destructive styling) that calls VoiceLibraryService.DeleteAsync and removes the row via VoicesChanged.
+**Commit:** a69b59a
+**Files changed:** 11
+**ADRs written:** none
+
+---
+
 ## 2026-05-04 17:50 -- Batch started: [main-026]
 
 **Type:** Work / Batch start

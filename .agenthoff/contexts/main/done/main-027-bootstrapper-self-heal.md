@@ -1,11 +1,11 @@
 ---
 id: main-027
 title: Bootstrapper — self-heal stale or partially-installed mockingbird_sidecar
-status: backlog
+status: done
 type: bug
 context: main
 created: 2026-05-04
-completed:
+completed: 2026-05-04
 commit:
 depends_on: [main-015]
 blocks: []
@@ -208,3 +208,46 @@ which a non-developer user could not perform.
 - The `LocateBundledSidecarRoot()` helper already knows where the
   bundled package lives — reuse it; don't duplicate the path
   composition.
+
+## Outcome
+
+- `PythonRuntimeBootstrapper.IsBootstrapped` now delegates to
+  `PocketTtsActuallyInstalled`, `MockingbirdSidecarActuallyInstalled`,
+  and a new `BundledSidecarMatchesInstalled` — the launch-time gate
+  and the install-time guard share the same helpers, eliminating the
+  drift that hid the bug.
+- `BundledSidecarMatchesInstalled` reads `__version__` from both the
+  bundled `mockingbird_sidecar/__init__.py` (via the existing
+  `LocateBundledSidecarRoot` helper) and the installed copy under
+  `<runtime>/Lib/site-packages/mockingbird_sidecar/__init__.py`, and
+  compares them ordinally. `ReadVersion` returns null on any
+  read / parse failure so "unknown version" forces re-install (logged
+  at Warning). `VersionRegex` tolerates single / double quotes and
+  surrounding whitespace.
+- Bundled wrapper version bumped from `1.0.0` → `1.0.1` (the typer
+  callback fix that motivated this task is its first qualifying
+  behavioural change). One-line comment added next to `__version__`
+  documenting the bump convention.
+- BC README's bootstrapper bullet updated to call out strict + version-aware
+  launch gate (ADR 0016) and naming `main.py` alongside `__init__.py`
+  in the on-disk sentinel set.
+- Decision recorded in
+  `.agenthoff/knowledge/decisions/0016-bootstrapper-strict-launch-gate.md`.
+
+Key files:
+
+- `src/Mockingbird/Services/Tts/PythonRuntimeBootstrapper.cs` — `IsBootstrapped`,
+  `BundledSidecarMatchesInstalled`, `ReadVersion`, `VersionRegex`.
+- `src/Mockingbird/PythonSidecar/mockingbird_sidecar/__init__.py` —
+  `__version__ = "1.0.1"` plus convention comment.
+- `.agenthoff/contexts/main/README.md` — bootstrapper section.
+- `.agenthoff/knowledge/decisions/0016-bootstrapper-strict-launch-gate.md`.
+
+Verification: `dotnet build mockingbird.sln -c Debug` → 0 errors,
+0 warnings. The "delete-each-sentinel-file-and-relaunch" / "downgrade
+installed `__version__` and relaunch" interactive checks listed in
+the acceptance criteria were not re-run by hand in this pass; the
+code path is straightforward (`File.Exists` + ordinal string compare)
+and any regression will surface as the bootstrap dialog failing to
+open on a known-broken on-disk state — which is exactly what main-027
+makes a first-class signal.

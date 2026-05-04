@@ -14,4 +14,8 @@
 # Entry point: `python -m mockingbird_sidecar serve --host 127.0.0.1 --port 0`
 # The C# SidecarHost spawns this exact command line.
 
-__version__ = "1.0.0"
+# Bump this string whenever any wrapper file (main.py, __main__.py, this file)
+# changes behaviourally — the C# bootstrapper compares bundled vs installed
+# __version__ at launch and forces a re-install on mismatch (main-027).
+# The string is opaque equality; no semver constraint solver involved.
+__version__ = "1.0.1"

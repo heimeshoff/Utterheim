@@ -297,10 +297,19 @@ As of main-011 the **real pocket-tts engine is wired in**:
   (main-015), and smoke-tests both imports. Progress is persisted to
   `bootstrap-state.json` so a half-finished run resumes on restart. Per ADR 0011,
   on-disk sentinel files (`python.exe`, `pip`, `pocket_tts/__init__.py`,
-  `mockingbird_sidecar/__init__.py`) are authoritative — a stale state file cannot
-  trick the bootstrapper into skipping a step whose artefacts have been wiped — and
-  any subprocess that exits non-zero surfaces its captured stderr tail in both the
-  file log (at `Error`) and the thrown exception (visible in the `BootstrapDialog`).
+  `mockingbird_sidecar/__init__.py` + `mockingbird_sidecar/main.py`) are
+  authoritative — a stale state file cannot trick the bootstrapper into skipping a
+  step whose artefacts have been wiped — and any subprocess that exits non-zero
+  surfaces its captured stderr tail in both the file log (at `Error`) and the
+  thrown exception (visible in the `BootstrapDialog`). Per ADR 0016 / main-027,
+  the launch-time gate (`IsBootstrapped`) is **strict and version-aware**: it
+  delegates to the same helpers the install path uses (`PocketTtsActuallyInstalled`
+  / `MockingbirdSidecarActuallyInstalled`) and additionally compares the bundled
+  `mockingbird_sidecar/__init__.py`'s `__version__` against the installed copy's
+  `__version__`. Any missing wrapper file or version mismatch returns false →
+  bootstrap dialog opens → install step re-runs and `File.Copy(overwrite: true)`
+  heals the tree. Bumping `__version__` in the bundled `__init__.py` is therefore
+  the wrapper's update mechanism — no separate migration code path.
 - `BootstrapDialog` drives the bootstrapper with per-step progress, cancel, and retry.
 - `StubTtsEngine` is preserved behind `MOCKINGBIRD_USE_STUB_ENGINE=1` for offline /
   CI testing; the env flag also disables the sidecar and bootstrap-dialog wiring.
