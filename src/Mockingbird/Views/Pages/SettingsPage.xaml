@@ -3,11 +3,166 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       Title="Settings">
-    <Grid>
-        <TextBlock Text="Settings — coming with main-016."
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   FontSize="18"
-                   Opacity="0.75" />
-    </Grid>
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="16">
+
+            <!-- Page header -->
+            <TextBlock Text="Settings"
+                       FontSize="28"
+                       FontWeight="Light"
+                       Margin="0,0,0,12" />
+
+            <!-- ─── Audio ─────────────────────────────────────────────────── -->
+            <TextBlock Text="Audio"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Margin="0,16,0,8" />
+
+            <!-- Default voice -->
+            <ui:CardControl Margin="0,0,0,8">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Default voice"
+                                   FontSize="14" />
+                        <TextBlock Text="Pre-selected on the Speak page. Empty = no preference (alphabetical fallback)."
+                                   FontSize="11"
+                                   Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox ItemsSource="{Binding ViewModel.Voices}"
+                          SelectedItem="{Binding ViewModel.SelectedDefaultVoice, Mode=TwoWay}"
+                          DisplayMemberPath="Id"
+                          MinWidth="200" />
+            </ui:CardControl>
+
+            <!-- Output device -->
+            <ui:CardControl Margin="0,0,0,8">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Output device"
+                                   FontSize="14" />
+                        <TextBlock Text="Where Mockingbird routes speech. Takes effect on the next speech request."
+                                   FontSize="11"
+                                   Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox ItemsSource="{Binding ViewModel.OutputDevices}"
+                          SelectedItem="{Binding ViewModel.SelectedOutputDevice, Mode=TwoWay}"
+                          DisplayMemberPath="Name"
+                          MinWidth="240" />
+            </ui:CardControl>
+
+            <!-- ─── App ───────────────────────────────────────────────────── -->
+            <TextBlock Text="App"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Margin="0,16,0,8" />
+
+            <!-- Start minimised -->
+            <ui:CardControl Margin="0,0,0,8">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Start minimised"
+                                   FontSize="14" />
+                        <TextBlock Text="When on, Mockingbird launches hidden in the tray."
+                                   FontSize="11"
+                                   Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch IsChecked="{Binding ViewModel.StartMinimised, Mode=TwoWay}" />
+            </ui:CardControl>
+
+            <!-- Launch at startup -->
+            <ui:CardControl Margin="0,0,0,8">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Launch at startup"
+                                   FontSize="14" />
+                        <TextBlock Text="Adds Mockingbird to your Windows logon entries (registry)."
+                                   FontSize="11"
+                                   Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch IsChecked="{Binding ViewModel.LaunchAtStartup, Mode=TwoWay}" />
+            </ui:CardControl>
+
+            <!-- ─── Diagnostics ───────────────────────────────────────────── -->
+            <TextBlock Text="Diagnostics"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Margin="0,16,0,8" />
+
+            <!-- HTTP port (read-only in v1) -->
+            <ui:CardControl Margin="0,0,0,8">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="HTTP port"
+                                   FontSize="14" />
+                        <TextBlock Text="The localhost endpoint Claude Code calls. Read-only in v1."
+                                   FontSize="11"
+                                   Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <TextBlock Text="{Binding ViewModel.HttpEndpoint, FallbackValue='—'}"
+                           FontFamily="Consolas"
+                           FontSize="13"
+                           VerticalAlignment="Center" />
+            </ui:CardControl>
+
+            <!-- Stop hotkey (read-only per ADR 0006) -->
+            <ui:CardControl Margin="0,0,0,8">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Stop hotkey"
+                                   FontSize="14" />
+                        <TextBlock Text="Halts current speech and drains the queue (ADR 0004)."
+                                   FontSize="11"
+                                   Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <TextBlock Text="{Binding ViewModel.StopHotkeyLabel, FallbackValue='—'}"
+                           FontSize="13"
+                           VerticalAlignment="Center" />
+            </ui:CardControl>
+
+            <!-- Data path -->
+            <ui:CardControl Margin="0,0,0,8">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Data path"
+                                   FontSize="14" />
+                        <TextBlock Text="Where voices and settings are stored (per bootstrap.json, ADR 0005)."
+                                   FontSize="11"
+                                   Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ViewModel.DataPath, FallbackValue='—'}"
+                                   FontFamily="Consolas"
+                                   FontSize="11"
+                                   Margin="0,4,0,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button Content="Open in Explorer"
+                           Appearance="Secondary"
+                           Icon="{ui:SymbolIcon FolderOpen24}"
+                           Command="{Binding ViewModel.OpenDataPathCommand}" />
+            </ui:CardControl>
+
+        </StackPanel>
+    </ScrollViewer>
 </Page>

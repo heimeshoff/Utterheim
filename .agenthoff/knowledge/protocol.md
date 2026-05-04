@@ -5,6 +5,80 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 21:00 -- Batch started: [main-016]
+
+**Type:** Work / Batch start
+**Tasks:** main-016 - Settings page (output device, default voice, startup, read-only diagnostics)
+**Parallel:** no (1 worker — main-017 deferred to wave 2 due to BC README conflict)
+
+---
+
+## 2026-05-04 20:35 -- Model / Promoted: main-017 - About page
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+
+---
+
+## 2026-05-04 20:30 -- Model / Refined: main-017 - About page
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (ready to promote)
+**Summary:** Resolved four open questions on the About page task:
+(Q1) engine status reads in-process via `SidecarHost.StateChanged` +
+`GetStatus()` — `GET /status` stays the external contract;
+(Q2) the always-visible footer stays, About surfaces the richer panel
+alongside; (Q3) ship a `Restart Engine` button backed by a new
+`SidecarHost.RestartAsync()` (StopAsync + reset + StartAsync), disabled
+during transitional states; (Q4) credits trim to a single line:
+"Synthesis powered by pocket-tts (Kyutai Labs)." Rewrote the task with
+concrete blocks (logo from `mockingbird-logo-256.png` at 128×128, exact
+tagline from styleguide §Sign-off, version from
+`AssemblyInformationalVersionAttribute`, status panel composition with
+state pip + healthy tick + lastError + retry, view-logs path resolution
+via `%LOCALAPPDATA%\Mockingbird\logs\`), tactical pointers (refactor
+`FormatState` into a shared helper, pip via `Ellipse` + converter, VM
+mirroring the `EngineStatusViewModel` subscribe pattern), and tightened
+acceptance criteria to be live-testable (kill-the-sidecar + force-failed
+scenarios). Title updated to include "retry".
+**Split into:** —
+**ADRs written:** —
+
+---
+
+## 2026-05-04 20:15 -- Model / Promoted: main-016 - Settings page
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+
+---
+
+## 2026-05-04 19:30 -- Model / Refined: main-016 - Settings page
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (ready to promote)
+**Summary:** Resolved the five open questions on the Settings page task with
+user direction: HTTP port stays read-only in v1, output device applies on
+next utterance only (no mid-stream switch), default-voice dropdown confirmed
+on this page sourced from `VoiceCatalog`, layout uses Fluent cards grouped
+into Audio / App / Diagnostics, and engine-status stays exclusively on the
+About page (main-017). Rewrote the task with concrete tactical pointers —
+`UserSettings.SettingsData` schema extension (`outputDeviceId`,
+`startMinimised`), `AudioPlayer` device-id passthrough at `WaveOutEvent`
+construction, `AudioDeviceResolver.EnumerateWaveOut()`, new
+`Services\Settings\StartupRegistration.cs` for the HKCU\Run helper, and
+`Views\MainWindow` honouring `StartMinimised` on initial Show. Added
+main-013 to `depends_on` for storage-layer lineage. Acceptance criteria
+expanded from 7 abstract bullets to 9 concrete verifiable ones.
+**Split into:** none (single coherent page)
+**ADRs written:** none (all decisions are tactical extensions of existing ADRs)
+
+---
+
 ## 2026-05-04 18:05 -- Work session ended
 
 **Type:** Work / Session end

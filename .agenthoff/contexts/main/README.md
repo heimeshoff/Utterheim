@@ -83,7 +83,7 @@ src\
         SpeakPage.xaml(.cs)           Stub in main-020 — main-013 fills it
         VoicesPage.xaml(.cs)          Voice library list with per-row preview (main-014)
                                       and per-row Delete on cloned rows (main-026)
-        SettingsPage.xaml(.cs)        Stub in main-020 — main-016 fills it
+        SettingsPage.xaml(.cs)        Audio / App / Diagnostics setting cards (main-016)
         AboutPage.xaml(.cs)           Stub in main-020 — main-017 fills it
       Dialogs\
         DeleteVoiceDialog.xaml(.cs)   Fluent ContentDialog for the per-row Delete
@@ -115,7 +115,13 @@ src\
         VoicesPageConverters.cs       NullOrEmptyToVisibilityConverter +
                                       CloningSourceToBoolConverter for the cloning
                                       panel (main-025).
-        SettingsPageViewModel.cs      Empty ObservableObject stub (main-016 fills)
+        SettingsPageViewModel.cs      Settings page VM (main-016) — Voices / OutputDevices /
+                                      SelectedDefaultVoice / SelectedOutputDevice /
+                                      StartMinimised / LaunchAtStartup + read-only diagnostics
+                                      (HttpEndpoint / StopHotkeyLabel / DataPath) +
+                                      OpenDataPath command. Persists to UserSettings except
+                                      LaunchAtStartup which writes HKCU\…\Run directly
+                                      (ADR 0017).
         AboutPageViewModel.cs         Empty ObservableObject stub (main-017 fills)
     Services\
       Navigation\PageService.cs       Thin IPageService → IServiceProvider adapter (ADR 0009)
@@ -138,7 +144,11 @@ src\
         SpeakRequest.cs               unit of work
         SpeakQueue.cs                 Channel<T> worker (ADR 0007, 0004) +
                                       RequestStarted / RequestCompleted events (main-013)
-        AudioPlayer.cs                NAudio WaveOutEvent wrapper
+        AudioPlayer.cs                NAudio WaveOutEvent wrapper. Reads
+                                      UserSettings.OutputDeviceId at WaveOutEvent
+                                      construction time — once per utterance, so
+                                      device changes apply to the next request only
+                                      (main-016).
         VoiceCatalog.cs               Single source of truth for the voice list —
                                       shared by HTTP /voices and the Speak page
                                       picker (main-013, Q4). Composes engine
@@ -185,7 +195,9 @@ src\
                                         captured audio to a temp WAV under
                                         %TEMP%\Mockingbird\.
         AudioDeviceInfo.cs            Shared device-info record.
-        AudioDeviceResolver.cs        WaveIn enumeration + Core Audio name resolution.
+        AudioDeviceResolver.cs        WaveIn + WaveOut enumeration with Core Audio
+                                        name resolution. EnumerateOutputDevices added
+                                        for the Settings page picker (main-016).
         AudioRingBuffer.cs            Thread-safe lock-free ring buffer used by
                                         AudioCaptureService.
       Hotkey\
@@ -194,8 +206,14 @@ src\
       Settings\
         DataPathService.cs            ADR 0005 path layout (adapted from WhisperHeim)
         UserSettings.cs               Typed wrapper over %LOCALAPPDATA%\Mockingbird\
-                                      settings.json — v1 stores DefaultVoiceId only;
-                                      forward-compatible JSON shape for main-016 (main-013)
+                                      settings.json — DefaultVoiceId (main-013),
+                                      OutputDeviceId, StartMinimised (main-016).
+                                      Forward-compatible JSON shape; unknown fields
+                                      ignored on read.
+        StartupRegistration.cs        HKCU\…\Run\Mockingbird helper (main-016) —
+                                      IsRegistered / Register / Unregister. Registry
+                                      is the source of truth for "Launch at startup";
+                                      not stored in settings.json (ADR 0017).
     appsettings.json                  default port + hotkey window
     PythonSidecar\
       mockingbird_sidecar\            mockingbird-owned Python wrapper around pocket_tts
@@ -615,6 +633,80 @@ unmodified.
   no UI in v1 (deferred per main-015 Q11).
 - No editing of voice metadata (rename, retag), no per-voice quality /
   temperature controls, no de-duplication, no marketplace / sharing.
+
+## Settings page
+
+As of main-016 the Settings page replaces the main-020 stub with three sections
+of Fluent setting cards (`ui:CardControl`) — Audio, App, Diagnostics — laid
+out vertically inside a `ScrollViewer`. WhisperHeim-style: each card = label +
+one-line description + control on the right. Mica backdrop, Segoe UI Variable,
+16 px outer margin to match the other pages.
+
+### Audio
+
+- **Default voice** — `ComboBox` sourced from `VoiceCatalog.ListAsync()`
+  (built-ins first, cloned voices second). Selection writes through
+  `UserSettings.DefaultVoiceId`. Empty selection = "no preference"
+  (alphabetical fallback per main-013, Q7).
+- **Output device** — `ComboBox` of WaveOut devices enumerated via
+  `AudioDeviceResolver.EnumerateOutputDevices()`, with a "System default"
+  sentinel (`DeviceIndex = -1`) at the top. Selection persists as
+  `UserSettings.OutputDeviceId` (`int?`, `null` = system default mapped to
+  `WaveOutEvent.DeviceNumber = -1`). **Applies to the next utterance only** —
+  `AudioPlayer` reads the active device id at `WaveOutEvent` construction
+  time, so current playback continues on the previous device and there are
+  no live-switch invariants to manage. Inline tip text: *"Takes effect on
+  the next speech request."*
+
+### App
+
+- **Start minimised** — `ui:ToggleSwitch`, persists as
+  `UserSettings.StartMinimised` (default false). Honoured by `EntryPoint`
+  on initial launch: when true, the window is shown and immediately hidden
+  so the tray:NotifyIcon initialises but the user starts in the tray
+  instead of an activated window. The HTTP / hotkey / sidecar surfaces
+  are independent of window visibility.
+- **Launch at startup** — `ui:ToggleSwitch`, persists by writing /
+  removing the `Mockingbird` value under
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` via
+  `StartupRegistration`. **Not stored in `settings.json`** — the registry
+  is the source of truth (ADR 0017), so an external uninstaller / cleanup
+  tool that drops the Run entry stays reflected accurately on the next
+  page load. Toggle reads the registry on every `OnNavigatedTo`, writes /
+  deletes on change.
+
+### Diagnostics (read-only in v1)
+
+- **HTTP port** — displays `{SpeakServer.Host}:{SpeakServer.Port}` as
+  monospaced text. Read-only; editing with auto-restart is **out of
+  scope** for v1 (deferred to a future refinement if a port collision
+  surfaces).
+- **Stop hotkey** — displays "Double-tap Left Ctrl". Read-only per
+  ADR 0006 (no rebinding UI in v1).
+- **Data path** — displays the active path from `DataPathService.DataPath`
+  (which reads `bootstrap.json` per ADR 0005), with an
+  `Open in Explorer` button next to it that calls
+  `Process.Start("explorer.exe", path)`. Changing the path requires a
+  migration flow and is **out of scope** for v1.
+
+### Refresh behaviour
+
+`OnNavigatedTo` calls `SettingsPageViewModel.LoadAsync` which: refreshes
+the voice list from the catalog, re-enumerates WaveOut devices,
+re-applies `UserSettings.StartMinimised`, and re-reads the registry for
+`LaunchAtStartup`. A `_suspendPersist` guard around the load prevents
+the auto-generated `OnXChanged` partial methods from firing
+spurious writes during the population pass. `OnNavigatedFrom` cancels
+the in-flight load CTS.
+
+### Out of scope for v1
+
+Captured in main-016's spec — repeated here so future tasks see the
+boundary: HTTP port editing with auto-restart, stop-hotkey rebinding UI,
+data-path change with migration flow, theme / language / update-check
+toggles, per-Claude-session voice routing UI (env-var-only via
+`examples/claude-hooks/`), output-device level meter / test-tone button,
+engine status panel (main-017's About page owns it).
 
 ## Voice library
 

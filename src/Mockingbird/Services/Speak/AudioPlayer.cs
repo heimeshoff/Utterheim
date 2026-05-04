@@ -1,5 +1,6 @@
 using System.IO;
 using Microsoft.Extensions.Logging;
+using Mockingbird.Services.Settings;
 using Mockingbird.Services.Tts;
 using NAudio.Wave;
 
@@ -15,17 +16,26 @@ namespace Mockingbird.Services.Speak;
 /// the lowest-friction NAudio output for a streaming WAV pipeline; in main-011
 /// when pocket-tts's exact sample rate is wired, we may switch to WasapiOut
 /// for tighter latency.
+///
+/// Per main-016, the active output device is read from
+/// <see cref="UserSettings.OutputDeviceId"/> at <see cref="WaveOutEvent"/>
+/// construction time — once per utterance. A device change therefore takes
+/// effect on the next speak request; current playback continues on the
+/// previous device. <c>UserSettings</c> is optional in the constructor so
+/// existing tests / direct construction paths keep compiling.
 /// </summary>
 public sealed class AudioPlayer : IDisposable
 {
     private readonly ILogger<AudioPlayer> _logger;
+    private readonly UserSettings? _userSettings;
     private WaveOutEvent? _output;
     private BufferedWaveProvider? _provider;
     private bool _disposed;
 
-    public AudioPlayer(ILogger<AudioPlayer> logger)
+    public AudioPlayer(ILogger<AudioPlayer> logger, UserSettings? userSettings = null)
     {
         _logger = logger;
+        _userSettings = userSettings;
     }
 
     /// <summary>True while audio is actively playing (or buffered to play).</summary>
@@ -52,11 +62,14 @@ public sealed class AudioPlayer : IDisposable
             BufferDuration = TimeSpan.FromSeconds(30),
             DiscardOnBufferOverflow = false,
         };
-        _output = new WaveOutEvent { DesiredLatency = 100 };
+        // Per main-016: read the active output device id at construction time
+        // (one read per utterance). null → -1 ("system default" in NAudio).
+        var deviceNumber = _userSettings?.OutputDeviceId ?? -1;
+        _output = new WaveOutEvent { DeviceNumber = deviceNumber, DesiredLatency = 100 };
         _output.Init(_provider);
         _output.Play();
-        _logger.LogInformation("AudioPlayer started ({Hz} Hz, {Ch} ch, {Bits}-bit)",
-            format.SampleRate, format.Channels, format.BitsPerSample);
+        _logger.LogInformation("AudioPlayer started ({Hz} Hz, {Ch} ch, {Bits}-bit, device {Device})",
+            format.SampleRate, format.Channels, format.BitsPerSample, deviceNumber);
 
         try
         {

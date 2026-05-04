@@ -75,6 +75,48 @@ public sealed class UserSettings
     /// OnNavigatedTo); main-016 will when the Settings UI ships.</summary>
     public event EventHandler<string?>? DefaultVoiceIdChanged;
 
+    /// <summary>
+    /// Output device id passed to <c>WaveOutEvent.DeviceNumber</c>. <c>null</c>
+    /// means "system default" — mapped to <c>-1</c> at the call site in
+    /// <see cref="Speak.AudioPlayer"/>. Read once per utterance at
+    /// <c>WaveOutEvent</c> construction time, so device changes apply to the
+    /// next speak request only (no live-switch invariants — main-016).
+    /// </summary>
+    public int? OutputDeviceId
+    {
+        get => _data.OutputDeviceId;
+        set
+        {
+            if (_data.OutputDeviceId == value) return;
+            _data.OutputDeviceId = value;
+            Save();
+            OutputDeviceIdChanged?.Invoke(this, value);
+        }
+    }
+
+    /// <summary>Fired after <see cref="OutputDeviceId"/> persistence (main-016).</summary>
+    public event EventHandler<int?>? OutputDeviceIdChanged;
+
+    /// <summary>
+    /// When true, the main window starts hidden in the tray on launch instead
+    /// of activating. Honoured by <c>MainWindow</c> on the initial show
+    /// (main-016). Defaults to false.
+    /// </summary>
+    public bool StartMinimised
+    {
+        get => _data.StartMinimised;
+        set
+        {
+            if (_data.StartMinimised == value) return;
+            _data.StartMinimised = value;
+            Save();
+            StartMinimisedChanged?.Invoke(this, value);
+        }
+    }
+
+    /// <summary>Fired after <see cref="StartMinimised"/> persistence (main-016).</summary>
+    public event EventHandler<bool>? StartMinimisedChanged;
+
     private void Load()
     {
         try
@@ -135,5 +177,11 @@ public sealed class UserSettings
     {
         [JsonPropertyName("defaultVoiceId")]
         public string? DefaultVoiceId { get; set; }
+
+        [JsonPropertyName("outputDeviceId")]
+        public int? OutputDeviceId { get; set; }
+
+        [JsonPropertyName("startMinimised")]
+        public bool StartMinimised { get; set; }
     }
 }

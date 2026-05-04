@@ -136,6 +136,10 @@ public static class EntryPoint
                 services.AddSingleton<SpeakService>();
                 services.AddSingleton<UserSettings>();
 
+                // Settings page registry helper (main-016) — Launch-at-startup
+                // toggle reads/writes HKCU\…\Run\Mockingbird directly.
+                services.AddSingleton<StartupRegistration>();
+
                 // Audio capture services (main-025) — adapted from WhisperHeim per ADR 0006.
                 // Registered transient so each cloning session is a fresh capture instance;
                 // the page VM resolves them per recording session.
@@ -226,11 +230,32 @@ public static class EntryPoint
         var pageService = host.Services.GetRequiredService<IPageService>();
         var engineStatus = host.Services.GetRequiredService<EngineStatusViewModel>();
         var contentDialogService = host.Services.GetRequiredService<IContentDialogService>();
+        var userSettings = host.Services.GetRequiredService<UserSettings>();
 
         Action exitAction = () => app.Dispatcher.BeginInvoke(() => app.Shutdown());
 
         var window = new MainWindow(queue, exitAction, pageService, engineStatus, contentDialogService);
-        window.Show();
+
+        // main-016: honour UserSettings.StartMinimised — when true, the window
+        // stays hidden in the tray on launch instead of activating. The tray
+        // icon still appears (it's part of MainWindow.xaml) so the user can
+        // restore via Show window / left-click. The HTTP / hotkey / sidecar
+        // surfaces are independent of window visibility.
+        if (userSettings.StartMinimised)
+        {
+            logger.LogInformation("StartMinimised is on — launching hidden in the tray.");
+            // Show + Hide so the WPF message loop fully initialises the
+            // tray:NotifyIcon (it relies on the window's HWND), then immediately
+            // returns to a hidden state. Calling only Hide() with the window
+            // never having been shown leaves the tray icon dormant on some
+            // Windows builds.
+            window.Show();
+            window.Hide();
+        }
+        else
+        {
+            window.Show();
+        }
 
         hotkey.DoubleTapped += (_, _) =>
         {
