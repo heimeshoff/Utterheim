@@ -249,9 +249,13 @@ src\
         main.py                       FastAPI route definitions + typer `serve` command
   Mockingbird.Cli\                    mockingbird-speak — single-file CLI wrapper
 assets\branding\                      brand mark + raster outputs
-  mockingbird-logo.svg                source artwork (placeholder, signed off)
-  mockingbird-logo-{16..512}.png      rasterised PNGs (main-012)
-  mockingbird.ico                     multi-resolution tray + taskbar icon
+  mockingbird-logo.svg                source artwork — final, signed off 2026-05-05
+                                      (main-028 draft 3): filled orange head profile
+                                      + three blue Wi-Fi-style arcs from the mouth.
+                                      Two-colour, not theme-adaptive.
+  mockingbird-logo-{16..512}.png      rasterised PNGs (rasteriser from main-012;
+                                      regenerated from the final SVG by main-028)
+  mockingbird.ico                     multi-resolution tray + taskbar icon (final)
 Tools\RasteriseLogo\                  one-shot helper that produces the PNG/ICO
                                       from the source SVG. Outside mockingbird.sln.
 README.md

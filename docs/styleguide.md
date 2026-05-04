@@ -51,18 +51,27 @@ for no reason".
 ### Brand mark (logo)
 
 WhisperHeim uses a microphone silhouette (input — listening). Mockingbird uses a
-**speaking-person silhouette** (output — speaking). The contrast is intentional and the
+**voice-emitting human head** (output — speaking). The contrast is intentional and the
 single most visible piece of brand differentiation: WhisperHeim listens, mockingbird
 speaks.
 
-- Placeholder asset: [`assets/branding/mockingbird-logo.svg`](../assets/branding/mockingbird-logo.svg)
-- Placeholder design: monochrome silhouette of a head + shoulders facing right, with
-  three concentric sound-wave arcs emanating from the mouth area. Drawn with
-  `stroke="currentColor"` so it tints cleanly against any Mica backdrop and adapts to
-  light/dark theme.
-- **Status: PLACEHOLDER** — pending user-supplied artwork. The silhouette is sufficient
-  for the WPF shell and About page during early development; it is **not** the final
-  brand mark.
+- Asset: [`assets/branding/mockingbird-logo.svg`](../assets/branding/mockingbird-logo.svg)
+- Design: an opaquely **filled** orange right-facing human-head silhouette in profile,
+  with three blue Wi-Fi-style concentric arcs ("C" shapes) fanning outward from the
+  mouth, each arc larger than the one in front of it. The arcs sit **behind** the head
+  silhouette so the head reads as the dominant shape. Two-colour, **not theme-adaptive**:
+  - Head fill — `#FFff8b00` (WhisperHeim brand orange).
+  - Arc strokes — `#FF25abfe` (WhisperHeim brand cyan-blue).
+  Both colours are hard-coded in the SVG; neither is `currentColor`. The mark renders
+  identically against any backdrop (Mica, light, dark, taskbar). The earlier line-art
+  treatment was reconsidered during sign-off — the final treatment is **filled silhouette
+  + stroked arcs**, not line-art.
+- **Small-size readability** — the head silhouette must stay recognisable at 16 px
+  (favicon / taskbar) even when the arc detail blurs. At the smallest sizes the arcs
+  may visually merge into the head; that is acceptable as long as the head profile
+  reads.
+- **Status: signed off / final** — approved by Marco Heimeshoff on 2026-05-05 (main-028,
+  draft 3).
 
 ### Page set
 
@@ -144,28 +153,26 @@ belong to WhisperHeim pages mockingbird doesn't ship.
 
 | Asset | Path | Status |
 |---|---|---|
-| Speaking-person logo (vector) | `assets/branding/mockingbird-logo.svg` | **Approved placeholder** — signed off 2026-05-01 as the working brand mark for v1. |
-| Logo PNG sizes (16, 24, 32, 48, 64, 128, 256, 512) | `assets/branding/mockingbird-logo-{size}.png` | **Generated** by `main-012` from the source SVG. White silhouette on transparent. |
-| Logo `.ico` (multi-resolution, for tray + taskbar) | `assets/branding/mockingbird.ico` | **Generated** by `main-012`. Layers: 16, 24, 32, 48, 64, 128, 256 (PNG-compressed). Wired as `<ApplicationIcon>` and bound to `tray:NotifyIcon` in `Views\MainWindow.xaml`. |
+| Voice human-head logo (vector) | `assets/branding/mockingbird-logo.svg` | **Final** — signed off 2026-05-05 (main-028, draft 3). Filled orange (`#FFff8b00`) right-facing head profile + three blue (`#FF25abfe`) Wi-Fi-style concentric arcs from the mouth; not theme-adaptive. |
+| Logo PNG sizes (16, 24, 32, 48, 64, 128, 256, 512) | `assets/branding/mockingbird-logo-{size}.png` | **Final** — regenerated from the signed-off SVG (originally produced by `main-012`'s rasteriser). Two-colour mark on transparent. |
+| Logo `.ico` (multi-resolution, for tray + taskbar) | `assets/branding/mockingbird.ico` | **Final** — regenerated from the signed-off SVG. Layers: 16, 24, 32, 48, 64, 128, 256 (PNG-compressed). Wired as `<ApplicationIcon>` and bound to `tray:NotifyIcon` in `Views\MainWindow.xaml`. |
 
 Notes:
 
-- The placeholder SVG is intentionally simple geometry (head circle + trapezoidal body +
-  three arc waves) so it's recognisable as "person speaking" without pretending to be
-  finished artwork.
+- The mark is two-colour and **not theme-adaptive** by design: orange head + blue arcs
+  render the same against Mica, light, dark, and the Windows 11 taskbar. The earlier
+  `currentColor` line-art approach was retired when the final mark landed.
 - The PNG and `.ico` assets are committed alongside the SVG. They are regenerated only
   when the source SVG changes, via the standalone helper at
   `Tools\RasteriseLogo\RasteriseLogo.csproj` (run with
   `dotnet run --project Tools\RasteriseLogo\RasteriseLogo.csproj`). The helper lives
   outside `mockingbird.sln` so day-to-day builds don't pull SkiaSharp into the main
   build graph.
-- The WPF main window also displays the SVG-derived geometry inline (in the sidebar and
-  centre splash) — that's a parallel rendering path and stays unchanged. The `.ico` is
-  what Windows uses for the tray, taskbar, and Explorer .exe icon.
-- The silhouette is rasterised in white on a transparent background so it reads cleanly
-  on a dark Windows 11 taskbar / Mica backdrop. The colour choice is mechanical, not
-  branded; if a future task introduces a coloured brand mark the rasteriser
-  (`Tools\RasteriseLogo\Program.cs`) is the single place to change.
+- The WPF main window references the rasters by stable filename
+  (`mockingbird-logo-256.png`, `mockingbird.ico`) — no hash-busting, so a new SVG +
+  re-rasterise picks up automatically with no `.csproj` or XAML changes.
+- The `.ico` is what Windows uses for the tray, taskbar, and Explorer .exe icon; the
+  PNGs are used in-app (e.g. About page hero at 256 → 128 displayed).
 
 ---
 
