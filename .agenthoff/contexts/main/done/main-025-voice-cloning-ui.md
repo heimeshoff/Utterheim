@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-04
 completed: 2026-05-04
-commit:
+commit: 5e66207c0dfef6ff816d4da9f8f2648571582a6c
 depends_on: [main-010, main-014, main-015]
 blocks: []
 tags: [frontend, page, voice-library, audio-capture]

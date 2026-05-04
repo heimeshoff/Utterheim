@@ -5,6 +5,45 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 17:09 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 1
+
+---
+
+## 2026-05-04 17:08 -- Task completed: main-025 - Voice cloning UI
+
+**Type:** Work / Task completion
+**Task:** main-025 - Voice cloning UI — recording controls + source toggle on the Voices page
+**Summary:** Voices page gained a Clone-a-new-voice sub-panel (source toggle, level meter, duration/progress, name validation, Save flow through `/export-voice` + `VoiceLibraryService`). WhisperHeim audio-capture stack copied per ADR 0006.
+**Commit:** 5e66207
+**Files changed:** 16
+**ADRs written:** none
+
+---
+
+## 2026-05-04 16:54 -- Batch started: [main-025]
+
+**Type:** Work / Batch start
+**Tasks:** main-025 - Voice cloning UI — recording controls + source toggle on the Voices page
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-04 16:50 -- Model / Promoted: main-025 - Voice cloning UI
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+
+Task was already deeply refined as part of the main-015 split (mic + loopback capture sub-flow on the Voices page, 5–60 s sample window, inline failure surfaces, WhisperHeim service copy-and-modify per ADR 0006). All dependencies (main-010 styleguide, main-014 Voices page, main-015 backend) in done/. Styleguide gate OPEN.
+
+---
+
 ## 2026-05-04 16:40 -- Work session ended
 
 **Type:** Work / Session end
