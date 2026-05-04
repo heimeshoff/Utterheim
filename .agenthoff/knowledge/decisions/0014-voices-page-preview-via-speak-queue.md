@@ -3,7 +3,7 @@ id: 0014
 title: Voices page preview routes through SpeakService.Enqueue (the single queue arbiter)
 scope: bounded-context
 context: main
-status: proposed
+status: accepted
 date: 2026-05-04
 supersedes: []
 superseded_by: []

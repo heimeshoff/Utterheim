@@ -76,7 +76,7 @@ src\
       BootstrapDialog.xaml(.cs)       first-run dialog (placeholder in v1)
       Pages\
         SpeakPage.xaml(.cs)           Stub in main-020 — main-013 fills it
-        VoicesPage.xaml(.cs)          Stub in main-020 — main-014 fills it
+        VoicesPage.xaml(.cs)          Voice library list with per-row preview (main-014)
         SettingsPage.xaml(.cs)        Stub in main-020 — main-016 fills it
         AboutPage.xaml(.cs)           Stub in main-020 — main-017 fills it
     ViewModels\
@@ -85,7 +85,10 @@ src\
       Pages\
         SpeakPageViewModel.cs         Speak page VM — Text / Voices / SelectedVoice /
                                       StatusLabel + Play / Stop / Save commands (main-013)
-        VoicesPageViewModel.cs        Empty ObservableObject stub (main-014 fills)
+        VoicesPageViewModel.cs        Voices page VM (main-014) — BuiltInVoices /
+                                      ClonedVoices / per-row PreviewCommand routed
+                                      through SpeakService.Enqueue (ADR 0014); plus a
+                                      VoiceRowViewModel inner class for each list row
         SettingsPageViewModel.cs      Empty ObservableObject stub (main-016 fills)
         AboutPageViewModel.cs         Empty ObservableObject stub (main-017 fills)
     Services\
@@ -292,6 +295,95 @@ status line transitions visibly, picker refreshes on navigation — are
 **not interactively re-tested** in this pass; the code is in place per
 the main-013 spec and any regression will surface during the next
 manual run.
+
+## Voices page
+
+As of main-014 the Voices page replaces the main-020 stub with the real voice
+library surface — a read-only list shell that main-015 will fold cloned
+voices into without touching this page's code:
+
+- A two-row Grid with a 16 px outer margin: a header (`FontWeight="Light"` page
+  title plus a small `{TotalCount} voices` sub-label) and a scrollable list
+  underneath. Inside the `ScrollViewer`, two grouped sections — **Built-in**
+  first, **Cloned** second — both with `SemiBold` section headers. Each row
+  is a three-column Grid: name + meta (engine), Preview button (`Play24`
+  icon, `Appearance="Secondary"`), and a per-row active-request indicator
+  (`Speaker224` symbol, hidden when idle).
+- View-model `VoicesPageViewModel` (`CommunityToolkit.Mvvm`,
+  `[ObservableProperty]` per ADR 0010) exposes two
+  `ObservableCollection<VoiceRowViewModel>`s (`BuiltInVoices`, `ClonedVoices`),
+  populated by partitioning `VoiceCatalog.ListAsync()`'s result on
+  `IsBuiltIn`. The page **does not read `library.json`** — main-015 owns
+  that layer end-to-end and feeds the catalog. `ClonedSectionIsEmpty`
+  drives the inline empty-state message (`"No cloned voices yet — see
+  main-015 to clone your own."`) that ships in v1.
+- The page implements both `INavigableView<VoicesPageViewModel>` and
+  `INavigationAware`. On navigated-to it seeds the engine state from
+  `SidecarHost.GetStatus()`, applies the current `SpeakStatus`, refreshes
+  voices, and subscribes to `VoiceCatalog.VoicesChanged`,
+  `SpeakService.StatusChanged`, and `SidecarHost.StateChanged`. On
+  navigated-from it unsubscribes and cancels in-flight refreshes.
+
+### Preview routes through the speak queue (ADR 0014)
+
+Per-row Preview calls `SpeakService.Enqueue($"Hello, this is {DisplayName}.",
+voiceId)` — the same in-process seam main-013 wired up for the Speak page's
+Play button and that `POST /speak` already uses. **Not** a direct
+`ITtsEngine.StreamAsync`, **not** a side `AudioPlayer`. ADR 0014 governs;
+the rationale is the queue's single-arbiter invariant: a direct off-queue
+path would race Claude-driven utterances for the output device and break
+the stop-hotkey contract (ADR 0004).
+
+Behavioural consequences inherited for free:
+
+- Click Preview while another preview / Claude utterance is in flight →
+  enqueues behind it (FIFO per ADR 0007, no barge in v1).
+- Double-tap LCtrl during a preview → drains the queue per ADR 0004,
+  identical to tray Stop and `POST /stop`. The row's active-request
+  indicator flips off; status footer briefly shows `stopped` then `idle`.
+- First-chunk latency = full queue latency (~190 ms warm for the canned
+  phrase, per ADR 0013). Lanes for preview-bargeing are deferred to v1.5.
+
+### Engine-state visibility
+
+The page binds three coarse view-states to `SidecarHost.State`:
+
+- `starting` / `restarting` / `notstarted` → centred `ui:ProgressRing` +
+  "Voice engine is starting..." in place of the list. Per-row Preview
+  buttons would be disabled anyway (no rows).
+- `failed` → an inline error banner using `SystemFillColorCriticalBackgroundBrush`:
+  "Voice engine failed to start. See the About page for details and retry."
+  (main-017 will surface the richer panel and a retry control.)
+- `running` → the normal two-section list. Preview buttons enabled per row.
+
+`VoicesPageViewModel.ApplyEngineState(...)` flips both the placeholder
+visibility flags (`IsLoading` / `IsFailed` / `IsRunning`) and each row's
+`CanPreview` (which guards the Preview command) in one shot.
+
+### Per-row active-request indicator
+
+A page-VM-level subscription to `SpeakService.StatusChanged` finds the row
+whose `VoiceId` matches the active request and toggles its `IsActiveRequest`
+flag. When status flips to `Idle` / `Stopped`, all rows return to inactive.
+The dispatcher hop matches the pattern in `EngineStatusViewModel`.
+
+### Refresh behaviour
+
+`OnNavigatedTo` and `VoiceCatalog.VoicesChanged` both call
+`RefreshVoicesAsync` (re-entrancy-guarded so a `VoicesChanged` event
+arriving mid-`OnNavigatedTo` doesn't double-refresh). When the engine
+transitions into `running` from a starting / restarting state mid-page-life,
+the code-behind also forces a refresh so the list populates without
+re-navigation. **No `library.json` file watcher** — the catalog is the
+single source of truth (main-015 will fire `VoicesChanged` on save / delete).
+
+### Out-of-scope reminders for v1
+
+- No delete affordance — moved to main-015 where cloned voices the button
+  would operate on actually exist.
+- No search / filter / tags — vision-deferred until ~15 voices.
+- No per-session voice routing UI — env-var-only per main-019.
+- No per-row preview error toasts — footer + log file is sufficient signal.
 
 ## Claude Code integration kit
 

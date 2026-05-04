@@ -1,16 +1,62 @@
 ---
 id: main-014
 title: Voices page — voice library list with preview
-status: backlog
+status: done
 type: feature
 context: main
 created: 2026-05-01
-completed:
+completed: 2026-05-04
 commit:
 depends_on: [main-010, main-011, main-020]
 blocks: [main-015]
 tags: [frontend, page, voice-library]
 ---
+
+## Outcome
+
+Replaced the main-020 Voices stub with the real read-only voice library
+shell. Two grouped sections (Built-in first, Cloned second) under a
+`FontWeight="Light"` page title, both inside a single `ScrollViewer` with
+`SemiBold` section headers. Each row has a name + meta line, a Preview
+button (`ui:Button` with `Play24`), and a `Speaker224` active-request
+indicator that lights up when its voice is the current speak request.
+Cloned section shows the inline empty-state copy in v1.
+
+Per ADR 0014, Preview routes through `SpeakService.Enqueue($"Hello, this
+is {DisplayName}.", voiceId)` — never directly to `ITtsEngine` or
+`AudioPlayer`. The queue invariant (ADR 0007) and stop semantics (ADR
+0004) are preserved end-to-end. The page consumes `VoiceCatalog`
+exclusively; no `library.json` reads (deferred to main-015).
+
+Engine state binds to `SidecarHost.StateChanged`:
+`starting`/`restarting`/`notstarted` → centred ProgressRing placeholder;
+`failed` → inline critical-style error banner pointing at About;
+`running` → normal list. A page-VM subscription to
+`SpeakService.StatusChanged` flips per-row `IsActiveRequest` flags via
+the dispatcher. Re-entry-guarded refresh on `OnNavigatedTo` and
+`VoiceCatalog.VoicesChanged` (the same event main-015 will fire on
+save / delete).
+
+Build clean (`dotnet build mockingbird.sln -c Debug` → 0 errors,
+0 warnings). Interactive UI behaviours (preview latency, FIFO ordering
+with concurrent Claude requests, stop-hotkey draining the preview) are
+**not interactively re-tested** in this pass; the code paths are in
+place per the spec and any regression will surface during the next
+manual run.
+
+Key files:
+
+- `src/Mockingbird/Views/Pages/VoicesPage.xaml` — two-section list +
+  loading / failed placeholders.
+- `src/Mockingbird/Views/Pages/VoicesPage.xaml.cs` — INavigationAware
+  hooks, dispatcher-marshalled subscriptions to VoicesChanged /
+  StatusChanged / StateChanged.
+- `src/Mockingbird/ViewModels/Pages/VoicesPageViewModel.cs` — page VM
+  + nested `VoiceRowViewModel` (per the spec's worker tip — single
+  file, no separate row file).
+
+ADR 0014 was already at `status: accepted` from the earlier refinement
+commit (3949301); no flip needed during execution.
 
 ## Why
 
