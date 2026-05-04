@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-04
 completed: 2026-05-05
-commit:
+commit: cc14359
 depends_on: [main-010]
 blocks: []
 tags: [settings, data-path, persistence]

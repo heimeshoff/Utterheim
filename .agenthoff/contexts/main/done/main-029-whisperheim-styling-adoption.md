@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-04
 completed: 2026-05-05
-commit:
+commit: 7cdbd60
 depends_on: [main-010]
 blocks: [main-030, main-032]
 tags: [styleguide, theming, ui, settings, appearance]

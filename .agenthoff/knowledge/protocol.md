@@ -5,6 +5,181 @@ Newest entries on top.
 
 ---
 
+## 2026-05-05 -- Model / Refined: main-030 + main-032 (visual + nav redesign pair)
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (both held — promote alongside main-028 + main-029 ship)
+**Summary:** Resolved the seven remaining open questions across the two
+visual-redesign tasks in one pass.
+
+main-030 (Speak hero + Voices clone-card layout):
+- Voices page: small `Light 28pt "Voices"` title only — big hero is Speak
+  + About only (consistent with main-029's protocol decision).
+- Button row: Play (Primary), Stop (Secondary), Save (Secondary) all in
+  one row, no separator gap. WhisperHeim TTS layout verbatim.
+- `BrandHeroControl` `UserControl` extracted in main-030 (consumed by
+  main-032). Single `Tagline` `DependencyProperty`; logo/name/version
+  come from app-wide sources internally.
+- Side-effect: extracted `Services/AppInfo.cs` static helper for
+  assembly-version lookup (currently inlined in `AboutPageViewModel`).
+  `BrandHeroControl` reads `AppInfo.Version`.
+
+main-032 (relocate engine diagnostics; redesign About):
+- Portrait: reuse WhisperHeim's `heimeshoff.jpg`, copy into
+  `assets/people/heimeshoff.jpg`.
+- Ko-fi URL: shared with WhisperHeim (`https://ko-fi.com/heimeshoff`,
+  verified via grep). Stored as `AppInfo.KofiUrl` constant. GitHub URL
+  also lifts to `AppInfo.GithubUrl`.
+- About copy: keep WhisperHeim's bio paragraph 1 verbatim (Marco's
+  identity is the same on both apps); replace paragraph 2 with the
+  mockingbird-specific voice-diversity framing the user proposed.
+- Engine status VM: extract `EngineStatusCardViewModel`, compose into
+  `SettingsPageViewModel.EngineStatus`. Mirrors
+  `VoicesPageViewModel.Cloning` composition pattern. Strips
+  engine-status fields from `AboutPageViewModel` entirely; About VM
+  shrinks to just `Version`.
+- Bonus cleanup: consolidate `NullOrEmptyToVisibilityConverter`
+  (duplicated in `AboutPageConverters.cs` + `VoicesPageConverters.cs`,
+  verified) and `EngineStateToPipBrushConverter` into a shared
+  `Views/Converters/SharedConverters.cs`, registered in `App.xaml`.
+
+**Dependency edges updated:**
+- main-030: `blocks` `[]` → `[main-032]`.
+- main-032: `depends_on` `[main-010, main-028, main-029]` →
+  `[main-010, main-028, main-029, main-030]` (consumes `BrandHeroControl`
+  + `AppInfo`).
+
+**Split into:** none. Both kept whole.
+**ADRs written:** none — no new architectural decision; refinement
+followed established sibling patterns + existing in-codebase composition
+shapes.
+
+---
+
+## 2026-05-05 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 3 (main-028 logo, main-029 styling adoption, main-031 editable data path)
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 3 feature + 1 chore (this entry)
+
+---
+
+## 2026-05-05 -- Task completed: main-031 - Editable data path with folder-picker dialog
+
+**Type:** Work / Task completion
+**Task:** main-031 - Editable data path with folder-picker dialog
+**Summary:** Settings → Diagnostics data-path card now offers Browse... + Reset; bootstrap.json writes via temp+rename with writability validation; VoiceLibraryService re-runs LoadAsync on DataPathChanged so Voices reflects the new library live, old voices stay at the previous location (pointer-swap, no migration). ADR 0020 captures the decision.
+**Commit:** cc14359
+**Files changed:** 7
+**ADRs written:** 0020-data-path-runtime-swap-pointer-only.md
+
+---
+
+## 2026-05-05 -- Task completed: main-029 - WhisperHeim styling adoption
+
+**Type:** Work / Task completion
+**Task:** main-029 - WhisperHeim styling adoption (Light theme, brand palette, card spec, Appearance picker)
+**Summary:** Flipped App.xaml to Light, declared four brand brushes, wrapped all four pages in the standard ScrollViewer + 40,36,40,32 chrome (MaxWidth=900 centred), replaced every Settings ui:CardControl with the Border CornerRadius=12 Padding=24 pattern, added Audio/App/Diagnostics/Appearance section headers and the Light/Dark/System tile picker. UserSettings.AppearanceMode persists via settings.json (default Light in memory) per ADR 0019; startup applies the persisted mode before MainWindow.Show. Styleguide gains §Brand palette, §Card spec, §Section header, §Page chrome, §Appearance modes sections.
+**Commit:** 7cdbd60
+**Files changed:** 11
+**ADRs written:** none (ADR 0019 was authored during refinement)
+
+---
+
+## 2026-05-05 -- Task completed: main-028 - Logo redesign (voice human-head mark)
+
+**Type:** Work / Task completion
+**Task:** main-028 - Logo redesign — voice human-head mark
+**Summary:** Pivoted the locked perched-mockingbird direction during sign-off iteration to a filled orange right-facing human-head profile with three blue Wi-Fi-style concentric arcs from the mouth. Three drafts to user approval; new SVG + regenerated PNGs (16..512) + multi-res .ico; styleguide brand-mark section + BC README brand asset table flipped from PLACEHOLDER to Final.
+**Commit:** 13a82e8
+**Files changed:** 13
+**ADRs written:** none
+
+---
+
+## 2026-05-05 -- Batch started: [main-028]
+
+**Type:** Work / Batch start
+**Tasks:** main-028 - Logo redesign — waveform-tail mockingbird
+**Parallel:** no (1 worker — design-bearing, user sign-off gate makes solo dispatch safer)
+
+---
+
+## 2026-05-05 -- Model / Refined + Promoted: main-031 - Editable data path with folder-picker dialog
+
+**Type:** Model / Refine + Promote
+**BC:** main
+**Status after:** todo
+**Summary:** Resolved five open questions against the WhisperHeim sibling
+pattern. Decisions: pointer-swap (no migration), writability validation,
+hybrid live `LoadAsync` + MessageBox restart-required notice, no
+confirmation dialog, drop "Open in Explorer". Concrete implementation plan
+added: `DataPathService.{ValidatePath, SetDataPath, DataPathChanged}`,
+`bootstrap.json` temp+rename, `VoiceLibraryService` subscribes to
+`DataPathChanged` and re-runs `LoadAsync` so the Voices page refreshes
+without re-navigation. Settings card replaces Open-in-Explorer with
+Browse + Reset. Scope clarified: only `<dataPath>\voices\` relocates;
+runtime / models / cache / logs / bootstrap-state.json / settings.json
+all stay anchored to `LocalRoot`. Acceptance criteria rewritten as eleven
+testable bullets. User accepted the resolutions and promoted to todo.
+**Split into:** none.
+**ADRs written:** none — refinement followed an existing sibling-app
+pattern; no new architectural decision needed.
+
+---
+
+## 2026-05-04 23:15 -- Model / Promoted: main-029 - WhisperHeim styling adoption
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+
+---
+
+## 2026-05-04 23:10 -- Model / Refined: main-029 - WhisperHeim styling adoption
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (held — promote alongside main-028 + main-032 for single visual checkpoint per user's note)
+**Summary:** Resolved every open question and tightened acceptance criteria so a worker can execute without re-asking. Locked the live-swap API to `Wpf.Ui.Appearance.ApplicationThemeManager.Apply / ApplySystemTheme` (verified against WhisperHeim `GeneralPage.xaml.cs`); kept `BrandDeepMutedBrush #66005FAA` despite ~2.2:1 contrast (decorative version-tag only, matches WhisperHeim verbatim); set page-title strategy per page (Speak/About hero placed by main-030/032; Voices/Settings small `FontWeight=Light FontSize=28` title); located brand brushes in `App.xaml <Application.Resources>` directly; defaulted `AppearanceMode = Light` in memory without rewriting settings.json on read; mirrored the styleguide diff into six explicit edits. `BrandHeroControl` extraction deferred to main-030. Decided NOT to split (single visual checkpoint wins) but documented a worker fallback plan (029a foundation / 029b chrome / 029c picker) for mid-session use.
+**Split into:** none (kept as one task; fallback plan documented inline)
+**ADRs written:** 0019 (appearance mode persisted in settings.json, not registry — distinguishes from ADR 0017's Run-key concern)
+**Research written:** wpfui-live-theme-swap-2026-05-04.md
+**`blocks` field:** updated from `[]` to `[main-030, main-032]` to mirror their `depends_on`.
+
+---
+
+## 2026-05-04 22:35 -- Model / Promoted: main-028 - Logo redesign (waveform-tail mockingbird)
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+
+---
+
+## 2026-05-04 22:30 -- Model / Refined: main-028 - Logo redesign (waveform-tail mockingbird)
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog (ready for promote)
+**Summary:** Locked the four open design decisions: (1) worker drafts the SVG with a user sign-off gate on rasters before done, (2) pose = perched in profile, (3) tail = three horizontal waveform bars trailing behind the bird, (4) line-art two-colour mark — bird stroked in `#FFff8b00` (orange), waveform bars stroked in `#FF25abfe` (cyan-blue), not theme-adaptive. Also: back-filled `blocks: [main-030, main-032]`, reworded AC #5 so the task no longer implicitly waits on main-032's About hero redesign, added a worker-draft + sign-off workflow note.
+**Split into:** —
+**ADRs written:** —
+
+---
+
+## 2026-05-04 22:05 -- Model / Captured: visual + UX refinement pass (main-028..032)
+
+**Type:** Model / Capture
+**BC:** main
+**Filed to:** backlog (5 tasks)
+**Summary:** User refinement pass aligning Mockingbird's visual language with WhisperHeim. Captured five backlog items: main-028 (waveform-tail mockingbird logo with WhisperHeim palette), main-029 (Light theme + brand brushes + WhisperHeim card spec + Appearance picker on Settings + styleguide update), main-030 (Speak page hero + controls row above text input; Voices clone-card above list), main-031 (editable data path with Vista folder picker — re-opens main-016's deferred migration question), main-032 (move engine status + restart + view logs to Settings end; About moves to nav FooterMenuItems with WhisperHeim-style hero + profile/contact + Ko-fi/GitHub composition pointing at mockingbird repo). 028+029 are independent foundations; 030/032 depend on both; 031 is independent.
+
+---
+
 ## 2026-05-04 21:30 -- Work session ended
 
 **Type:** Work / Session end

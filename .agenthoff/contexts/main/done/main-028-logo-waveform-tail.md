@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-04
 completed: 2026-05-05
-commit:
+commit: 13a82e8
 depends_on: [main-010]
 blocks: [main-030, main-032]
 tags: [branding, design, logo]
