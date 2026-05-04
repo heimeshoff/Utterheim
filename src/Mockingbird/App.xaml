@@ -6,9 +6,19 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ui:ThemesDictionary Theme="Dark" />
+                <ui:ThemesDictionary Theme="Light" />
                 <ui:ControlsDictionary />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- main-029: Brand palette inherited from WhisperHeim. Theme-independent
+                 fixed hex values; safe to declare alongside the merged wpfui dictionaries
+                 (NOT inside them, so the wpfui chain stays untouched). Resolved via
+                 {StaticResource ...} from any Page since the values do not change with
+                 the active Light/Dark theme. See docs/styleguide.md §Brand palette. -->
+            <SolidColorBrush x:Key="BrandPrimaryBrush" Color="#FF25abfe" />
+            <SolidColorBrush x:Key="BrandAccentBrush" Color="#FFff8b00" />
+            <SolidColorBrush x:Key="BrandDeepBrush" Color="#FF005FAA" />
+            <SolidColorBrush x:Key="BrandDeepMutedBrush" Color="#66005FAA" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -30,15 +30,46 @@ What we adopt **unchanged**:
   Section B Voices). The shared recording controls (audio level meter, duration display
   with 5-second minimum + progress bar, start/stop buttons, voice name input, save
   button) are reused identically in mockingbird's voice-cloning flow.
-- **Color and contrast principles** — high contrast ratios, dark theme default
-  (`ui:ThemesDictionary Theme="Dark"` in `App.xaml`), accent color from system. No
-  bespoke palette.
+- **Color and contrast principles** — high contrast ratios, Light theme default
+  (`ui:ThemesDictionary Theme="Light"` in `App.xaml`). Per ADR 0019 the active
+  theme is user-selectable via Settings → Appearance and persists in
+  `settings.json`. Accent color from system. No bespoke palette beyond the
+  brand brushes documented under §Brand palette.
 - **Iconography** — Fluent System Icons via `ui:SymbolIcon`. No custom glyphs except
   the brand mark.
 
 The `## Design Principles` section of WhisperHeim's design.md applies verbatim:
 local-first confidence, hotkey-first UI-second, progressive disclosure, Windows 11 native
 feel, accessible.
+
+---
+
+## Brand palette
+
+Mockingbird inherits four brand brushes from WhisperHeim. They are declared once
+in `App.xaml` `<Application.Resources>` (alongside the merged wpfui dictionaries,
+not inside them — wpfui's chain stays untouched) as `SolidColorBrush` resources
+with stable `x:Key` names. Brushes are theme-independent fixed hex values — the
+Light/Dark theme switch does not touch them — so consumers reference them via
+`{StaticResource BrandPrimaryBrush}` rather than `DynamicResource`.
+
+| Brush key | Hex | Use it for |
+|---|---|---|
+| `BrandPrimaryBrush` | `#FF25abfe` | Primary brand colour (cyan-blue). The voice-arcs in the logo, primary brand accents, hyperlink-style emphasis on dark surfaces. |
+| `BrandAccentBrush` | `#FFff8b00` | Accent colour (orange). The head silhouette in the logo. Reserved for the brand mark; avoid as a UI fill. |
+| `BrandDeepBrush` | `#FF005FAA` | Deep blue. Section-header glyphs in `ui:SymbolIcon` `Foreground`, hyperlink accents on dark surfaces. |
+| `BrandDeepMutedBrush` | `#66005FAA` | Supplementary numerals such as version tags and footnotes. **Decorative only** — the RGBA renders ≈ 2.2:1 contrast on a Light Mica backdrop and fails WCAG body-text contrast. Matches WhisperHeim verbatim and is accepted as-is per the styleguide gate's "inherit wholesale" rule. Never use for body copy or for any text the user has to read at length. |
+
+A page references the palette as e.g.:
+
+```xml
+<ui:SymbolIcon Symbol="PaintBrush24"
+               Foreground="{StaticResource BrandDeepBrush}" />
+```
+
+Theme brushes (`ApplicationBackgroundBrush`, `TextFillColorPrimaryBrush`,
+`CardBackgroundFillColorDefaultBrush`, …) stay `DynamicResource` so the
+in-app Light/Dark/System swap re-renders without an app restart.
 
 ---
 
@@ -125,6 +156,162 @@ Per main-009, the tray menu is fixed at three items:
 
 WhisperHeim's tray menu (Start/Stop Call Recording, Settings, Exit) doesn't apply because
 mockingbird has no recording-of-meetings mode.
+
+### Appearance modes
+
+The Settings page hosts a three-tile picker (Light / Dark / System) modelled
+verbatim on WhisperHeim's General-page picker. Selection persists to
+`settings.json` as `appearanceMode: "Light" | "Dark" | "System"` per
+[ADR 0019](../.agenthoff/knowledge/decisions/0019-appearance-mode-in-settings-json.md);
+default for installs missing the field is `Light` (in-memory only — the file
+is not rewritten on read).
+
+Live swap uses `Wpf.Ui.Appearance.ApplicationThemeManager.Apply(...)` /
+`ApplySystemTheme()` per
+[`knowledge/research/wpfui-live-theme-swap-2026-05-04.md`](../.agenthoff/knowledge/research/wpfui-live-theme-swap-2026-05-04.md);
+no app restart is required. Startup (`EntryPoint`) calls the same helper once
+before `MainWindow.Show()` so the persisted preference applies on first paint
+without flicker.
+
+The active tile is highlighted with a 10% blue tint (`#19005FAA` over
+transparent); the others stay transparent. Mica backdrop is unchanged across
+all three modes (matches WhisperHeim).
+
+---
+
+## Page chrome
+
+Every top-level page in mockingbird wraps its content in a single shared shell
+so margins, max width, and the Mica-backdrop reveal stay consistent across
+Speak, Voices, Settings, and About:
+
+```xml
+<ScrollViewer Background="{DynamicResource ApplicationBackgroundBrush}"
+              VerticalScrollBarVisibility="Auto"
+              HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="40,36,40,32"
+                MaxWidth="900"
+                HorizontalAlignment="Center">
+        <!-- page-specific content -->
+    </StackPanel>
+</ScrollViewer>
+```
+
+- The `ScrollViewer.Background` is the theme application brush so Mica shows
+  through behind transparent cards.
+- `Margin="40,36,40,32"` matches WhisperHeim's outer breathing room.
+- `MaxWidth="900"` keeps line lengths readable on wide displays;
+  `HorizontalAlignment="Center"` centres the column when the window is wider.
+- Pages do **not** set their own `Background` — the inherited theme brush
+  is the source of truth.
+
+Page titles follow one of two patterns:
+
+- **Hero** (Speak, About) — logo + bold "Mockingbird" + version tag + tagline
+  per the brand mark spec. Reusable extraction `BrandHeroControl` lives under
+  Reusable component map below; placement is per main-030 / main-032.
+- **Small heading** (Voices, Settings) — single `TextBlock`
+  `FontWeight="Light" FontSize="28"
+  Foreground="{DynamicResource TextFillColorPrimaryBrush}"`. The Light-theme
+  primary brush renders as dark text on the Mica backdrop and stays readable
+  without competing with card-level headings on the same page.
+
+---
+
+## Section header
+
+Section headers separate logical groups within a single page (e.g. Audio /
+App / Diagnostics / Appearance on Settings). The composition is:
+
+```xml
+<StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+    <ui:SymbolIcon Symbol="..." FontSize="24"
+                   Foreground="{StaticResource BrandDeepBrush}"
+                   Margin="0,0,10,0" />
+    <TextBlock Text="SECTION LABEL"
+               FontSize="10" FontWeight="Bold"
+               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+               VerticalAlignment="Center" />
+</StackPanel>
+```
+
+- 24-px Fluent System icon glyph in `BrandDeepBrush`.
+- Uppercase 10-pt bold label in the secondary text brush (so the label reads
+  as muted relative to card-level headings).
+- 20-px bottom margin separates the header from the first card under it.
+
+The 40-px gap before each section header (i.e. the bottom margin of the
+preceding section's last card — see §Card spec) is what gives the page its
+vertical rhythm.
+
+---
+
+## Card spec
+
+A card is the unit of grouped content inside a section. The shell is:
+
+```xml
+<Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+        CornerRadius="12" Padding="24" Margin="0,0,0,12">
+    <!-- one-row or stacked-content composition -->
+</Border>
+```
+
+- `CornerRadius="12"` and `Padding="24"` are the WhisperHeim values; do not
+  bespokify per page.
+- **Spacing rule**:
+  - Between cards in the **same section**: `Margin="0,0,0,12"`.
+  - On the **last card of a section** (before the next section header, or at
+    the bottom of the page): `Margin="0,0,0,40"`. The wider gap is the visual
+    separator between sections.
+
+**One-row card** (label + description on the left, control on the right —
+e.g. ToggleSwitch / ComboBox / Button):
+
+```xml
+<Border ...>
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="400">
+            <TextBlock Text="Label"
+                       FontSize="15" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+            <TextBlock Text="Description (≤2 lines, wraps if needed)."
+                       FontSize="13"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+        <ControlOfChoice DockPanel.Dock="Right"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Center" />
+    </DockPanel>
+</Border>
+```
+
+**Stacked-content card** (label + description on top, control(s) below — e.g.
+the Data path card or the Appearance picker):
+
+```xml
+<Border ...>
+    <StackPanel>
+        <TextBlock Text="Label"
+                   FontSize="15" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+        <TextBlock Text="Description."
+                   FontSize="13"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   Margin="0,4,0,16"
+                   TextWrapping="Wrap" />
+        <!-- control(s) -->
+    </StackPanel>
+</Border>
+```
+
+**Do not use `ui:CardControl`.** It is wpfui's older card chrome and produces
+a visibly different surface (different padding, different background fill,
+no rounded-12 rhythm) that drifts away from WhisperHeim. The only remaining
+usage in v1 is the About page's Engine status panel, which main-032 will
+restructure; new code should always use the `Border` pattern above.
 
 ---
 

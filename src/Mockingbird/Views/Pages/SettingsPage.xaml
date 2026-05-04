@@ -3,165 +3,293 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       Title="Settings">
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
+    <ScrollViewer Background="{DynamicResource ApplicationBackgroundBrush}"
+                  VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="16">
+        <StackPanel Margin="40,36,40,32"
+                    MaxWidth="900"
+                    HorizontalAlignment="Center">
 
-            <!-- Page header -->
+            <!-- Page title -->
             <TextBlock Text="Settings"
                        FontSize="28"
                        FontWeight="Light"
-                       Margin="0,0,0,12" />
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                       Margin="0,0,0,24" />
 
-            <!-- ─── Audio ─────────────────────────────────────────────────── -->
-            <TextBlock Text="Audio"
-                       FontSize="14"
-                       FontWeight="SemiBold"
-                       Margin="0,16,0,8" />
+            <!-- ═══════ Audio Section ═══════ -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                <ui:SymbolIcon Symbol="Speaker224"
+                               FontSize="24"
+                               Foreground="{StaticResource BrandDeepBrush}"
+                               Margin="0,0,10,0" />
+                <TextBlock Text="AUDIO"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
 
             <!-- Default voice -->
-            <ui:CardControl Margin="0,0,0,8">
-                <ui:CardControl.Header>
-                    <StackPanel>
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="12" Padding="24" Margin="0,0,0,12">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="400">
                         <TextBlock Text="Default voice"
-                                   FontSize="14" />
+                                   FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                         <TextBlock Text="Pre-selected on the Speak page. Empty = no preference (alphabetical fallback)."
-                                   FontSize="11"
-                                   Margin="0,2,0,0"
+                                   FontSize="13"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0"
                                    TextWrapping="Wrap" />
                     </StackPanel>
-                </ui:CardControl.Header>
-                <ComboBox ItemsSource="{Binding ViewModel.Voices}"
-                          SelectedItem="{Binding ViewModel.SelectedDefaultVoice, Mode=TwoWay}"
-                          DisplayMemberPath="Id"
-                          MinWidth="200" />
-            </ui:CardControl>
+                    <ComboBox DockPanel.Dock="Right"
+                              ItemsSource="{Binding ViewModel.Voices}"
+                              SelectedItem="{Binding ViewModel.SelectedDefaultVoice, Mode=TwoWay}"
+                              DisplayMemberPath="Id"
+                              MinWidth="200"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
 
-            <!-- Output device -->
-            <ui:CardControl Margin="0,0,0,8">
-                <ui:CardControl.Header>
-                    <StackPanel>
+            <!-- Output device (last card in Audio — 40-px bottom margin) -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="12" Padding="24" Margin="0,0,0,40">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="400">
                         <TextBlock Text="Output device"
-                                   FontSize="14" />
+                                   FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                         <TextBlock Text="Where Mockingbird routes speech. Takes effect on the next speech request."
-                                   FontSize="11"
-                                   Margin="0,2,0,0"
+                                   FontSize="13"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0"
                                    TextWrapping="Wrap" />
                     </StackPanel>
-                </ui:CardControl.Header>
-                <ComboBox ItemsSource="{Binding ViewModel.OutputDevices}"
-                          SelectedItem="{Binding ViewModel.SelectedOutputDevice, Mode=TwoWay}"
-                          DisplayMemberPath="Name"
-                          MinWidth="240" />
-            </ui:CardControl>
+                    <ComboBox DockPanel.Dock="Right"
+                              ItemsSource="{Binding ViewModel.OutputDevices}"
+                              SelectedItem="{Binding ViewModel.SelectedOutputDevice, Mode=TwoWay}"
+                              DisplayMemberPath="Name"
+                              MinWidth="240"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
 
-            <!-- ─── App ───────────────────────────────────────────────────── -->
-            <TextBlock Text="App"
-                       FontSize="14"
-                       FontWeight="SemiBold"
-                       Margin="0,16,0,8" />
+            <!-- ═══════ App Section ═══════ -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                <ui:SymbolIcon Symbol="Power24"
+                               FontSize="24"
+                               Foreground="{StaticResource BrandDeepBrush}"
+                               Margin="0,0,10,0" />
+                <TextBlock Text="APP"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
 
             <!-- Start minimised -->
-            <ui:CardControl Margin="0,0,0,8">
-                <ui:CardControl.Header>
-                    <StackPanel>
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="12" Padding="24" Margin="0,0,0,12">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="400">
                         <TextBlock Text="Start minimised"
-                                   FontSize="14" />
+                                   FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                         <TextBlock Text="When on, Mockingbird launches hidden in the tray."
-                                   FontSize="11"
-                                   Margin="0,2,0,0"
+                                   FontSize="13"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0"
                                    TextWrapping="Wrap" />
                     </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch IsChecked="{Binding ViewModel.StartMinimised, Mode=TwoWay}" />
-            </ui:CardControl>
+                    <ui:ToggleSwitch DockPanel.Dock="Right"
+                                     IsChecked="{Binding ViewModel.StartMinimised, Mode=TwoWay}"
+                                     HorizontalAlignment="Right"
+                                     VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
 
-            <!-- Launch at startup -->
-            <ui:CardControl Margin="0,0,0,8">
-                <ui:CardControl.Header>
-                    <StackPanel>
+            <!-- Launch at startup (last card in App — 40-px bottom margin) -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="12" Padding="24" Margin="0,0,0,40">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="400">
                         <TextBlock Text="Launch at startup"
-                                   FontSize="14" />
+                                   FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                         <TextBlock Text="Adds Mockingbird to your Windows logon entries (registry)."
-                                   FontSize="11"
-                                   Margin="0,2,0,0"
+                                   FontSize="13"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0"
                                    TextWrapping="Wrap" />
                     </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch IsChecked="{Binding ViewModel.LaunchAtStartup, Mode=TwoWay}" />
-            </ui:CardControl>
+                    <ui:ToggleSwitch DockPanel.Dock="Right"
+                                     IsChecked="{Binding ViewModel.LaunchAtStartup, Mode=TwoWay}"
+                                     HorizontalAlignment="Right"
+                                     VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
 
-            <!-- ─── Diagnostics ───────────────────────────────────────────── -->
-            <TextBlock Text="Diagnostics"
-                       FontSize="14"
-                       FontWeight="SemiBold"
-                       Margin="0,16,0,8" />
+            <!-- ═══════ Diagnostics Section ═══════ -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                <ui:SymbolIcon Symbol="Wrench24"
+                               FontSize="24"
+                               Foreground="{StaticResource BrandDeepBrush}"
+                               Margin="0,0,10,0" />
+                <TextBlock Text="DIAGNOSTICS"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
 
             <!-- HTTP port (read-only in v1) -->
-            <ui:CardControl Margin="0,0,0,8">
-                <ui:CardControl.Header>
-                    <StackPanel>
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="12" Padding="24" Margin="0,0,0,12">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="400">
                         <TextBlock Text="HTTP port"
-                                   FontSize="14" />
+                                   FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                         <TextBlock Text="The localhost endpoint Claude Code calls. Read-only in v1."
-                                   FontSize="11"
-                                   Margin="0,2,0,0"
+                                   FontSize="13"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0"
                                    TextWrapping="Wrap" />
                     </StackPanel>
-                </ui:CardControl.Header>
-                <TextBlock Text="{Binding ViewModel.HttpEndpoint, FallbackValue='—'}"
-                           FontFamily="Consolas"
-                           FontSize="13"
-                           VerticalAlignment="Center" />
-            </ui:CardControl>
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding ViewModel.HttpEndpoint, FallbackValue='—'}"
+                               FontFamily="Consolas"
+                               FontSize="13"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
 
             <!-- Stop hotkey (read-only per ADR 0006) -->
-            <ui:CardControl Margin="0,0,0,8">
-                <ui:CardControl.Header>
-                    <StackPanel>
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="12" Padding="24" Margin="0,0,0,12">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="400">
                         <TextBlock Text="Stop hotkey"
-                                   FontSize="14" />
+                                   FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                         <TextBlock Text="Halts current speech and drains the queue (ADR 0004)."
-                                   FontSize="11"
-                                   Margin="0,2,0,0"
+                                   FontSize="13"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <TextBlock Text="{Binding ViewModel.StopHotkeyLabel, FallbackValue='—'}"
-                           FontSize="13"
-                           VerticalAlignment="Center" />
-            </ui:CardControl>
-
-            <!-- Data path -->
-            <ui:CardControl Margin="0,0,0,8">
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Text="Data path"
-                                   FontSize="14" />
-                        <TextBlock Text="Where voices and settings are stored (per bootstrap.json, ADR 0005)."
-                                   FontSize="11"
-                                   Margin="0,2,0,0"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding ViewModel.DataPath, FallbackValue='—'}"
-                                   FontFamily="Consolas"
-                                   FontSize="11"
                                    Margin="0,4,0,0"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap" />
                     </StackPanel>
-                </ui:CardControl.Header>
-                <ui:Button Content="Open in Explorer"
-                           Appearance="Secondary"
-                           Icon="{ui:SymbolIcon FolderOpen24}"
-                           Command="{Binding ViewModel.OpenDataPathCommand}" />
-            </ui:CardControl>
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding ViewModel.StopHotkeyLabel, FallbackValue='—'}"
+                               FontSize="13"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <!-- Data path (last card in Diagnostics — 40-px bottom margin; stacked-content card) -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="12" Padding="24" Margin="0,0,0,40">
+                <StackPanel>
+                    <TextBlock Text="Data path"
+                               FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <TextBlock Text="Where voices and settings are stored (per bootstrap.json, ADR 0005)."
+                               FontSize="13"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,4,0,16"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding ViewModel.DataPath, FallbackValue='—'}"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,0,0,12"
+                               TextWrapping="Wrap" />
+                    <ui:Button Content="Open in Explorer"
+                               Appearance="Secondary"
+                               Icon="{ui:SymbolIcon FolderOpen24}"
+                               Command="{Binding ViewModel.OpenDataPathCommand}"
+                               HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+
+            <!-- ═══════ Appearance Section ═══════ -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                <ui:SymbolIcon Symbol="PaintBrush24"
+                               FontSize="24"
+                               Foreground="{StaticResource BrandDeepBrush}"
+                               Margin="0,0,10,0" />
+                <TextBlock Text="APPEARANCE"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Appearance picker (last card of the last section — 40-px bottom margin) -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="12" Padding="24" Margin="0,0,0,40">
+                <StackPanel>
+                    <TextBlock Text="Choose your preferred color scheme."
+                               FontSize="13"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,0,0,20" />
+                    <UniformGrid Columns="3">
+                        <!-- Light theme -->
+                        <Border x:Name="ThemeLight" Margin="0,0,8,0" Cursor="Hand"
+                                Background="Transparent" CornerRadius="12" Padding="12"
+                                MouseLeftButtonUp="ThemeLight_Click">
+                            <StackPanel HorizontalAlignment="Center">
+                                <Border Width="80" Height="52" CornerRadius="8"
+                                        Background="#FFF9F9F9" Margin="0,0,0,8"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1" />
+                                <TextBlock Text="LIGHT" FontSize="9" FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <!-- Dark theme -->
+                        <Border x:Name="ThemeDark" Margin="4,0" Cursor="Hand"
+                                Background="Transparent" CornerRadius="12" Padding="12"
+                                MouseLeftButtonUp="ThemeDark_Click">
+                            <StackPanel HorizontalAlignment="Center">
+                                <Border Width="80" Height="52" CornerRadius="8"
+                                        Background="#FF2F3131" Margin="0,0,0,8"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1" />
+                                <TextBlock Text="DARK" FontSize="9" FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <!-- System theme -->
+                        <Border x:Name="ThemeSystem" Margin="8,0,0,0" Cursor="Hand"
+                                Background="Transparent" CornerRadius="12" Padding="12"
+                                MouseLeftButtonUp="ThemeSystem_Click">
+                            <StackPanel HorizontalAlignment="Center">
+                                <Border Width="80" Height="52" CornerRadius="8" Margin="0,0,0,8"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#FFF9F9F9" Offset="0" />
+                                            <GradientStop Color="#FF2F3131" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+                                <TextBlock Text="SYSTEM" FontSize="9" FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

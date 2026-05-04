@@ -6,70 +6,78 @@
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     </Page.Resources>
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <!-- 1. text input — fills all remaining vertical space -->
-            <RowDefinition Height="*" />
-            <!-- 2. voice picker -->
-            <RowDefinition Height="Auto" />
-            <!-- 3. button row -->
-            <RowDefinition Height="Auto" />
-            <!-- 4. status line -->
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <ScrollViewer Background="{DynamicResource ApplicationBackgroundBrush}"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="40,36,40,32"
+                    MaxWidth="900"
+                    HorizontalAlignment="Center">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <!-- 1. text input -->
+                    <RowDefinition Height="*" />
+                    <!-- 2. voice picker -->
+                    <RowDefinition Height="Auto" />
+                    <!-- 3. button row -->
+                    <RowDefinition Height="Auto" />
+                    <!-- 4. status line -->
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-        <ui:TextBox Grid.Row="0"
-                    Text="{Binding ViewModel.Text, UpdateSourceTrigger=PropertyChanged}"
-                    PlaceholderText="Type or paste something for Mockingbird to say..."
-                    AcceptsReturn="True"
-                    AcceptsTab="False"
-                    TextWrapping="Wrap"
-                    VerticalAlignment="Stretch"
-                    HorizontalAlignment="Stretch"
-                    VerticalContentAlignment="Top"
-                    VerticalScrollBarVisibility="Auto"
-                    MinHeight="200"
-                    Margin="0,0,0,12" />
+                <ui:TextBox Grid.Row="0"
+                            Text="{Binding ViewModel.Text, UpdateSourceTrigger=PropertyChanged}"
+                            PlaceholderText="Type or paste something for Mockingbird to say..."
+                            AcceptsReturn="True"
+                            AcceptsTab="False"
+                            TextWrapping="Wrap"
+                            VerticalAlignment="Stretch"
+                            HorizontalAlignment="Stretch"
+                            VerticalContentAlignment="Top"
+                            VerticalScrollBarVisibility="Auto"
+                            MinHeight="200"
+                            Margin="0,0,0,12" />
 
-        <ComboBox Grid.Row="1"
-                  ItemsSource="{Binding ViewModel.Voices}"
-                  SelectedItem="{Binding ViewModel.SelectedVoice, Mode=TwoWay}"
-                  DisplayMemberPath="Id"
-                  HorizontalAlignment="Left"
-                  MinWidth="200"
-                  Margin="0,0,0,12" />
+                <ComboBox Grid.Row="1"
+                          ItemsSource="{Binding ViewModel.Voices}"
+                          SelectedItem="{Binding ViewModel.SelectedVoice, Mode=TwoWay}"
+                          DisplayMemberPath="Id"
+                          HorizontalAlignment="Left"
+                          MinWidth="200"
+                          Margin="0,0,0,12" />
 
-        <StackPanel Grid.Row="2"
-                    Orientation="Horizontal"
-                    Margin="0,0,0,12">
-            <ui:Button Content="Play"
-                       Appearance="Primary"
-                       Icon="{ui:SymbolIcon Mic24}"
-                       Command="{Binding ViewModel.PlayCommand}"
-                       Margin="0,0,8,0" />
-            <ui:Button Content="Stop"
-                       Appearance="Secondary"
-                       Icon="{ui:SymbolIcon Stop24}"
-                       Command="{Binding ViewModel.StopCommand}"
-                       Margin="0,0,8,0" />
-            <ui:Button Appearance="Secondary"
-                       Command="{Binding ViewModel.SaveCommand}"
-                       Margin="0,0,8,0">
-                <ui:Button.Content>
-                    <StackPanel Orientation="Horizontal">
-                        <ui:ProgressRing IsIndeterminate="True"
-                                         Width="16" Height="16"
-                                         Margin="0,0,8,0"
-                                         Visibility="{Binding ViewModel.SaveCommand.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}" />
-                        <TextBlock Text="Save" VerticalAlignment="Center" />
-                    </StackPanel>
-                </ui:Button.Content>
-            </ui:Button>
+                <StackPanel Grid.Row="2"
+                            Orientation="Horizontal"
+                            Margin="0,0,0,12">
+                    <ui:Button Content="Play"
+                               Appearance="Primary"
+                               Icon="{ui:SymbolIcon Mic24}"
+                               Command="{Binding ViewModel.PlayCommand}"
+                               Margin="0,0,8,0" />
+                    <ui:Button Content="Stop"
+                               Appearance="Secondary"
+                               Icon="{ui:SymbolIcon Stop24}"
+                               Command="{Binding ViewModel.StopCommand}"
+                               Margin="0,0,8,0" />
+                    <ui:Button Appearance="Secondary"
+                               Command="{Binding ViewModel.SaveCommand}"
+                               Margin="0,0,8,0">
+                        <ui:Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:ProgressRing IsIndeterminate="True"
+                                                 Width="16" Height="16"
+                                                 Margin="0,0,8,0"
+                                                 Visibility="{Binding ViewModel.SaveCommand.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}" />
+                                <TextBlock Text="Save" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ui:Button.Content>
+                    </ui:Button>
+                </StackPanel>
+
+                <TextBlock Grid.Row="3"
+                           Text="{Binding ViewModel.StatusLabel, FallbackValue='idle'}"
+                           FontSize="12"
+                           Opacity="0.85" />
+            </Grid>
         </StackPanel>
-
-        <TextBlock Grid.Row="3"
-                   Text="{Binding ViewModel.StatusLabel, FallbackValue='idle'}"
-                   FontSize="12"
-                   Opacity="0.85" />
-    </Grid>
+    </ScrollViewer>
 </Page>

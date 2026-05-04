@@ -6,10 +6,21 @@ using Microsoft.Extensions.Logging;
 namespace Mockingbird.Services.Settings;
 
 /// <summary>
+/// User-selectable theme for the app shell. Persisted as a string in
+/// <c>settings.json</c> per ADR 0019. Default is <see cref="Light"/>.
+/// </summary>
+public enum AppearanceMode
+{
+    Light = 0,
+    Dark = 1,
+    System = 2,
+}
+
+/// <summary>
 /// Typed wrapper over <c>%LOCALAPPDATA%\Mockingbird\settings.json</c>. v1 (main-013)
-/// ships the storage layer for <see cref="DefaultVoiceId"/> only — main-016 will
-/// add the UI to mutate it and additional setting slots (output device, start
-/// minimised, etc.).
+/// ships the storage layer for <see cref="DefaultVoiceId"/> only — main-016 adds
+/// the UI to mutate it and additional setting slots (output device, start
+/// minimised); main-029 extends the schema with <see cref="AppearanceMode"/>.
 ///
 /// JSON shape is forward-compatible: unknown fields are ignored on read so a
 /// settings.json that has been extended by a future build can still be loaded by
@@ -25,12 +36,14 @@ public sealed class UserSettings
         PropertyNameCaseInsensitive = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) },
     };
 
     private static readonly JsonSerializerOptions WriteOptions = new()
     {
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter() },
     };
 
     private readonly ILogger<UserSettings> _logger;
@@ -117,6 +130,29 @@ public sealed class UserSettings
     /// <summary>Fired after <see cref="StartMinimised"/> persistence (main-016).</summary>
     public event EventHandler<bool>? StartMinimisedChanged;
 
+    /// <summary>
+    /// Active theme mode (main-029). Persisted as the JSON string
+    /// <c>"Light" | "Dark" | "System"</c> in <c>settings.json</c> per ADR 0019.
+    /// Default for installs missing the field is <see cref="AppearanceMode.Light"/>;
+    /// the default is applied <b>in memory only</b> — the file is not rewritten
+    /// on read so existing settings.json mtime stays untouched until the user
+    /// explicitly toggles the picker.
+    /// </summary>
+    public AppearanceMode AppearanceMode
+    {
+        get => _data.AppearanceMode;
+        set
+        {
+            if (_data.AppearanceMode == value) return;
+            _data.AppearanceMode = value;
+            Save();
+            AppearanceModeChanged?.Invoke(this, value);
+        }
+    }
+
+    /// <summary>Fired after <see cref="AppearanceMode"/> persistence (main-029).</summary>
+    public event EventHandler<AppearanceMode>? AppearanceModeChanged;
+
     private void Load()
     {
         try
@@ -183,5 +219,8 @@ public sealed class UserSettings
 
         [JsonPropertyName("startMinimised")]
         public bool StartMinimised { get; set; }
+
+        [JsonPropertyName("appearanceMode")]
+        public AppearanceMode AppearanceMode { get; set; } = AppearanceMode.Light;
     }
 }

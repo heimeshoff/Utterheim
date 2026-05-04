@@ -21,6 +21,7 @@ using Mockingbird.Views.Pages;
 using Serilog;
 using Serilog.Events;
 using Wpf.Ui;
+using Wpf.Ui.Appearance;
 
 namespace Mockingbird;
 
@@ -232,6 +233,13 @@ public static class EntryPoint
         var contentDialogService = host.Services.GetRequiredService<IContentDialogService>();
         var userSettings = host.Services.GetRequiredService<UserSettings>();
 
+        // main-029: apply the persisted appearance mode before MainWindow.Show() so
+        // the initial paint matches the user's preference (no Light→Dark flicker).
+        // The in-memory default (Light) covers fresh installs whose settings.json
+        // has no appearanceMode field. Per ADR 0019 the default is not persisted on
+        // read; only an explicit Settings → Appearance toggle writes the value.
+        ApplyAppearanceMode(userSettings.AppearanceMode);
+
         Action exitAction = () => app.Dispatcher.BeginInvoke(() => app.Shutdown());
 
         var window = new MainWindow(queue, exitAction, pageService, engineStatus, contentDialogService);
@@ -295,6 +303,29 @@ public static class EntryPoint
         {
             var app = new App();
             app.InitializeComponent();
+        }
+    }
+
+    /// <summary>
+    /// main-029 — apply the user's persisted appearance preference via
+    /// <see cref="ApplicationThemeManager"/>. Called once at startup before
+    /// the main window is shown; the Settings page picker calls the same
+    /// API live for in-app toggles. Keeping the dispatch logic here means
+    /// startup and the picker hand off to a single helper.
+    /// </summary>
+    internal static void ApplyAppearanceMode(AppearanceMode mode)
+    {
+        switch (mode)
+        {
+            case AppearanceMode.Light:
+                ApplicationThemeManager.Apply(ApplicationTheme.Light);
+                break;
+            case AppearanceMode.Dark:
+                ApplicationThemeManager.Apply(ApplicationTheme.Dark);
+                break;
+            case AppearanceMode.System:
+                ApplicationThemeManager.ApplySystemTheme();
+                break;
         }
     }
 }

@@ -664,10 +664,14 @@ unmodified.
 ## Settings page
 
 As of main-016 the Settings page replaces the main-020 stub with three sections
-of Fluent setting cards (`ui:CardControl`) — Audio, App, Diagnostics — laid
-out vertically inside a `ScrollViewer`. WhisperHeim-style: each card = label +
-one-line description + control on the right. Mica backdrop, Segoe UI Variable,
-16 px outer margin to match the other pages.
+of Fluent setting cards — Audio, App, Diagnostics — laid out vertically inside
+a `ScrollViewer`. WhisperHeim-style: each card = label + one-line description +
+control on the right. Mica backdrop, Segoe UI Variable. main-029 added a fourth
+section, **Appearance**, with a Light / Dark / System tile picker that swaps the
+active theme live and persists to `settings.json` (per ADR 0019). main-029 also
+re-skinned every existing card from `ui:CardControl` to the WhisperHeim
+`Border CornerRadius=12 Padding=24` pattern documented in the styleguide
+(§Card spec / §Section header / §Page chrome).
 
 ### Audio
 
@@ -726,14 +730,31 @@ the auto-generated `OnXChanged` partial methods from firing
 spurious writes during the population pass. `OnNavigatedFrom` cancels
 the in-flight load CTS.
 
+### Appearance (main-029)
+
+A fourth section sits at the bottom of Settings: a single card containing a
+`UniformGrid Columns="3"` of Light / Dark / System tiles. Tile clicks call
+`Wpf.Ui.Appearance.ApplicationThemeManager.Apply(...)` /
+`ApplySystemTheme()` for an immediate live swap (no app restart) and write
+through `UserSettings.AppearanceMode`, which persists the JSON string to
+`settings.json` per ADR 0019. The active tile gets a 10% blue tint
+(`#19005FAA`) over transparent; the others stay transparent.
+
+Default for installs whose `settings.json` has no `appearanceMode` field is
+`Light`, applied **in memory only** — the file is not rewritten on read.
+Startup (`EntryPoint`) calls the same `ApplicationThemeManager` helper once
+before `MainWindow.Show()` so the persisted preference paints on first
+launch with no Light → Dark flicker.
+
 ### Out of scope for v1
 
 Captured in main-016's spec — repeated here so future tasks see the
 boundary: HTTP port editing with auto-restart, stop-hotkey rebinding UI,
-data-path change with migration flow, theme / language / update-check
-toggles, per-Claude-session voice routing UI (env-var-only via
+data-path change with migration flow, language / update-check toggles,
+per-Claude-session voice routing UI (env-var-only via
 `examples/claude-hooks/`), output-device level meter / test-tone button,
-engine status panel (main-017's About page owns it).
+engine status panel (main-017's About page owns it). The theme toggle that
+was on this list is **lifted as of main-029** — see §Appearance above.
 
 ## About page
 

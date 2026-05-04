@@ -10,9 +10,12 @@
         <vm:EngineStateToPipBrushConverter x:Key="EngineStateToPipBrushConverter" />
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
+    <ScrollViewer Background="{DynamicResource ApplicationBackgroundBrush}"
+                  VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="16">
+        <StackPanel Margin="40,36,40,32"
+                    MaxWidth="900"
+                    HorizontalAlignment="Center">
 
             <!-- ─── 1. Brand mark + identity ──────────────────────────────── -->
             <StackPanel HorizontalAlignment="Center"
@@ -24,6 +27,7 @@
                 <TextBlock Text="Mockingbird"
                            FontSize="28"
                            FontWeight="Light"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                            HorizontalAlignment="Center"
                            Margin="0,12,0,0" />
                 <TextBlock Text="Local voices for Claude Code"
