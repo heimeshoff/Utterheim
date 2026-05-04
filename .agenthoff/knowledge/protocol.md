@@ -5,6 +5,44 @@ Newest entries on top.
 
 ---
 
+## 2026-05-04 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 1 (plus this end-of-session chore)
+
+---
+
+## 2026-05-04 -- Task completed: main-014 - Voices page — voice library list with preview
+
+**Type:** Work / Task completion
+**Task:** main-014 - Voices page — voice library list with preview
+**Summary:** Replaced the Voices page stub with the real two-section voice library list (Built-in + Cloned) and per-row Preview routed through SpeakService.Enqueue per ADR 0014; page binds engine state to SidecarHost.StateChanged for loading / failed / running placeholders and refreshes on VoiceCatalog.VoicesChanged.
+**Commit:** 3d763f5
+**Files changed:** 6
+**ADRs written:** 0014 ratified (status flipped proposed → accepted)
+
+---
+
+## 2026-05-04 -- Batch started: [main-014]
+
+**Type:** Work / Batch start
+**Tasks:** main-014 - Voices page — voice library list with preview
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-04 -- Model / Promoted: main-014 - Voices page — voice library list with preview
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+**ADR 0014 status:** proposed → accepted (Voices page preview routes through SpeakService.Enqueue)
+
+---
+
 ## 2026-05-04 10:36 -- Work session ended
 
 **Type:** Work / Session end
