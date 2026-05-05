@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Microsoft.Extensions.Logging;
 using Mockingbird.Services.Speak;
 using Mockingbird.Services.Tts;
@@ -132,5 +133,17 @@ public partial class VoicesPage : Page, INavigableView<VoicesPageViewModel>, INa
         // state, force a refresh so the list populates without re-navigation.
         if (state == SidecarState.Running && !wasRunning)
             _ = ViewModel.RefreshVoicesAsync(CancellationToken.None);
+    }
+
+    // Inner controls (ComboBox, ui:TextBox in the clone card, ItemsControl
+    // rows) sometimes mark MouseWheel as handled before it bubbles up to the
+    // outer ScrollViewer, leaving the page only scrollable via the scrollbar.
+    // Forward the wheel delta directly so the page scrolls regardless of which
+    // child the cursor is over.
+    private void PageScroll_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (e.Handled) return;
+        PageScroll.ScrollToVerticalOffset(PageScroll.VerticalOffset - e.Delta);
+        e.Handled = true;
     }
 }

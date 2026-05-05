@@ -5,7 +5,7 @@
                  xmlns:tray="clr-namespace:Wpf.Ui.Tray.Controls;assembly=Wpf.Ui.Tray"
                  xmlns:pages="clr-namespace:Mockingbird.Views.Pages"
                  Title="Mockingbird — Local voices for Claude Code"
-                 Width="900" Height="600"
+                 Width="900" Height="820"
                  Icon="pack://application:,,,/Resources/mockingbird.ico"
                  ExtendsContentIntoTitleBar="True"
                  WindowBackdropType="Mica"

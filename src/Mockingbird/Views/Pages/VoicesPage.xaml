@@ -3,6 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:Mockingbird.ViewModels.Pages"
+      Background="{DynamicResource ApplicationBackgroundBrush}"
       Title="Voices">
     <Page.Resources>
         <!-- BoolToVisibilityConverter + NullOrEmptyToVisibilityConverter are
@@ -11,9 +12,10 @@
         <vm:CloningSourceToBoolConverter x:Key="CloningSourceToBoolConverter" />
     </Page.Resources>
 
-    <ScrollViewer Background="{DynamicResource ApplicationBackgroundBrush}"
+    <ScrollViewer x:Name="PageScroll"
                   VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
+                  HorizontalScrollBarVisibility="Disabled"
+                  PreviewMouseWheel="PageScroll_PreviewMouseWheel">
         <StackPanel Margin="40,36,40,32"
                     MaxWidth="900"
                     HorizontalAlignment="Center">
@@ -67,6 +69,7 @@
                     <TextBlock Text="Clone a new voice"
                                FontSize="14"
                                FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                Margin="0,0,0,12" />
 
                     <!-- Source toggle: Microphone | System Audio -->
@@ -131,6 +134,7 @@
                                    Text="{Binding ViewModel.Cloning.DurationLabel, FallbackValue='00:00'}"
                                    FontFamily="Consolas"
                                    FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                    Margin="12,0,0,0"
                                    VerticalAlignment="Center" />
                     </Grid>
@@ -162,6 +166,7 @@
                         <StackPanel>
                             <TextBlock Text="{Binding ViewModel.Cloning.StatusMessage}"
                                        FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                        TextWrapping="Wrap" />
                             <TextBlock Text="{Binding ViewModel.Cloning.StatusDetail}"
                                        FontSize="11"
@@ -200,7 +205,9 @@
                                                      Margin="0,0,8,0"
                                                      Visibility="{Binding ViewModel.Cloning.SaveCommand.IsRunning, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}" />
                                     <ui:SymbolIcon Symbol="Save24" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                    <TextBlock Text="Save Voice" VerticalAlignment="Center" />
+                                    <TextBlock Text="Save Voice"
+                                               Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                               VerticalAlignment="Center" />
                                 </StackPanel>
                             </ui:Button.Content>
                         </ui:Button>
@@ -214,6 +221,7 @@
                 <TextBlock Text="Built-in"
                            FontSize="14"
                            FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                            Margin="0,0,0,8" />
                 <ItemsControl ItemsSource="{Binding ViewModel.BuiltInVoices}"
                               Margin="0,0,0,16">
@@ -231,7 +239,8 @@
 
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding DisplayName}"
-                                                   FontSize="14" />
+                                                   FontSize="14"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                                         <TextBlock Text="{Binding Meta}"
                                                    FontSize="11"
                                                    Margin="0,2,0,0"
@@ -261,6 +270,7 @@
                 <TextBlock Text="Cloned"
                            FontSize="14"
                            FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                            Margin="0,0,0,8" />
                 <TextBlock Text="No cloned voices yet — clone one above."
                            FontSize="12"
@@ -285,7 +295,8 @@
 
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding DisplayName}"
-                                                   FontSize="14" />
+                                                   FontSize="14"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                                         <TextBlock Text="{Binding Meta}"
                                                    FontSize="11"
                                                    Margin="0,2,0,0"

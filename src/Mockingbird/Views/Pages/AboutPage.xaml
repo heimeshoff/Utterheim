@@ -3,9 +3,9 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:controls="clr-namespace:Mockingbird.Views.Controls"
+      Background="{DynamicResource ApplicationBackgroundBrush}"
       Title="About">
-    <ScrollViewer Background="{DynamicResource ApplicationBackgroundBrush}"
-                  VerticalScrollBarVisibility="Auto"
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="40,36,40,32"
                     MaxWidth="900"
@@ -205,11 +205,14 @@
             </Border>
 
             <!-- ═══════ 4. Credits ═══════ -->
-            <TextBlock Text="Synthesis powered by pocket-tts (Kyutai Labs)."
-                       FontSize="11"
+            <TextBlock FontSize="11"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        HorizontalAlignment="Center"
-                       Margin="0,0,0,16" />
+                       Margin="0,0,0,16">
+                <Run Text="Synthesis powered by " /><Hyperlink RequestNavigate="Hyperlink_RequestNavigate"
+                                                               NavigateUri="https://kyutai-labs.github.io/pocket-tts/"
+                                                               Foreground="#FF25abfe" TextDecorations="None"><Run Text="pocket-tts" /></Hyperlink><Run Text=" (Kyutai Labs)." />
+            </TextBlock>
 
         </StackPanel>
     </ScrollViewer>

@@ -86,6 +86,6 @@
         <TextBlock Grid.Row="3"
                    Text="{Binding ViewModel.StatusLabel, FallbackValue='idle'}"
                    FontSize="12"
-                   Opacity="0.85" />
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
     </Grid>
 </Page>
