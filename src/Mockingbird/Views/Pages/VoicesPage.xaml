@@ -4,6 +4,7 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:Mockingbird.ViewModels.Pages"
       Background="{DynamicResource ApplicationBackgroundBrush}"
+      ScrollViewer.CanContentScroll="False"
       Title="Voices">
     <Page.Resources>
         <!-- BoolToVisibilityConverter + NullOrEmptyToVisibilityConverter are
@@ -13,7 +14,6 @@
     </Page.Resources>
 
     <ScrollViewer x:Name="PageScroll"
-                  Background="Transparent"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="40,36,40,32"
@@ -118,6 +118,34 @@
                                Margin="0,0,0,12"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                TextWrapping="Wrap" />
+
+                    <!-- Rainbow Passage reading prompt (main-034). Mic mode only —
+                         in System Audio mode the user isn't speaking, so the prompt
+                         is irrelevant and the block stays collapsed via IsMicMode.
+                         Display-only: no interactive elements, no focus trap. -->
+                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="12"
+                            Margin="0,0,0,12"
+                            Visibility="{Binding ViewModel.Cloning.IsMicMode, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}">
+                        <StackPanel>
+                            <TextBlock Text="Read this aloud:"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Margin="0,0,0,6" />
+                            <TextBlock Text="{x:Static vm:RainbowPassage.OpeningTwoSentences}"
+                                       TextWrapping="Wrap"
+                                       LineHeight="20"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <TextBlock Text="The Rainbow Passage — University of York"
+                                       FontSize="11"
+                                       Margin="0,8,0,0"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
 
                     <!-- Audio level meter + duration display -->
                     <Grid Margin="0,0,0,8">

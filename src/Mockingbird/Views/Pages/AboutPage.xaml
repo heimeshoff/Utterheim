@@ -4,8 +4,10 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:controls="clr-namespace:Mockingbird.Views.Controls"
       Background="{DynamicResource ApplicationBackgroundBrush}"
+      ScrollViewer.CanContentScroll="False"
       Title="About">
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
+    <ScrollViewer x:Name="PageScroll"
+                  VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="40,36,40,32"
                     MaxWidth="900"

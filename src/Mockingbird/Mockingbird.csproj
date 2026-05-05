@@ -65,10 +65,14 @@
   <ItemGroup>
     <!-- Bundle the mockingbird-owned Python sidecar wrapper (ADR 0015 / main-015)
          next to the binary. PythonRuntimeBootstrapper copies the package into the
-         bootstrapped Python runtime's site-packages on first launch. -->
+         bootstrapped Python runtime's site-packages on first launch.
+         CopyToPublishDirectory is set explicitly because PublishSingleFile=true
+         drops these files otherwise (the Link-with-RecursiveDir form we used
+         before created an empty target dir under publish/), which broke
+         BundledSidecarMatchesInstalled and forced a full re-bootstrap. -->
     <Content Include="PythonSidecar\mockingbird_sidecar\**\*.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>PythonSidecar\mockingbird_sidecar\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
 

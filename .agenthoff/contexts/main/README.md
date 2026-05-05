@@ -149,6 +149,12 @@ src\
                                       (render WAV → POST /export-voice →
                                       VoiceLibraryService.AddAsync). Minimum 5 s,
                                       soft cap 30 s, hard cap 60 s auto-stop.
+        RainbowPassage.cs             Static class holding the canonical first
+                                      two sentences of the Rainbow Passage
+                                      (Fairbanks 1960) — the Mic-mode reading
+                                      prompt rendered above the audio level
+                                      meter (main-034). x:Static-bound from
+                                      VoicesPage.xaml; no localisation in v1.
         VoicesPageConverters.cs       CloningSourceToBoolConverter for the cloning
                                       panel (main-025). NullOrEmptyToVisibilityConverter
                                       moved to Views/Converters/SharedConverters.cs in
@@ -645,6 +651,18 @@ running (no collapse / expand in v1). Its view-model is
   at the native render-endpoint format, typically 48 kHz IEEE-float stereo).
   Capture writes a temp WAV under `%TEMP%\Mockingbird\` for the duration of
   the session; the path is consumed by Save and deleted on success.
+- **Rainbow Passage prompt** (main-034) — Mic mode only: a subtle-fill
+  `Border` (`SubtleFillColorSecondaryBrush`, 1-pt `ControlStrokeColorDefault`,
+  4-pt corner) sitting between the mic tip and the audio level meter shows a
+  "Read this aloud:" heading and the canonical first two sentences of the
+  Rainbow Passage (Fairbanks 1960, *Voice and Articulation Drillbook* —
+  public domain), captioned "The Rainbow Passage — University of York".
+  The text is a `const string` on `RainbowPassage` (`ViewModels/Pages/
+  RainbowPassage.cs`) bound via `{x:Static}` — no view-model property,
+  no localisation in v1. Visibility is keyed off `Cloning.IsMicMode`, the
+  same flag the mic device selector uses, so System Audio mode keeps the
+  block collapsed (the user isn't speaking in that mode). Display-only:
+  no auto-scroll, no current-sentence highlight, no interactive elements.
 - **Recording controls** (shared, identical in both modes per styleguide
   Reusable component map):
   - Audio level meter — horizontal `ProgressBar` driven by the capture
