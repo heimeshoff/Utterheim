@@ -453,7 +453,7 @@ public sealed partial class VoiceCloningViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "/export-voice failed.");
-            StatusMessage = "Voice profile encoding failed. See the engine status footer or About page.";
+            StatusMessage = "Voice profile encoding failed. See the engine status footer or Settings page.";
             StatusDetail = ex.Message;
             return;
         }

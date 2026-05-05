@@ -80,7 +80,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         // stop hotkey are read-only in v1). Data path is a live mirror — see
         // OnDataPathChanged for the runtime-swap path.
         HttpEndpoint = $"{_speakServer.Host}:{_speakServer.Port}";
-        StopHotkeyLabel = "Double-tap Left Ctrl";
+        StopHotkeyLabel = "Double-tap Right Ctrl";
         DataPath = _dataPathService.DataPath;
     }
 
@@ -118,7 +118,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject
 
     /// <summary>Static label per ADR 0006 (read-only display, no rebinding UI in v1).</summary>
     [ObservableProperty]
-    private string _stopHotkeyLabel = "Double-tap Left Ctrl";
+    private string _stopHotkeyLabel = "Double-tap Right Ctrl";
 
     /// <summary>
     /// Active data path from <c>bootstrap.json</c> per ADR 0005. Editable via

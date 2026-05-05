@@ -15,6 +15,13 @@
             <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="UseLayoutRounding" Value="True" />
         </Style>
+        <!-- main-033: nav items mirror WhisperHeim — uppercase label, FontSize=11,
+             FontWeight=Medium. Applied as an implicit style scoped to the
+             NavigationView so Speak/Voices/Settings/About all match. -->
+        <Style x:Key="NavItemStyle" TargetType="ui:NavigationViewItem">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Medium" />
+        </Style>
     </ui:FluentWindow.Resources>
 
     <Grid>
@@ -68,46 +75,41 @@
                            IsPaneToggleVisible="False"
                            OpenPaneLength="220">
             <ui:NavigationView.PaneHeader>
+                <!-- main-033: sidebar header mirrors WhisperHeim's BrandingHeader —
+                     same brand mark (mockingbird-logo-256.png) used by BrandHeroControl
+                     on the Speak page, beside the "Mockingbird" wordmark in 16pt Bold.
+                     The previous inline-drawn portrait is gone. -->
                 <StackPanel Orientation="Horizontal" Margin="12,12,12,16">
-                    <Viewbox Width="28" Height="28" Style="{StaticResource BrandMarkStyle}">
-                        <Canvas Width="256" Height="256">
-                            <Ellipse Canvas.Left="62" Canvas.Top="46" Width="60" Height="60"
-                                     Fill="{DynamicResource TextFillColorPrimaryBrush}" />
-                            <Path Fill="{DynamicResource TextFillColorPrimaryBrush}"
-                                  Data="M 44 196 Q 52 132 92 124 Q 132 132 140 196 Z" />
-                            <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                  Data="M 138 76 Q 158 56 158 76 Q 158 96 138 76" />
-                            <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                  Data="M 168 76 Q 196 46 196 76 Q 196 106 168 76" />
-                            <Path Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="10"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                  Data="M 198 76 Q 234 36 234 76 Q 234 116 198 76" />
-                        </Canvas>
+                    <Viewbox Width="28" Height="28" VerticalAlignment="Center"
+                             Style="{StaticResource BrandMarkStyle}">
+                        <Image Source="pack://application:,,,/assets/branding/mockingbird-logo-256.png"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
                     </Viewbox>
                     <TextBlock Text="Mockingbird"
-                               FontSize="20"
-                               FontWeight="SemiBold"
+                               FontSize="16"
+                               FontWeight="Bold"
                                VerticalAlignment="Center"
                                Margin="10,0,0,0" />
                 </StackPanel>
             </ui:NavigationView.PaneHeader>
 
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="Speak"
+                <ui:NavigationViewItem Content="SPEAK"
+                                       Style="{StaticResource NavItemStyle}"
                                        TargetPageType="{x:Type pages:SpeakPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Mic24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="Voices"
+                <ui:NavigationViewItem Content="VOICES"
+                                       Style="{StaticResource NavItemStyle}"
                                        TargetPageType="{x:Type pages:VoicesPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PersonVoice24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="Settings"
+                <ui:NavigationViewItem Content="SETTINGS"
+                                       Style="{StaticResource NavItemStyle}"
                                        TargetPageType="{x:Type pages:SettingsPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Settings24" />
@@ -119,7 +121,8 @@
                  like WhisperHeim — main-032 separates identity / credits from
                  the everyday speak / voices / settings flow. -->
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="About"
+                <ui:NavigationViewItem Content="ABOUT"
+                                       Style="{StaticResource NavItemStyle}"
                                        TargetPageType="{x:Type pages:AboutPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Info24" />

@@ -51,7 +51,7 @@ curl http://127.0.0.1:7223/voices
 mockingbird-speak --voice test-voice "task done"
 ```
 
-The global stop hotkey is **double-tap LCtrl** (within 400 ms).
+The global stop hotkey is **double-tap Right Ctrl** (within 400 ms).
 
 ## Layout
 

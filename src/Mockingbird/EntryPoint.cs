@@ -159,7 +159,7 @@ public static class EntryPoint
 
                 services.AddSingleton(sp => new DoubleTapDetector(
                     sp.GetRequiredService<ILogger<DoubleTapDetector>>(),
-                    NativeMethods.VK_LCONTROL,
+                    NativeMethods.VK_RCONTROL,
                     hotkeyWindowMs));
 
                 // Navigation shell (main-020, ADR 0009).
@@ -272,7 +272,7 @@ public static class EntryPoint
 
         hotkey.DoubleTapped += (_, _) =>
         {
-            logger.LogInformation("Stop hotkey (double-tap LCtrl) — draining queue.");
+            logger.LogInformation("Stop hotkey (double-tap RCtrl) — draining queue.");
             queue.StopAndDrain();
         };
         hotkey.Register();

@@ -28,7 +28,7 @@ From the vision's seed glossary, plus terms that surfaced during boundary analys
 | **Cloned voice** | A user-created voice profile. |
 | **Speak request** | An incoming call carrying `{text, voice ID}`. The unit of work the BC queues, synthesizes, and plays. |
 | **Speak queue** | FIFO of pending speak requests. Head plays; tail is appended. Advances on completion or stop. |
-| **Stop signal** | A user action (double-tap LCtrl) that halts current playback. Drain-vs-keep semantics is an open question (see vision). |
+| **Stop signal** | A user action (double-tap RCtrl) that halts current playback. Drain-vs-keep semantics is an open question (see vision). |
 | **Loopback capture** | Recording the system output device via WASAPI loopback. The "record what I'm hearing" source for voice cloning. |
 | **First-chunk latency** | Time from speak request to first audio sample at the speakers. Target ≤2 s; measured ~190 ms warm / ~320 ms cold (median, alba) and input-length-independent after main-024 / ADR 0013. |
 | **Streaming synthesis** | Producing audio in chunks during generation so playback starts before the full utterance is rendered. |
@@ -278,7 +278,9 @@ src\
                                         AudioCaptureService.
       Hotkey\
         NativeMethods.cs              copied from WhisperHeim @ 911bff0
-        DoubleTapDetector.cs          mockingbird-specific LCtrl gesture (ADR 0006)
+        DoubleTapDetector.cs          mockingbird-specific RCtrl gesture (ADR 0006;
+                                      switched from LCtrl to RCtrl in main-033 for
+                                      right-hand reachability on Marco's keyboard)
       Settings\
         DataPathService.cs            ADR 0005 path layout (adapted from WhisperHeim).
                                       main-031: ValidatePath + SetDataPath + DataPathChanged
@@ -353,6 +355,13 @@ main-032 split the placement: Speak / Voices / Settings sit in
 `MenuItems` (the regular sidebar list); About sits in `FooterMenuItems`
 (bottom-left of the nav pane), mirroring WhisperHeim and visually
 separating the everyday workflow from the identity / credits surface.
+main-033 brought the chrome itself in line with WhisperHeim: the sidebar
+header now renders the Speak-page brand mark (`mockingbird-logo-256.png`
+via the same `Image` source the `BrandHeroControl` uses) beside a
+**16pt Bold** "Mockingbird" wordmark, and the four nav items use the
+WhisperHeim list typography (uppercased label, `FontSize=11`,
+`FontWeight=Medium`, applied via the `NavItemStyle` resource). The
+inline-drawn portrait that previously sat next to the wordmark is gone.
 Pages are real WPF `Page` subclasses, registered transient in DI, and
 implement both `Wpf.Ui.Controls.INavigableView<TViewModel>` (typed VM
 accessor) and `Wpf.Ui.Controls.INavigationAware` (`OnNavigatedTo` /
@@ -538,10 +547,12 @@ voices into without touching this page's code:
 
 - A two-row Grid with a 16 px outer margin: a header (`FontWeight="Light"` page
   title plus a small `{TotalCount} voices` sub-label) and a scrollable list
-  underneath. Inside the `ScrollViewer`, two grouped sections — **Built-in**
-  first, **Cloned** second — both with `SemiBold` section headers. Each row
-  is a three-column Grid: name + meta (engine), Preview button (`Play24`
-  icon, `Appearance="Secondary"`), and a per-row active-request indicator
+  underneath. Inside the `ScrollViewer`, two grouped sections — **Cloned**
+  first, **Built-in** second (main-033 swap; cloned voices are the user's
+  own work and the differentiator, so they lead) — both with `SemiBold`
+  section headers. Each row is a three-column Grid (four for cloned rows
+  per main-026): name + meta (engine), Preview button (`Play24` icon,
+  `Appearance="Secondary"`), and a per-row active-request indicator
   (`Speaker224` symbol, hidden when idle).
 - View-model `VoicesPageViewModel` (`CommunityToolkit.Mvvm`,
   `[ObservableProperty]` per ADR 0010) exposes two
@@ -572,7 +583,7 @@ Behavioural consequences inherited for free:
 
 - Click Preview while another preview / Claude utterance is in flight →
   enqueues behind it (FIFO per ADR 0007, no barge in v1).
-- Double-tap LCtrl during a preview → drains the queue per ADR 0004,
+- Double-tap RCtrl during a preview → drains the queue per ADR 0004,
   identical to tray Stop and `POST /stop`. The row's active-request
   indicator flips off; status footer briefly shows `stopped` then `idle`.
 - First-chunk latency = full queue latency (~190 ms warm for the canned
@@ -756,7 +767,20 @@ re-skinned every existing card from `ui:CardControl` to the WhisperHeim
 `Border CornerRadius=12 Padding=24` pattern documented in the styleguide
 (§Card spec / §Section header / §Page chrome).
 
+main-033 then re-ordered the page so user-facing cards lead and technical /
+diagnostic cards sink to the bottom. Card order top-to-bottom: **Default voice
+→ Output device → Data path → Appearance → Start minimised → Launch at startup
+→ HTTP port → Stop hotkey → Engine status → View logs**. Data path is no
+longer rendered under the Diagnostics header (it is its own free-standing
+card between Audio and Appearance); HTTP port + Stop hotkey + Engine status
++ View logs remain inside Diagnostics, now at the foot of the page.
+
 ### Audio
+
+main-033 reflowed both Audio cards from the right-aligned label/control
+DockPanel pattern to the styleguide's stacked-content composition (label +
+description on top, full-width control below) so they match WhisperHeim's
+Settings page.
 
 - **Default voice** — `ComboBox` sourced from `VoiceCatalog.ListAsync()`
   (built-ins first, cloned voices second). Selection writes through
@@ -795,8 +819,9 @@ re-skinned every existing card from `ui:CardControl` to the WhisperHeim
   monospaced text. Read-only; editing with auto-restart is **out of
   scope** for v1 (deferred to a future refinement if a port collision
   surfaces).
-- **Stop hotkey** — displays "Double-tap Left Ctrl". Read-only per
-  ADR 0006 (no rebinding UI in v1).
+- **Stop hotkey** — displays "Double-tap Right Ctrl". Read-only per
+  ADR 0006 (no rebinding UI in v1). main-033 switched the watched key
+  from Left Ctrl to Right Ctrl.
 - **Data path** — displays the active path from `DataPathService.DataPath`
   (which reads `bootstrap.json` per ADR 0005). Editable as of main-031:
   a `Browse...` button opens `Microsoft.Win32.OpenFolderDialog`, the

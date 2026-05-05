@@ -1,8 +1,11 @@
-// Mockingbird-specific: low-level keyboard hook listening for a double-tap of LCtrl.
+// Mockingbird-specific: low-level keyboard hook listening for a double-tap of RCtrl.
 // Built on top of the same Win32 SetWindowsHookEx primitive as
 // WhisperHeim/Services/Hotkey/GlobalHotkeyService.cs (@ 911bff0) but with different
 // gesture semantics (double-tap, not chord). Per ADR 0006 we copy-and-modify
-// rather than share a library.
+// rather than share a library. main-033 switched the watched key from
+// VK_LCONTROL to VK_RCONTROL — Right Ctrl sits next to the cursor keys on
+// Marco's split keyboard, so the gesture is reachable with the right hand
+// without leaving the home row.
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
@@ -10,7 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace Mockingbird.Services.Hotkey;
 
 /// <summary>
-/// Detects a "double tap" of a configured virtual key (default: Left Control)
+/// Detects a "double tap" of a configured virtual key (default: Right Control)
 /// within a short window (default: 400 ms). Emits <see cref="DoubleTapped"/>
 /// when the second key-down arrives in time. Uses a low-level keyboard hook so
 /// the gesture works even when mockingbird's window is not focused.
@@ -30,7 +33,7 @@ public sealed class DoubleTapDetector : IDisposable
 
     public event EventHandler? DoubleTapped;
 
-    public DoubleTapDetector(ILogger<DoubleTapDetector> logger, int virtualKey = NativeMethods.VK_LCONTROL, int windowMs = 400)
+    public DoubleTapDetector(ILogger<DoubleTapDetector> logger, int virtualKey = NativeMethods.VK_RCONTROL, int windowMs = 400)
     {
         _logger = logger;
         _virtualKey = virtualKey;
