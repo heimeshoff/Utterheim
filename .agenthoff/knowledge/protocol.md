@@ -8,6 +8,44 @@ Newest entries on top.
 ## 2026-05-05 -- Work session ended
 
 **Type:** Work / Session end
+**Completed:** 1
+**Bounced:** 0
+**Failed:** 0
+**Commits:** 2
+
+---
+
+## 2026-05-05 -- Task completed: main-033 - Design corrections — menu font/logo, voices order, settings layout, right-Ctrl hotkey, error strings
+
+**Type:** Work / Task completion
+**Task:** main-033 - Design corrections — menu font/logo, voices order, settings layout, right-Ctrl hotkey, error strings
+**Summary:** Bundled seven post-main-032 design corrections — sidebar wordmark + brand mark now match WhisperHeim, Voices page renders Cloned above Built-in, Settings page reflows with stacked combobox cards in the new order, stop hotkey now watches Right Ctrl end-to-end with all user-visible strings updated, and the two stale "About page" pointers in error strings now point to the Settings page. Build clean (0 warnings / 0 errors); manual smoke not run by the worker.
+**Commit:** 2b8fb3d
+**Files changed:** 11
+**ADRs written:** 0022-stop-hotkey-double-tap-right-ctrl.md
+
+---
+
+## 2026-05-05 -- Batch started: [main-033]
+
+**Type:** Work / Batch start
+**Tasks:** main-033 - Design corrections — menu font/logo, voices order, settings layout, right-Ctrl hotkey, error strings
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-05 -- Model / Captured: main-033 - Design corrections — menu font/logo, voices order, settings layout, right-Ctrl hotkey, error strings
+
+**Type:** Model / Capture
+**BC:** main
+**Filed to:** todo
+**Summary:** Bundled UI follow-up to main-032: switch sidebar font + logo to match WhisperHeim, swap Cloned/Built-in section order on Voices page, stack the Default-voice and Output-device comboboxes below their labels, re-order Settings cards (Default voice → Output device → Data path → Appearance → HTTP port → Stop key → Engine status), move stop-hotkey from double-tap Left Ctrl to Right Ctrl (function + all UI strings + appsettings default), and update the two "see About page" error strings (`VoicesPage.xaml:54`, `VoiceCloningViewModel.cs:456`) to point at Settings instead. Filed straight to todo — depends on `main-010` (styleguide gate is OPEN).
+
+---
+
+## 2026-05-05 -- Work session ended
+
+**Type:** Work / Session end
 **Completed:** 2 (main-030, main-032)
 **Bounced:** 0
 **Failed:** 0

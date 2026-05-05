@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-05
 completed: 2026-05-05
-commit:
+commit: 2b8fb3d
 depends_on: [main-010]
 blocks: []
 tags: [ui, polish, styleguide, hotkey, follow-up-main-032]
