@@ -11,6 +11,56 @@ Newest entries on top.
 **Completed:** 1
 **Bounced:** 0
 **Failed:** 0
+**Commits:** 2 (1 task commit + 1 SHA-backfill chore)
+
+---
+
+## 2026-05-05 -- Task completed: main-034 - Rainbow Passage prompt for microphone voice cloning
+
+**Type:** Work / Task completion
+**Task:** main-034 - Rainbow Passage prompt for microphone voice cloning
+**Summary:** Voices page now renders a Mic-mode-only "Read this aloud:" Rainbow Passage reading prompt above the audio level meter, sourced from a new RainbowPassage constants class and bound via x:Static; System Audio mode stays unaffected via the existing IsMicMode visibility flag.
+**Commit:** 4ebd671
+**Files changed:** 3 (worker) + 5 bundled pre-existing UI tweaks
+**ADRs written:** none
+
+---
+
+## 2026-05-05 -- Batch started: [main-034]
+
+**Type:** Work / Batch start
+**Tasks:** main-034 - Rainbow Passage prompt for microphone voice cloning
+**Parallel:** no (1 worker)
+
+---
+
+## 2026-05-05 -- Model / Refined + Promoted: main-034 - Rainbow Passage prompt for microphone voice cloning
+
+**Type:** Model / Refine + Promote
+**BC:** main
+**Status after:** todo (promoted from backlog)
+**From → To:** backlog → todo
+**Summary:** Resolved the three open questions blocking promotion. (1) Mic-only confirmed — System Audio mode keeps the prompt block collapsed. (2) Length pinned to the **first two sentences** of the Rainbow Passage (~10–15 s reading), not the full passage and not paragraph one — fits the user's stated "5–10 seconds of clear voice" goal, no `ScrollViewer` needed. Exact text now embedded inline in the task file so the worker doesn't need a runtime fetch. (3) Source-URL research blocked by content-filter; deferred to worker (best-effort capture of the canonical york.ac.uk URL in a code comment, fallback to "Fairbanks 1960, *Voice and Articulation Drillbook* (public domain)" if the page is unreachable). UI caption stays "The Rainbow Passage — University of York" either way. Acceptance criteria tightened around exact text, attribution caption, and source-comment requirement.
+**Split into:** —
+**ADRs written:** —
+
+---
+
+## 2026-05-05 -- Model / Captured: main-034 - Rainbow Passage prompt for microphone voice cloning
+
+**Type:** Model / Capture
+**BC:** main
+**Filed to:** backlog
+**Summary:** Show the Rainbow Passage (sourced from York.ac.uk) inside the Voices page Clone-a-new-voice panel when Microphone mode is selected, so users have something natural to read aloud to produce 5–30 s of clear speech for cloning. Open questions parked in Notes: mic-only confirmation, full passage vs. first paragraph vs. first 2 sentences, exact York source URL.
+
+---
+
+## 2026-05-05 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1
+**Bounced:** 0
+**Failed:** 0
 **Commits:** 2
 
 ---

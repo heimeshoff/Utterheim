@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-05
 completed: 2026-05-05
-commit:
+commit: 4ebd671
 depends_on: [main-010, main-025]
 blocks: []
 tags: [frontend, voice-cloning, voices-page, ux, microphone]
