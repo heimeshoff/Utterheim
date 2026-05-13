@@ -1,0 +1,14 @@
+{
+  "name": "utterheim-narrator",
+  "owner": { "name": "Marco Heimeshoff" },
+  "metadata": {
+    "description": "Claude Code TTS notifications via Utterheim"
+  },
+  "plugins": [
+    {
+      "name": "utterheim-narrator",
+      "source": "./",
+      "description": "Speak Claude Code's end-of-turn summaries and attention prompts through Utterheim"
+    }
+  ]
+}
