@@ -29,7 +29,7 @@ Two related restructurings:
 3. **About content needs to mirror WhisperHeim's About**: hero (logo + name +
    version + tagline), profile-and-contact card with the Marco Heimeshoff
    bio + "Get in Touch" links, and a support card with Ko-fi button and
-   "View on GitHub" link — pointing at the **mockingbird** repo, not the
+   "View on GitHub" link — pointing at the **utterheim** repo, not the
    WhisperHeim one.
 
 ## What
@@ -40,7 +40,7 @@ Two related restructurings:
   healthy + last-error block + Restart Engine button) and the View logs
   hyperlink.
 - **Extract `EngineStatusCardViewModel`** in
-  `src/Mockingbird/ViewModels/EngineStatusCardViewModel.cs` (note:
+  `src/Utterheim/ViewModels/EngineStatusCardViewModel.cs` (note:
   parallel to the ViewModels/Pages/ folder, not inside it — this VM is
   composed, not a page VM). Carries the rich panel's state:
   `EngineState`, `Healthy`, `Port`, `LastError`, `EngineStateLabel`,
@@ -85,7 +85,7 @@ lines 9–230 — adapt section by section):
 
 1. **Hero** — `<controls:BrandHeroControl Tagline="Local voices for Claude
    Code" />` from main-030. Shows the main-028 mark inside the brand-blue
-   badge, "Mockingbird" 40 pt ExtraBold, the version tag in
+   badge, "Utterheim" 40 pt ExtraBold, the version tag in
    `BrandDeepMutedBrush`, and the tagline beneath.
 2. **Profile & Contact card** — `Border` with
    `CardBackgroundFillColorSecondaryBrush`, `CornerRadius=12`, `Padding=28`.
@@ -93,15 +93,15 @@ lines 9–230 — adapt section by section):
    - Round 140×140 portrait of Marco. **Asset**: copy
      `tooling/WhisperHeim/src/WhisperHeim/Assets/heimeshoff.jpg` into
      `assets/people/heimeshoff.jpg` and add as `<Resource>` to
-     `Mockingbird.csproj`. Render with
+     `Utterheim.csproj`. Render with
      `BorderBrush=#FF25abfe BorderThickness=3` ring (identical to
      WhisperHeim).
    - Bio paragraph 1 (verbatim from WhisperHeim — Marco's identity is the
      same on both apps): *"Hi, I'm **Marco Heimeshoff** — trainer,
      consultant, and conference organiser focused on **Domain-Driven
      Design** and **collaborative modeling**."*
-   - Bio paragraph 2 (mockingbird-specific, replaces WhisperHeim's
-     ubiquitous-language line): *"I built Mockingbird so my Claude Code
+   - Bio paragraph 2 (utterheim-specific, replaces WhisperHeim's
+     ubiquitous-language line): *"I built Utterheim so my Claude Code
      sessions could speak in different voices — local, offline, with
      whatever voices I want to clone."*
    - Divider.
@@ -111,7 +111,7 @@ lines 9–230 — adapt section by section):
      to WhisperHeim — same hyperlinks, same colours.
 3. **Support & GitHub card** — `Border` `CardBackgroundFillColorSecondaryBrush`
    `CornerRadius=12` `Padding=28`. Inside:
-   - "If you enjoy Mockingbird and want to support my open-source work,
+   - "If you enjoy Utterheim and want to support my open-source work,
      you can buy me a coffee!" line (text adapted from WhisperHeim).
    - Ko-fi button — gradient `#FF25abfe → #FF005FAA`, `CornerRadius=10`,
      "Buy me a coffee on Ko-fi" white text. Click navigates to
@@ -119,27 +119,27 @@ lines 9–230 — adapt section by section):
      verified via grep). The URL is stored as a constant on `AppInfo`
      (`AppInfo.KofiUrl`) so it's a single-source rename target if it ever
      moves.
-   - Closing line "Otherwise, just **enjoy using Mockingbird for free** —
+   - Closing line "Otherwise, just **enjoy using Utterheim for free** —
      and thanks for giving it a try!"
    - GitHub row: Star icon + "View on GitHub" hyperlink. URL stored as
-     `AppInfo.GithubUrl = "https://github.com/heimeshoff/mockingbird"`.
+     `AppInfo.GithubUrl = "https://github.com/heimeshoff/utterheim"`.
 4. **Credits** at the bottom (smaller, unchanged): "Synthesis powered by
    pocket-tts (Kyutai Labs)."
 
 The Bento grid (Philosophy + AI Models) at the very bottom of WhisperHeim's
 About is **not** copied — it's WhisperHeim-specific and overlaps with
-mockingbird's Settings → Engine status. Drop it.
+utterheim's Settings → Engine status. Drop it.
 
 ### Converters consolidation
 
 `EngineStateToPipBrushConverter` and `NullOrEmptyToVisibilityConverter`
 currently live in
-`src/Mockingbird/ViewModels/Pages/AboutPageConverters.cs`.
+`src/Utterheim/ViewModels/Pages/AboutPageConverters.cs`.
 `NullOrEmptyToVisibilityConverter` is **also** duplicated in
 `VoicesPageConverters.cs` (verified via grep on the codebase).
 
 - Move both converters into a new file
-  `src/Mockingbird/Views/Converters/SharedConverters.cs` (or the existing
+  `src/Utterheim/Views/Converters/SharedConverters.cs` (or the existing
   converter folder if one is established).
 - Delete the duplicate from `VoicesPageConverters.cs`. If
   `VoicesPageConverters.cs` ends up empty after the move, delete it.
@@ -172,7 +172,7 @@ currently live in
       `AppInfo.Version` per main-030).
 - [ ] `RestartEngineCommand` and `OpenLogsCommand` continue to work
       identically (call `SidecarHost.RestartAsync` and open
-      `%LOCALAPPDATA%\Mockingbird\logs\` in Explorer). The state pip is
+      `%LOCALAPPDATA%\Utterheim\logs\` in Explorer). The state pip is
       live via `SidecarHost.StateChanged`.
 - [ ] Persistent footer (HTTP + Engine state) is unchanged — still backed
       by `EngineStatusViewModel`.
@@ -183,13 +183,13 @@ currently live in
 - [ ] About profile card carries the 140×140 ringed `heimeshoff.jpg`
       portrait (copied into `assets/people/`), Marco's two-paragraph bio
       (paragraph 1 verbatim from WhisperHeim, paragraph 2 the
-      mockingbird-specific voice-diversity line), and the
+      utterheim-specific voice-diversity line), and the
       heimeshoff.de / Bluesky / LinkedIn "Get in Touch" rows with
       identical hyperlinks and icons to WhisperHeim.
 - [ ] Support card has the Ko-fi gradient button (URL via
       `AppInfo.KofiUrl = "https://ko-fi.com/heimeshoff"`) and a
       "View on GitHub" link (URL via
-      `AppInfo.GithubUrl = "https://github.com/heimeshoff/mockingbird"`).
+      `AppInfo.GithubUrl = "https://github.com/heimeshoff/utterheim"`).
 - [ ] `AppInfo` (shipped by main-030) gains `KofiUrl` and `GithubUrl`
       static constants in this task, alongside the existing `Version`.
 - [ ] `EngineStateToPipBrushConverter` and
@@ -198,7 +198,7 @@ currently live in
       `App.xaml` resources. The duplicate definition in
       `VoicesPageConverters.cs` is removed; pages reference the shared
       resources via `StaticResource`.
-- [ ] Build is clean (`dotnet build mockingbird.sln -c Debug` →
+- [ ] Build is clean (`dotnet build utterheim.sln -c Debug` →
       0 errors, 0 warnings).
 
 ## Notes
@@ -212,7 +212,7 @@ currently live in
   page resolution gets a fresh instance — same lifetime
   `VoiceCloningViewModel` uses for the same reason.
 - The WhisperHeim About uses `UserControl` as the page root while
-  Mockingbird Pages use `Page` (from main-020 nav shell). Stay on `Page`;
+  Utterheim Pages use `Page` (from main-020 nav shell). Stay on `Page`;
   the XAML pattern is identical aside from the root element name.
 - Bluesky and LinkedIn icon paths/glyphs: lift verbatim from
   `WhisperHeim/Views/Pages/AboutPage.xaml` (lines around the contact
@@ -230,7 +230,7 @@ follows:
 |---|---|
 | Marco's portrait? | Reuse WhisperHeim's `heimeshoff.jpg`. Copy the file into `assets/people/heimeshoff.jpg`. |
 | Ko-fi URL? | Shared with WhisperHeim: `https://ko-fi.com/heimeshoff` (verified via grep). Stored as `AppInfo.KofiUrl` constant. |
-| About copy — voice-diversity wording? | Keep WhisperHeim's bio paragraph 1 verbatim. Replace paragraph 2 with: *"I built Mockingbird so my Claude Code sessions could speak in different voices — local, offline, with whatever voices I want to clone."* |
+| About copy — voice-diversity wording? | Keep WhisperHeim's bio paragraph 1 verbatim. Replace paragraph 2 with: *"I built Utterheim so my Claude Code sessions could speak in different voices — local, offline, with whatever voices I want to clone."* |
 | Engine status VM placement? | Extract `EngineStatusCardViewModel`. Compose into `SettingsPageViewModel.EngineStatus`. Mirrors the `VoicesPageViewModel.Cloning` pattern. |
 
 Side effects:
@@ -258,37 +258,37 @@ gradient button → `AppInfo.KofiUrl`; "View on GitHub" → `AppInfo.GithubUrl`)
 at the bottom-left of the nav pane.
 
 Key files:
-- `src/Mockingbird/ViewModels/EngineStatusCardViewModel.cs` (new) — extracted
+- `src/Utterheim/ViewModels/EngineStatusCardViewModel.cs` (new) — extracted
   sub-VM, composed onto `SettingsPageViewModel.EngineStatus`, registered
   transient (mirrors the `VoiceCloningViewModel` pattern).
-- `src/Mockingbird/Views/Pages/AboutPage.xaml` + `.xaml.cs` (rewritten) —
+- `src/Utterheim/Views/Pages/AboutPage.xaml` + `.xaml.cs` (rewritten) —
   WhisperHeim-style composition; code-behind handles `Hyperlink_RequestNavigate`
   + `KofiButton_Click`.
-- `src/Mockingbird/ViewModels/Pages/AboutPageViewModel.cs` (collapsed) — only
+- `src/Utterheim/ViewModels/Pages/AboutPageViewModel.cs` (collapsed) — only
   `Version` (sourced from `AppInfo.Version`) remains; no commands, no
   subscriptions, no `Attach()` / `Detach()`.
-- `src/Mockingbird/Views/Pages/SettingsPage.xaml` + `SettingsPageViewModel.cs`
+- `src/Utterheim/Views/Pages/SettingsPage.xaml` + `SettingsPageViewModel.cs`
   + `SettingsPage.xaml.cs` — engine card + View logs added at end of
   Diagnostics; `Attach()`/`Detach()` forwarded to the composed sub-VM.
-- `src/Mockingbird/Services/AppInfo.cs` — extended with `KofiUrl` +
+- `src/Utterheim/Services/AppInfo.cs` — extended with `KofiUrl` +
   `GithubUrl` constants.
-- `src/Mockingbird/Views/Converters/SharedConverters.cs` (new) — consolidates
+- `src/Utterheim/Views/Converters/SharedConverters.cs` (new) — consolidates
   `NullOrEmptyToVisibilityConverter` (previously duplicated in
   `AboutPageConverters.cs` + `VoicesPageConverters.cs`) and
   `EngineStateToPipBrushConverter`. Both registered as `App.xaml` resources
   alongside the WPF built-in `BoolToVisibilityConverter` so any Page can
   reference them via `{StaticResource ...}` without per-page imports.
-- `src/Mockingbird/ViewModels/Pages/VoicesPageConverters.cs` — duplicate
+- `src/Utterheim/ViewModels/Pages/VoicesPageConverters.cs` — duplicate
   removed; only `CloningSourceToBoolConverter` remains.
-- `src/Mockingbird/ViewModels/Pages/AboutPageConverters.cs` — deleted.
-- `src/Mockingbird/Views/MainWindow.xaml` — About moved to `FooterMenuItems`.
-- `src/Mockingbird/Views/Pages/VoicesPage.xaml` +
-  `src/Mockingbird/Views/Dialogs/DeleteVoiceDialog.xaml` — local converter
+- `src/Utterheim/ViewModels/Pages/AboutPageConverters.cs` — deleted.
+- `src/Utterheim/Views/MainWindow.xaml` — About moved to `FooterMenuItems`.
+- `src/Utterheim/Views/Pages/VoicesPage.xaml` +
+  `src/Utterheim/Views/Dialogs/DeleteVoiceDialog.xaml` — local converter
   declarations dropped; both pages now resolve from App.xaml.
-- `src/Mockingbird/EntryPoint.cs` — `EngineStatusCardViewModel` registered
+- `src/Utterheim/EntryPoint.cs` — `EngineStatusCardViewModel` registered
   transient.
-- `src/Mockingbird/App.xaml` — three converters registered at app scope.
-- `src/Mockingbird/Mockingbird.csproj` — `assets/people/heimeshoff.jpg`
+- `src/Utterheim/App.xaml` — three converters registered at app scope.
+- `src/Utterheim/Utterheim.csproj` — `assets/people/heimeshoff.jpg`
   added as `<Resource>`.
 - `assets/people/heimeshoff.jpg` (new) — copied verbatim from
   `tooling/WhisperHeim/src/WhisperHeim/Assets/heimeshoff.jpg`.

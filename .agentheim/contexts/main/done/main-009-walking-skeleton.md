@@ -14,7 +14,7 @@ tags: [foundation, skeleton, prototype]
 
 ## Why
 
-This is mockingbird's first prototype. Every architectural foundation decision (main-001 through main-008) needs proof that the chosen stack runs end-to-end before any feature work begins. The skeleton is **feature-thin, architecture-thick** — it does almost nothing functionally interesting, but it exercises every layer the foundation ADRs decided on. If the skeleton can't ship, one of the foundation decisions is wrong and we revisit before pouring code on top.
+This is utterheim's first prototype. Every architectural foundation decision (main-001 through main-008) needs proof that the chosen stack runs end-to-end before any feature work begins. The skeleton is **feature-thin, architecture-thick** — it does almost nothing functionally interesting, but it exercises every layer the foundation ADRs decided on. If the skeleton can't ship, one of the foundation decisions is wrong and we revisit before pouring code on top.
 
 This is also the **moment code first appears in the project** — the brainstorm phase produced only markdown.
 
@@ -22,16 +22,16 @@ This is also the **moment code first appears in the project** — the brainstorm
 
 Build the thinnest possible end-to-end path from a shell HTTP call to audio playing through the speakers. Specifically:
 
-1. **Project skeleton** (per main-001): `mockingbird.csproj` with `net9.0-windows`, `WinExe`, `UseWPF=true`, `x64`, server GC, Nullable + ImplicitUsings on. Solution file `mockingbird.sln`. Wpf.Ui.Tray + Serilog + NAudio NuGet references.
+1. **Project skeleton** (per main-001): `utterheim.csproj` with `net9.0-windows`, `WinExe`, `UseWPF=true`, `x64`, server GC, Nullable + ImplicitUsings on. Solution file `utterheim.sln`. Wpf.Ui.Tray + Serilog + NAudio NuGet references.
 
 2. **Path layout + bootstrap** (per main-005, main-008):
-   - Create `%APPDATA%\Mockingbird\` and `%LOCALAPPDATA%\Mockingbird\` on first run.
-   - Copy WhisperHeim's `DataPathService` and rename to mockingbird paths (per main-006).
+   - Create `%APPDATA%\Utterheim\` and `%LOCALAPPDATA%\Utterheim\` on first run.
+   - Copy WhisperHeim's `DataPathService` and rename to utterheim paths (per main-006).
    - Create `<dataPath>\voices\library.json` (empty list is fine for v1 skeleton).
    - Bring up Serilog with the rolling file sink and the sidecar-stdout redirect sink.
 
 3. **Python sidecar bootstrap** (per main-002, main-008):
-   - On first launch, run an install script that prepares the embeddable Python at `%LOCALAPPDATA%\Mockingbird\runtime\python\` and pip-installs `pocket-tts` and deps. Mirror WhisperHeim's `ModelDownloadDialog` UX for progress.
+   - On first launch, run an install script that prepares the embeddable Python at `%LOCALAPPDATA%\Utterheim\runtime\python\` and pip-installs `pocket-tts` and deps. Mirror WhisperHeim's `ModelDownloadDialog` UX for progress.
    - On every launch, spawn `runtime\python\python.exe -m pocket_tts.server --host 127.0.0.1 --port 0`. Read the assigned port from stdout/stderr or a known hand-off file. Bind loopback only.
    - Health-check the sidecar (e.g., `GET /healthz` if pocket-tts exposes it; otherwise a benign synthesis call) before declaring it ready.
    - Capture sidecar stdout/stderr into Serilog as `sidecar`-tagged events.
@@ -58,21 +58,21 @@ Build the thinnest possible end-to-end path from a shell HTTP call to audio play
    - A minimal main window using Wpf.Ui that just shows the sidebar shell + a placeholder "ready" content area. **No real UI yet** — that's main-010 and beyond.
    - The "speaking person" logo is a stub; final logo lands in main-010.
 
-9. **CLI wrapper** (per main-003): a tiny `mockingbird-speak.exe` (single-file `dotnet publish`) that wraps `POST /speak`. Lets a Claude hook do `mockingbird-speak --voice alba "task done"` without remembering curl flags.
+9. **CLI wrapper** (per main-003): a tiny `utterheim-speak.exe` (single-file `dotnet publish`) that wraps `POST /speak`. Lets a Claude hook do `utterheim-speak --voice alba "task done"` without remembering curl flags.
 
 ## Acceptance criteria
 
 These are observable behaviours, not architectural promises. A user (or a smoke test) can verify each one.
 
-- [ ] **App launches.** Run `mockingbird.exe`; tray icon appears within 5 seconds; main window opens on left-click; closes to tray on close-button.
+- [ ] **App launches.** Run `utterheim.exe`; tray icon appears within 5 seconds; main window opens on left-click; closes to tray on close-button.
 - [ ] **First-run bootstrap completes.** On a clean machine with no prior install, the bootstrap dialog appears, completes the Python+pocket-tts install with progress, and ends with the tray ready. Subsequent launches skip the dialog.
-- [ ] **Speak request plays audio.** With the app running, `curl -s -X POST http://127.0.0.1:7223/speak -H "Content-Type: application/json" -d '{"text":"Hello, this is mockingbird.","voice":"<built-in voice id>"}'` returns `202 Accepted` within ~100 ms, and audio plays through the default output device within ~2 seconds.
+- [ ] **Speak request plays audio.** With the app running, `curl -s -X POST http://127.0.0.1:7223/speak -H "Content-Type: application/json" -d '{"text":"Hello, this is utterheim.","voice":"<built-in voice id>"}'` returns `202 Accepted` within ~100 ms, and audio plays through the default output device within ~2 seconds.
 - [ ] **Streaming is real.** A long text (~200 words) starts playing audio before the full synthesis completes (first-chunk latency well under the total synthesis time).
 - [ ] **Concurrent requests queue.** Fire two `POST /speak` calls back-to-back; both play, in order, with no overlap and no drop.
 - [ ] **HTTP stop works.** While audio is playing, `curl -X POST http://127.0.0.1:7223/stop` halts playback within ~200 ms and clears any queued requests.
 - [ ] **Double-tap LCtrl stops.** Same outcome as HTTP stop, triggered by the global hotkey.
 - [ ] **Voice list works.** `GET /voices` returns the pocket-tts built-ins as `{id, name, engine: "pocket-tts", isBuiltIn: true}`.
-- [ ] **CLI wrapper works.** `mockingbird-speak --voice <id> "test"` plays audio.
+- [ ] **CLI wrapper works.** `utterheim-speak --voice <id> "test"` plays audio.
 - [ ] **Logs are useful.** A failed sidecar start, a missing voice, or a port collision produces a clear log line and a tray toast (per main-008).
 - [ ] **Clean shutdown.** Closing the tray icon's "Exit" terminates the sidecar, releases port 7223, and removes the tray icon. No zombie `python.exe` processes.
 
@@ -91,7 +91,7 @@ Explicitly defer to subsequent feature tasks:
 - The eight foundation ADRs (0001–0008) MUST be committed before the skeleton work begins — that's why this task `depends_on` all of them. The decision tasks should commit ADR files and nothing else; the skeleton is where they all materialise as code.
 - Validate `pip install pocket-tts` in a fresh Windows 11 venv as the very first step of skeleton work. If pocket-tts can't install on Windows, the foundation decision (main-002) needs revisiting *before* you keep building. Don't paper over a broken sidecar with mocks.
 - A synthesis smoke test against a built-in voice (one of `alba`, `marius`, etc.) is the minimum proof that the engine works. The voice library + clone flow is main-011 territory, not skeleton.
-- After this task finishes, mockingbird is ready for feature work. The user should hear "Hello, this is mockingbird." in a real voice as the moment of validation.
+- After this task finishes, utterheim is ready for feature work. The user should hear "Hello, this is utterheim." in a real voice as the moment of validation.
 
 ## Worker note (scope amendment)
 
@@ -124,29 +124,29 @@ Solution layout (suggestion-shape from the orchestrator was followed almost
 verbatim):
 
 ```
-mockingbird.sln
+utterheim.sln
 src\
-  Mockingbird\Mockingbird.csproj         WPF tray app, net9.0-windows, x64, Mica
-  Mockingbird\EntryPoint.cs              composition root
-  Mockingbird\App.xaml(.cs)              WPF Application + WPF-UI theme
-  Mockingbird\Views\MainWindow.xaml(.cs) Mica window + tray:NotifyIcon menu
-  Mockingbird\Views\BootstrapDialog.*    first-run placeholder
-  Mockingbird\Services\Tts\              ITtsEngine + StubTtsEngine
-  Mockingbird\Services\Speak\            SpeakRequest + SpeakQueue + AudioPlayer
-  Mockingbird\Services\Http\SpeakServer  Kestrel on 127.0.0.1:7223
-  Mockingbird\Services\Hotkey\           NativeMethods + DoubleTapDetector
-  Mockingbird\Services\Settings\         DataPathService (ADR 0005 layout)
-  Mockingbird\appsettings.json           default port + hotkey window
-  Mockingbird.Cli\                       mockingbird-speak — single-file CLI
+  Utterheim\Utterheim.csproj         WPF tray app, net9.0-windows, x64, Mica
+  Utterheim\EntryPoint.cs              composition root
+  Utterheim\App.xaml(.cs)              WPF Application + WPF-UI theme
+  Utterheim\Views\MainWindow.xaml(.cs) Mica window + tray:NotifyIcon menu
+  Utterheim\Views\BootstrapDialog.*    first-run placeholder
+  Utterheim\Services\Tts\              ITtsEngine + StubTtsEngine
+  Utterheim\Services\Speak\            SpeakRequest + SpeakQueue + AudioPlayer
+  Utterheim\Services\Http\SpeakServer  Kestrel on 127.0.0.1:7223
+  Utterheim\Services\Hotkey\           NativeMethods + DoubleTapDetector
+  Utterheim\Services\Settings\         DataPathService (ADR 0005 layout)
+  Utterheim\appsettings.json           default port + hotkey window
+  Utterheim.Cli\                       utterheim-speak — single-file CLI
 README.md
 ```
 
-Build: `dotnet build mockingbird.sln -c Debug -v minimal` succeeds with 0
+Build: `dotnet build utterheim.sln -c Debug -v minimal` succeeds with 0
 warnings, 0 errors.
 
 Smoke-tested end-to-end against a freshly-built binary:
 - App launched, hosted services started, log file written under
-  `%LOCALAPPDATA%\Mockingbird\logs\`.
+  `%LOCALAPPDATA%\Utterheim\logs\`.
 - `GET /status` → 200 with `{playing, queueLength, currentRequestId, sidecar}`.
 - `GET /voices` → 200 with `[{id:"test-voice", name:"Test Tone", engine:"stub",
   isBuiltIn:true}]`.
@@ -154,15 +154,15 @@ Smoke-tested end-to-end against a freshly-built binary:
   queuePosition}`; `AudioPlayer` started at 24 kHz mono 16-bit, `StubTtsEngine`
   produced its tone, request completed.
 - `POST /stop` → 200 with `{stopped:true, dropped}`; queue drained cleanly.
-- `taskkill mockingbird.exe` released the port.
+- `taskkill utterheim.exe` released the port.
 
 Files of interest:
-- `src/Mockingbird/EntryPoint.cs` — composition root, hosted-service lifecycle
-- `src/Mockingbird/Services/Tts/ITtsEngine.cs` — the seam main-011 plugs into
-- `src/Mockingbird/Services/Speak/SpeakQueue.cs` — `Channel<T>` worker (ADR 0007)
-- `src/Mockingbird/Services/Http/SpeakServer.cs` — minimal API (ADR 0003)
-- `src/Mockingbird/Services/Settings/DataPathService.cs` — path layout (ADR 0005)
-- `src/Mockingbird/Services/Hotkey/DoubleTapDetector.cs` — LCtrl gesture (ADR 0006)
+- `src/Utterheim/EntryPoint.cs` — composition root, hosted-service lifecycle
+- `src/Utterheim/Services/Tts/ITtsEngine.cs` — the seam main-011 plugs into
+- `src/Utterheim/Services/Speak/SpeakQueue.cs` — `Channel<T>` worker (ADR 0007)
+- `src/Utterheim/Services/Http/SpeakServer.cs` — minimal API (ADR 0003)
+- `src/Utterheim/Services/Settings/DataPathService.cs` — path layout (ADR 0005)
+- `src/Utterheim/Services/Hotkey/DoubleTapDetector.cs` — LCtrl gesture (ADR 0006)
 
 ADRs touched: none modified. Foundation ADRs 0001–0008 are now materialised in
 working code.

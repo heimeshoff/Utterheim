@@ -18,7 +18,7 @@ The walking skeleton (main-009) ships with a stubbed `ITtsEngine` that plays a
 440 Hz test tone instead of synthesised speech. Every architectural seam is in
 place — HTTP, queue, NAudio playback, hotkey, tray, logging, voice list — but
 the user never actually hears Claude's voice come through. This task replaces
-the stub with the real pocket-tts engine so mockingbird becomes useful.
+the stub with the real pocket-tts engine so utterheim becomes useful.
 
 This is also where the heavy first-run UX lives: bundling embeddable Python,
 pip-installing pocket-tts and its torch CPU dependency, downloading the model
@@ -27,7 +27,7 @@ skeleton tractable.
 
 ## What
 
-1. **Bundle / prepare embeddable Python** at `%LOCALAPPDATA%\Mockingbird\runtime\python\`:
+1. **Bundle / prepare embeddable Python** at `%LOCALAPPDATA%\Utterheim\runtime\python\`:
    - First-launch bootstrap dialog (replacing the placeholder shipped in main-009)
      downloads Python 3.12 embeddable, extracts to `runtime\python\`, and pip-installs
      `pocket-tts` plus deps into a venv-style site-packages folder. Mirror
@@ -58,7 +58,7 @@ skeleton tractable.
 
 4. **Wire-up in DI** (`EntryPoint.cs`): swap `services.AddSingleton<ITtsEngine, StubTtsEngine>()`
    for `services.AddSingleton<ITtsEngine, PocketTtsEngine>()`. Optionally keep the
-   stub gated behind an env flag (`MOCKINGBIRD_USE_STUB_ENGINE=1`) for offline
+   stub gated behind an env flag (`UTTERHEIM_USE_STUB_ENGINE=1`) for offline
    testing.
 
 5. **Output sample rate**: pocket-tts produces at its own native rate; the
@@ -68,10 +68,10 @@ skeleton tractable.
 
 ## Acceptance criteria
 
-- [ ] On a clean machine with no prior install, launching mockingbird shows
+- [ ] On a clean machine with no prior install, launching utterheim shows
   a bootstrap dialog with real download progress; the dialog completes and
   hands off to the tray app.
-- [ ] `curl -X POST http://127.0.0.1:7223/speak -d '{"text":"Hello, this is mockingbird.","voice":"alba"}'`
+- [ ] `curl -X POST http://127.0.0.1:7223/speak -d '{"text":"Hello, this is utterheim.","voice":"alba"}'`
   produces audible speech in the alba voice through the default output device
   within ~2 seconds (vision target).
 - [ ] `GET /voices` returns the eight pocket-tts built-ins (`alba`, `marius`,
@@ -81,11 +81,11 @@ skeleton tractable.
   before the full synthesis completes.
 - [ ] `GET /status` reports `sidecar.state = "running"` (or similar) and
   `sidecar.healthy = true` once warm; reflects degraded state during restart.
-- [ ] Sidecar stdout/stderr appear in `mockingbird-YYYYMMDD.log` with a
+- [ ] Sidecar stdout/stderr appear in `utterheim-YYYYMMDD.log` with a
   `sidecar` source tag.
 - [ ] Closing the tray's "Exit" terminates the sidecar; no zombie `python.exe`
   remains.
-- [ ] Stub engine either removed entirely OR gated behind `MOCKINGBIRD_USE_STUB_ENGINE=1`.
+- [ ] Stub engine either removed entirely OR gated behind `UTTERHEIM_USE_STUB_ENGINE=1`.
 
 ## Out of scope
 
@@ -100,7 +100,7 @@ skeleton tractable.
 ## Notes
 
 - Reference: ADR 0002 (Python sidecar shape), ADR 0008 (model bootstrap UX),
-  the kyutai-tts research report at `.agenthoff/knowledge/research/kyutai-tts-2026-05-01.md`,
+  the kyutai-tts research report at `.agentheim/knowledge/research/kyutai-tts-2026-05-01.md`,
   and main-009's `StubTtsEngine` for the API contract every engine must satisfy.
 - The skeleton's audio path expects raw PCM chunks. If pocket-tts's HTTP
   endpoint emits a streaming WAV / Opus / MP3 encoding, decode in the engine
@@ -143,7 +143,7 @@ Code:
   step counter, overall progress bar, cancel + retry. Mirrors WhisperHeim's
   `ModelDownloadDialog` shape per ADR 0008.
 - `EntryPoint.cs` — DI swap to `PocketTtsEngine` by default; `StubTtsEngine`
-  preserved behind `MOCKINGBIRD_USE_STUB_ENGINE=1`. `SidecarHost` registered as
+  preserved behind `UTTERHEIM_USE_STUB_ENGINE=1`. `SidecarHost` registered as
   a hosted service when the real engine is selected. Bootstrap dialog now drives
   `PythonRuntimeBootstrapper` instead of just writing a sentinel file.
 - `Services/Http/SpeakServer.cs` — `/status` reports the real sidecar state /
@@ -151,7 +151,7 @@ Code:
   reading when the env-flagged stub is in use. `SidecarHost` injected as an
   optional ctor parameter.
 
-Build: `dotnet build mockingbird.sln -c Debug --nologo -v quiet` → 0 warnings,
+Build: `dotnet build utterheim.sln -c Debug --nologo -v quiet` → 0 warnings,
 0 errors.
 
 User-verifiable acceptance criteria pending first run on a clean machine:
@@ -161,6 +161,6 @@ User-verifiable acceptance criteria pending first run on a clean machine:
   speech within ≤2 s.
 - [ ] Streaming behaviour: long text starts playing before synthesis completes.
 - [ ] `GET /status` reports `sidecar.state = "running"` and `sidecar.healthy = true`.
-- [ ] Sidecar stdout/stderr appear in `mockingbird-YYYYMMDD.log` under the
+- [ ] Sidecar stdout/stderr appear in `utterheim-YYYYMMDD.log` under the
   `sidecar` source.
 - [ ] Tray "Exit" terminates the python.exe — no zombie process.

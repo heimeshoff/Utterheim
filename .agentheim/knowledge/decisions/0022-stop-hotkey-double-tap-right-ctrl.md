@@ -14,7 +14,7 @@ related_research: []
 
 ## Context
 ADR 0006 established the copy-and-modify reuse pattern from WhisperHeim and
-mentioned a "double-tap LCtrl" gesture in passing. Mockingbird shipped that
+mentioned a "double-tap LCtrl" gesture in passing. Utterheim shipped that
 through main-006 / main-009 and lived with Left Ctrl through main-032. main-033
 revisited the choice based on real-world use:
 
@@ -36,7 +36,7 @@ revisited the choice based on real-world use:
   more naturally than reaching across the keyboard with the left hand mid-task.
 
 ## Decision
-The mockingbird stop hotkey is **double-tap Right Ctrl** (within 400 ms).
+The utterheim stop hotkey is **double-tap Right Ctrl** (within 400 ms).
 
 - `DoubleTapDetector` defaults to `NativeMethods.VK_RCONTROL`.
 - `EntryPoint` registers it with `VK_RCONTROL` explicitly.

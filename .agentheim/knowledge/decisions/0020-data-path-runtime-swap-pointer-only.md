@@ -25,7 +25,7 @@ chose option 2.
 
 ## Decision
 
-**Mockingbird does the same: pointer-only swap, no migration.**
+**Utterheim does the same: pointer-only swap, no migration.**
 
 Concretely, on a successful `DataPathService.SetDataPath(newPath)`:
 
@@ -35,14 +35,14 @@ Concretely, on a successful `DataPathService.SetDataPath(newPath)`:
   `<newPath>\voices\` folder, which is typically empty on first swap.
 - The old `<oldPath>\voices\` folder stays exactly where it was. Nothing
   is moved, copied, or deleted.
-- A MessageBox info ("Restart Mockingbird for the change to take full
+- A MessageBox info ("Restart Utterheim for the change to take full
   effect") nudges the user to cycle the app so other path-anchored
   surfaces (logs, etc.) are unambiguous, but the live `LoadAsync`
   ensures the Voices page reflects the swap immediately.
 
 The Reset path (`SetDataPath(null)`) follows the same pattern: the
 override is cleared, the resolved path falls back to
-`%APPDATA%\Mockingbird\`, and any voices that were created under the
+`%APPDATA%\Utterheim\`, and any voices that were created under the
 override stay where they are.
 
 ## Why pointer-only
@@ -53,7 +53,7 @@ override stay where they are.
    intermediate states. The failure mode is "voices appear empty in the
    new location, but the old folder is fully intact" — recoverable by
    pointing the path back.
-2. **Scope** — Mockingbird is a personal tool with one user and small
+2. **Scope** — Utterheim is a personal tool with one user and small
    data sets (single-digit-MB voice profiles). The "I just want to put
    my voices on OneDrive" use case is well-served by the user
    manually copying `<oldPath>\voices\` to `<newPath>\voices\` before
@@ -63,13 +63,13 @@ override stay where they are.
    bootstrap.json discipline (ADR 0005); they should share the runtime
    change discipline too.
 4. **`bootstrap.json` itself doesn't move** — it stays at
-   `%APPDATA%\Mockingbird\bootstrap.json` because that's where the
+   `%APPDATA%\Utterheim\bootstrap.json` because that's where the
    pointer lives. Putting the pointer inside the path it points at would
    be a self-reference loop.
-5. **Only `<dataPath>\voices\` relocates in Mockingbird.** Per the
+5. **Only `<dataPath>\voices\` relocates in Utterheim.** Per the
    layout in ADR 0005, every other directory (`runtime/`, `models/`,
    `cache/`, `logs/`, `bootstrap-state.json`, `settings.json`) is
-   anchored to `LocalRoot` (`%LOCALAPPDATA%\Mockingbird\`) and is
+   anchored to `LocalRoot` (`%LOCALAPPDATA%\Utterheim\`) and is
    genuinely indifferent to a `dataPath` change. So the migration
    surface is small — it's *just* the voices folder — but the pointer
    semantics still beat copying it.
@@ -92,7 +92,7 @@ override stay where they are.
   the MessageBox "Restart for full effect."
 - **Validation is writability-only.** `ValidatePath` round-trips a tiny
   temp file. We do not check whether the target already contains a
-  Mockingbird tree, or refuse paths that would shadow LocalRoot. Edge
+  Utterheim tree, or refuse paths that would shadow LocalRoot. Edge
   cases like "user picks `C:\Windows\System32`" surface as a
   `ValidatePath` failure (no write access) rather than a structural
   rejection — keeps the v1 surface small.

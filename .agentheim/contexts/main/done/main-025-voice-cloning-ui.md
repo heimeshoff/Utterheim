@@ -138,8 +138,8 @@ On Save click:
    typically 48 kHz IEEE-float stereo per `HighQualityLoopbackService`).
    The sidecar's torchaudio backend resamples internally per main-015
    Q6 — no client-side resampling.
-3. POST temp WAV to `mockingbird_sidecar`'s `/export-voice`
-   (per ADR 0015) via the existing `HttpClient` shape mockingbird
+3. POST temp WAV to `utterheim_sidecar`'s `/export-voice`
+   (per ADR 0015) via the existing `HttpClient` shape utterheim
    already uses for `/tts`. Display inline progress: "Encoding
    voice profile..." (typically 1–2 s for a 5–20 s sample).
 4. Receive `.safetensors` bytes. Call
@@ -195,9 +195,9 @@ Cancel or a successful Save clears it.
 ### WhisperHeim service copies (per ADR 0006)
 
 This task is the first to bring WhisperHeim's audio-capture services
-into mockingbird. Per ADR 0006 (copy-and-modify):
+into utterheim. Per ADR 0006 (copy-and-modify):
 
-| WhisperHeim source | Mockingbird target |
+| WhisperHeim source | Utterheim target |
 |---|---|
 | `Services\Audio\IAudioCaptureService.cs` | `Services\Audio\IAudioCaptureService.cs` |
 | `Services\Audio\AudioCaptureService.cs` | `Services\Audio\AudioCaptureService.cs` |
@@ -210,14 +210,14 @@ into mockingbird. Per ADR 0006 (copy-and-modify):
 
 What gets adapted:
 
-- Namespaces: `WhisperHeim.Services.Audio` → `Mockingbird.Services.Audio`.
+- Namespaces: `WhisperHeim.Services.Audio` → `Utterheim.Services.Audio`.
 - `HighQualityLoopbackService.SaveAsVoice(...)` — **delete this method**
-  (lines 162–183). It's WhisperHeim's WAV-only persistence; mockingbird
+  (lines 162–183). It's WhisperHeim's WAV-only persistence; utterheim
   routes through `VoiceLibraryService` which writes both `.safetensors`
   and the sample WAV. The `TempWavFilePath` getter stays — it's how the
   Save flow retrieves the captured audio path.
 - `HighQualityLoopbackService.Initialize(DataPathService)` — the
-  `CustomVoicesDir` static is no longer relevant; remove it. Mockingbird's
+  `CustomVoicesDir` static is no longer relevant; remove it. Utterheim's
   capture writes to `Path.GetTempPath()` only; the persistent location
   is `VoiceLibraryService`'s concern.
 - DI: register both as **transient** (each cloning session is a fresh
@@ -259,7 +259,7 @@ in normal use because the UI catches the same conditions.
   styleguide.
 - [ ] WhisperHeim's `AudioCaptureService`, `HighQualityLoopbackService`,
   `AudioDeviceInfo`, `AudioDeviceResolver`, `AudioRingBuffer`, plus
-  the two interfaces, are copied into `src\Mockingbird\Services\Audio\`
+  the two interfaces, are copied into `src\Utterheim\Services\Audio\`
   per ADR 0006. Each file has the `// Adapted from WhisperHeim/...`
   header.
   `LoopbackCaptureService` (the 16 kHz-downsampled variant) is **not**
@@ -315,7 +315,7 @@ in normal use because the UI catches the same conditions.
 - [ ] Visual matches the styleguide — Mica backdrop, Fluent controls,
   Segoe UI Variable, no bespoke palette. Section heading uses
   `FontWeight="SemiBold"`.
-- [ ] Build clean: `dotnet build mockingbird.sln -c Debug` produces
+- [ ] Build clean: `dotnet build utterheim.sln -c Debug` produces
   0 errors, 0 warnings.
 
 ## Notes
@@ -323,8 +323,8 @@ in normal use because the UI catches the same conditions.
 ### ADRs that govern this task
 
 - **ADR 0006** — WhisperHeim copy-and-modify (the audio-capture
-  services land in mockingbird here).
-- **ADR 0015** — Mockingbird sidecar wrapper (this task POSTs to
+  services land in utterheim here).
+- **ADR 0015** — Utterheim sidecar wrapper (this task POSTs to
   `/export-voice` from the wrapper, not from `pocket_tts.main`).
 - **ADR 0010** — `CommunityToolkit.Mvvm` (the cloning panel's
   view-model uses `[ObservableProperty]` / `[RelayCommand]` per the
@@ -390,12 +390,12 @@ WhisperHeim/<path> @ 911bff0` headers and a CHANGELOG entry per file.
 `LoopbackCaptureService` (the 16 kHz-downsampled ASR variant) is
 intentionally not copied. `HighQualityLoopbackService.SaveAsVoice` was
 deleted, and its `Initialize(DataPathService)` + static `CustomVoicesDir`
-were removed — mockingbird routes persistence through `VoiceLibraryService`,
+were removed — utterheim routes persistence through `VoiceLibraryService`,
 not the capture service.
 
 ### Verification
 
-`dotnet build mockingbird.sln -c Debug` → 0 errors, 0 warnings.
+`dotnet build utterheim.sln -c Debug` → 0 errors, 0 warnings.
 
 The interactive UI behaviours — level meter pulses on mic + system audio,
 progress bar fills 0..5 s, Save enables only when all four conditions
@@ -408,17 +408,17 @@ the next manual run.
 
 ### Key files
 
-- `src\Mockingbird\Services\Audio\IAudioCaptureService.cs`
-- `src\Mockingbird\Services\Audio\AudioCaptureService.cs`
-- `src\Mockingbird\Services\Audio\IHighQualityLoopbackService.cs`
-- `src\Mockingbird\Services\Audio\HighQualityLoopbackService.cs`
-- `src\Mockingbird\Services\Audio\AudioDeviceInfo.cs`
-- `src\Mockingbird\Services\Audio\AudioDeviceResolver.cs`
-- `src\Mockingbird\Services\Audio\AudioRingBuffer.cs`
-- `src\Mockingbird\ViewModels\Pages\VoiceCloningViewModel.cs`
-- `src\Mockingbird\ViewModels\Pages\VoicesPageConverters.cs`
-- `src\Mockingbird\ViewModels\Pages\VoicesPageViewModel.cs` (composes Cloning child VM)
-- `src\Mockingbird\Views\Pages\VoicesPage.xaml` (third row + cloning panel)
-- `src\Mockingbird\Views\Pages\VoicesPage.xaml.cs` (calls `Cloning.RefreshDevices()` on navigate-to)
-- `src\Mockingbird\EntryPoint.cs` (DI: transient audio services, transient `VoiceCloningViewModel`)
+- `src\Utterheim\Services\Audio\IAudioCaptureService.cs`
+- `src\Utterheim\Services\Audio\AudioCaptureService.cs`
+- `src\Utterheim\Services\Audio\IHighQualityLoopbackService.cs`
+- `src\Utterheim\Services\Audio\HighQualityLoopbackService.cs`
+- `src\Utterheim\Services\Audio\AudioDeviceInfo.cs`
+- `src\Utterheim\Services\Audio\AudioDeviceResolver.cs`
+- `src\Utterheim\Services\Audio\AudioRingBuffer.cs`
+- `src\Utterheim\ViewModels\Pages\VoiceCloningViewModel.cs`
+- `src\Utterheim\ViewModels\Pages\VoicesPageConverters.cs`
+- `src\Utterheim\ViewModels\Pages\VoicesPageViewModel.cs` (composes Cloning child VM)
+- `src\Utterheim\Views\Pages\VoicesPage.xaml` (third row + cloning panel)
+- `src\Utterheim\Views\Pages\VoicesPage.xaml.cs` (calls `Cloning.RefreshDevices()` on navigate-to)
+- `src\Utterheim\EntryPoint.cs` (DI: transient audio services, transient `VoiceCloningViewModel`)
 - `CHANGELOG.md` (created — provenance entries per ADR 0006)

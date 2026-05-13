@@ -18,7 +18,7 @@ main-018 (clean-machine first-run verification) surfaced a real bootstrap
 failure: on first launch the bootstrap dialog reports
 "Python smoke test exited with code 1" and refuses to hand off. Reproduced
 multiple times by the user (eight `Bootstrap failed` entries between
-22:18:04 and 22:18:36 in `mockingbird-20260503.log`).
+22:18:04 and 22:18:36 in `utterheim-20260503.log`).
 
 main-018's contract says "if anything fails, file a bug task against
 main-011 and reopen the engine work properly." This is that task.
@@ -54,7 +54,7 @@ Reproducing observation in this incident:
 1. A previous successful bootstrap left `bootstrap-state.json` with
    `PocketTtsInstalled: true` / `RuntimeReady: true`.
 2. The `runtime/` folder was deleted (clean-machine simulation) but the
-   JSON state file in `%LOCALAPPDATA%\Mockingbird\` was not.
+   JSON state file in `%LOCALAPPDATA%\Utterheim\` was not.
 3. `IsBootstrapped` correctly returned false (its file-existence check
    *does* verify `pocket_tts/__init__.py`), so the dialog opened.
 4. `BootstrapAsync` re-extracted Python (step 1 saw missing `python.exe`)
@@ -141,7 +141,7 @@ captured tail (last ~30 lines is plenty).
   `runtime/` while keeping `bootstrap-state.json` leads to a complete,
   successful bootstrap, not a code-1 smoke test.
 - [ ] Bug B: when any bootstrap subprocess exits non-zero, the captured
-  stderr (full, or last ~30 lines) appears in `mockingbird-YYYYMMDD.log`
+  stderr (full, or last ~30 lines) appears in `utterheim-YYYYMMDD.log`
   at ERR or above, and in the dialog's user-visible error message.
 - [ ] Spot-check that `EnableSitePackages()` is correctly re-applied
   whenever step 1 re-extracts (i.e. that `python312._pth` ends up patched
@@ -151,9 +151,9 @@ captured tail (last ~30 lines is plenty).
 
 ## Notes
 
-- Affected file: `src/Mockingbird/Services/Tts/PythonRuntimeBootstrapper.cs`
+- Affected file: `src/Utterheim/Services/Tts/PythonRuntimeBootstrapper.cs`
   (lines ~123 and ~242 per current `master`).
-- Also touch `src/Mockingbird/Views/BootstrapDialog.xaml.cs` if needed
+- Also touch `src/Utterheim/Views/BootstrapDialog.xaml.cs` if needed
   to surface the captured stderr to the user (currently shows the
   exception message verbatim — once the message includes stderr, the
   dialog inherits the improvement for free).
@@ -171,7 +171,7 @@ captured tail (last ~30 lines is plenty).
 ## Outcome
 
 Both defects fixed in
-`src/Mockingbird/Services/Tts/PythonRuntimeBootstrapper.cs`:
+`src/Utterheim/Services/Tts/PythonRuntimeBootstrapper.cs`:
 
 **Bug A — state-vs-disk reconciliation.** Step 3 now gates on
 `!state.PocketTtsInstalled || !PocketTtsActuallyInstalled()`, mirroring the
@@ -198,7 +198,7 @@ pip resolver complaint rather than the opaque "exit code 1".
 `Information` after each `_pth` write, so future runtime-wipe scenarios
 leave evidence that the patch was re-applied.
 
-**Build:** `dotnet build src/Mockingbird/Mockingbird.csproj` clean, no
+**Build:** `dotnet build src/Utterheim/Utterheim.csproj` clean, no
 warnings introduced.
 
 **ADR written:** `0011-bootstrap-state-reconciliation.md` records the
@@ -215,6 +215,6 @@ re-attempted. The workaround note in this task's body (delete
 just `runtime\` is enough to trigger a full re-bootstrap.
 
 Key files:
-- `src/Mockingbird/Services/Tts/PythonRuntimeBootstrapper.cs` — both fixes
-- `.agenthoff/knowledge/decisions/0011-bootstrap-state-reconciliation.md` — ADR
-- `.agenthoff/contexts/main/README.md` — engine-status bullet updated
+- `src/Utterheim/Services/Tts/PythonRuntimeBootstrapper.cs` — both fixes
+- `.agentheim/knowledge/decisions/0011-bootstrap-state-reconciliation.md` — ADR
+- `.agentheim/contexts/main/README.md` — engine-status bullet updated

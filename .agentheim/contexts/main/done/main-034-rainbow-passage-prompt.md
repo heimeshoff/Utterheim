@@ -52,7 +52,7 @@ two sentences fit a single wrapped block.
 
 ### Placement
 
-In `src\Mockingbird\Views\Pages\VoicesPage.xaml`, just below the
+In `src\Utterheim\Views\Pages\VoicesPage.xaml`, just below the
 Mic-mode `TipText` `TextBlock` (currently around line 116) and above
 the audio level meter Grid (around line 122). Visibility bound to
 `ViewModel.Cloning.IsMicMode` (same converter the mic device selector
@@ -110,7 +110,7 @@ the York attribution).
   trap focus — it's display text, no interactive elements.
 - [ ] Visual matches styleguide (main-010) — Mica-friendly subtle
   fill, Segoe UI Variable, no bespoke colours.
-- [ ] Build clean: `dotnet build mockingbird.sln -c Debug` produces
+- [ ] Build clean: `dotnet build utterheim.sln -c Debug` produces
   0 errors, 0 warnings.
 
 ## Notes
@@ -141,9 +141,9 @@ the York attribution).
 
 ### Files likely to change
 
-- `src\Mockingbird\Views\Pages\VoicesPage.xaml` — add the passage
+- `src\Utterheim\Views\Pages\VoicesPage.xaml` — add the passage
   `Border` block under the mic tip.
-- `src\Mockingbird\ViewModels\Pages\VoiceCloningViewModel.cs` — if
+- `src\Utterheim\ViewModels\Pages\VoiceCloningViewModel.cs` — if
   exposing the text via property; otherwise a sibling
   `RainbowPassage.cs` constants file.
 
@@ -160,7 +160,7 @@ block collapsed via the existing `Cloning.IsMicMode` flag (same binding
 pattern as the mic device selector).
 
 The passage text lives in a new static class
-`Mockingbird.ViewModels.Pages.RainbowPassage` (`OpeningTwoSentences`
+`Utterheim.ViewModels.Pages.RainbowPassage` (`OpeningTwoSentences`
 const), bound via `{x:Static vm:RainbowPassage.OpeningTwoSentences}` —
 no view-model property, no localisation in v1, no runtime fetch. The
 file's comment header documents the source: at execute time none of
@@ -172,15 +172,15 @@ in code falls back to *Fairbanks 1960, Voice and Articulation Drillbook
 on-screen caption stays "The Rainbow Passage — University of York"
 per the visual spec.
 
-`dotnet build mockingbird.sln -c Debug` → **0 warnings, 0 errors**.
+`dotnet build utterheim.sln -c Debug` → **0 warnings, 0 errors**.
 
 ### Key files
 
-- `src\Mockingbird\Views\Pages\VoicesPage.xaml` — new `Border` block
+- `src\Utterheim\Views\Pages\VoicesPage.xaml` — new `Border` block
   inserted between the mic tip and the audio level meter.
-- `src\Mockingbird\ViewModels\Pages\RainbowPassage.cs` (new) — static
+- `src\Utterheim\ViewModels\Pages\RainbowPassage.cs` (new) — static
   class with the canonical text and source-attribution comment header.
-- `.agenthoff\contexts\main\README.md` — Cloning panel section gains a
+- `.agentheim\contexts\main\README.md` — Cloning panel section gains a
   Rainbow Passage prompt bullet; file map gains the new constants file.
 
 No ADR was warranted — both implementation choices the task left open

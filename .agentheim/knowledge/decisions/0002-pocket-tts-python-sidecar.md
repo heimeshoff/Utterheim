@@ -14,7 +14,7 @@ related_research: [kyutai-tts-2026-05-01]
 
 ## Context
 
-Pocket-tts is a Python package (PyPI `pocket-tts`, MIT/CC-BY-4.0, ~100M params, CPU-only, ~200ms first-chunk). It is English-only at v1. Kyutai documents a built-in FastAPI server (`pocket-tts serve`). The host language for mockingbird is C#/WPF/.NET 9.
+Pocket-tts is a Python package (PyPI `pocket-tts`, MIT/CC-BY-4.0, ~100M params, CPU-only, ~200ms first-chunk). It is English-only at v1. Kyutai documents a built-in FastAPI server (`pocket-tts serve`). The host language for utterheim is C#/WPF/.NET 9.
 
 Three integration shapes are viable:
 
@@ -26,14 +26,14 @@ The vision's hard constraint is that the tray app must be reliable, fast to laun
 
 ## Decision
 
-Run pocket-tts as a Python sidecar process that mockingbird supervises:
+Run pocket-tts as a Python sidecar process that utterheim supervises:
 
-- Bundle Python 3.12 embeddable + a prepared site-packages folder (containing `pocket-tts`, torch CPU, deps) inside the mockingbird install directory, under `runtime\python\`.
-- On first launch, mockingbird verifies `python.exe` and the pocket-tts package are present; if not, it runs the install script (lazy bootstrap).
+- Bundle Python 3.12 embeddable + a prepared site-packages folder (containing `pocket-tts`, torch CPU, deps) inside the utterheim install directory, under `runtime\python\`.
+- On first launch, utterheim verifies `python.exe` and the pocket-tts package are present; if not, it runs the install script (lazy bootstrap).
 - On every launch (or on first speak request), spawn `runtime\python\python.exe -m pocket_tts.server --host 127.0.0.1 --port 0`. Bind only to loopback.
 - The C# host owns the process lifecycle: graceful shutdown on tray exit, restart on crash with backoff, structured logging of stdout/stderr to Serilog.
 - The synthesis engine is wrapped behind an internal `ITtsEngine` interface so a future second engine (sherpa-onnx ONNX, Chatterbox, Kyutai multilingual) can slot in.
-- The voice profile model treats `.safetensors` files as opaque artefacts produced and consumed by the sidecar; mockingbird only handles file paths and metadata.
+- The voice profile model treats `.safetensors` files as opaque artefacts produced and consumed by the sidecar; utterheim only handles file paths and metadata.
 
 ## Consequences
 
@@ -52,7 +52,7 @@ Run pocket-tts as a Python sidecar process that mockingbird supervises:
 
 ### Neutral
 
-- The sidecar can be managed independently for debugging — start it manually and point mockingbird at it for development.
+- The sidecar can be managed independently for debugging — start it manually and point utterheim at it for development.
 
 ## Alternatives considered
 
@@ -62,6 +62,6 @@ Run pocket-tts as a Python sidecar process that mockingbird supervises:
 
 ## References
 
-- Kyutai TTS research: `.agenthoff/knowledge/research/kyutai-tts-2026-05-01.md`
-- Vision: `.agenthoff/vision.md`
+- Kyutai TTS research: `.agentheim/knowledge/research/kyutai-tts-2026-05-01.md`
+- Vision: `.agentheim/vision.md`
 - Pocket-tts repo: `kyutai-labs/pocket-tts` (GitHub)

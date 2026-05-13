@@ -63,7 +63,7 @@ This gives us atomic, OS-enforced cleanup along three paths:
 A 1 s post-verification waits on the captured Process handle after both
 kill paths have fired and logs at `LogError` if anything is still alive
 — giving operators a clear signal in
-`%LOCALAPPDATA%\Mockingbird\logs\` if the contract ever degrades again
+`%LOCALAPPDATA%\Utterheim\logs\` if the contract ever degrades again
 (per main-022 acceptance criterion 3).
 
 The job is created in the constructor (lazy via field initializer) and
@@ -111,7 +111,7 @@ prior `StopAsync` releases the OS handle and triggers cleanup.
   `CreateNoWindow = true`. Also doesn't solve the abrupt-host-death
   case.
 - **Polling Task Manager / WMI to clean orphans on next launch.**
-  Fragile; assumes mockingbird relaunches; doesn't free the port
+  Fragile; assumes utterheim relaunches; doesn't free the port
   immediately after Exit.
 
 ## References

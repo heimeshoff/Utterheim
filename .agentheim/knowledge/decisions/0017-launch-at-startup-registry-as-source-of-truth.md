@@ -8,13 +8,13 @@ Accepted (main-016).
 
 ## Context
 
-mockingbird's Settings page (main-016) has a "Launch at startup" toggle. Two
+utterheim's Settings page (main-016) has a "Launch at startup" toggle. Two
 plausible storage choices:
 
 1. **Mirror state in `settings.json`** — a `launchAtStartup: bool` field
    alongside `defaultVoiceId`, `outputDeviceId`, `startMinimised`. On change,
    write both the JSON value AND the registry entry under
-   `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Mockingbird`.
+   `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Utterheim`.
 2. **Registry-only** — the Run entry IS the state. The toggle reads the
    registry on every page navigation and writes/deletes on change.
 
@@ -29,7 +29,7 @@ The registry is the source of truth. We do **not** store
 `launchAtStartup` in `settings.json`. The Settings page reads
 `StartupRegistration.IsRegistered` on every `OnNavigatedTo` and writes /
 deletes the value on toggle change. Registry value name is
-`Mockingbird` (matches the product name so it's identifiable in `regedit`
+`Utterheim` (matches the product name so it's identifiable in `regedit`
 and Task Manager's Startup tab); the value command is the quoted current
 executable path resolved via `Process.MainModule.FileName`.
 
@@ -79,7 +79,7 @@ state.
 ## Verification
 
 `reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Run` after
-toggling on shows `Mockingbird "<path-to>\mockingbird.exe"`. Toggling
+toggling on shows `Utterheim "<path-to>\utterheim.exe"`. Toggling
 off removes the value. Closing and re-opening the Settings page
 reflects the current registry state — including changes made by
 external tools between visits.

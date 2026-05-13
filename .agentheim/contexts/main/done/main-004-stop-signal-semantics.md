@@ -22,7 +22,7 @@ Default behaviour: **stop current utterance AND drain the speak queue**. Expose 
 
 ## Acceptance criteria
 
-- [ ] ADR 0004 committed at `.agenthoff/knowledge/decisions/0004-stop-drains-queue.md` with `scope: global`.
+- [ ] ADR 0004 committed at `.agentheim/knowledge/decisions/0004-stop-drains-queue.md` with `scope: global`.
 - [ ] ADR matches the draft in Notes (or carries user amendments).
 - [ ] No code yet — implementation lands in main-009.
 
@@ -63,7 +63,7 @@ Implementation: on stop signal, the synthesis engine cancels in-flight generatio
 - **Configurable from day one with no default** — rejected; chose a clear default to avoid analysis paralysis at v1.
 
 ## References
-- Vision: `.agenthoff/vision.md` (open questions section)
+- Vision: `.agentheim/vision.md` (open questions section)
 ```
 
 ## Outcome
@@ -71,4 +71,4 @@ Implementation: on stop signal, the synthesis engine cancels in-flight generatio
 Decision recorded as ADR 0004 (`scope: global`, `status: accepted`). Stop semantics for v1: cancel in-flight synthesis, flush audio buffer, and discard pending queue items; setting toggle exposed in tray UI to allow opting into "stop current only". Implementation deferred to main-009; queue mechanism (main-007) and HTTP `/stop` endpoint (main-003) can now build against this decision.
 
 Key files:
-- `.agenthoff/knowledge/decisions/0004-stop-drains-queue.md`
+- `.agentheim/knowledge/decisions/0004-stop-drains-queue.md`

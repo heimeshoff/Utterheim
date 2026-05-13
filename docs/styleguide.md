@@ -1,8 +1,8 @@
-# Mockingbird Styleguide
+# Utterheim Styleguide
 
-This is the single source of truth for mockingbird's frontend look and feel. It exists to
+This is the single source of truth for utterheim's frontend look and feel. It exists to
 satisfy the styleguide gate captured in `main-010` and referenced by every frontend feature
-task in `.agenthoff/contexts/main/`.
+task in `.agentheim/contexts/main/`.
 
 > **Status:** Signed off by Marco Heimeshoff on 2026-05-01. Frontend feature tasks may
 > now be promoted from `backlog/` to `todo/`. The placeholder logo was approved in place;
@@ -12,7 +12,7 @@ task in `.agenthoff/contexts/main/`.
 
 ## Inherited from WhisperHeim
 
-Mockingbird inherits its design language wholesale from WhisperHeim. The authoritative
+Utterheim inherits its design language wholesale from WhisperHeim. The authoritative
 reference is:
 
 > [`..\..\tooling\WhisperHeim\design.md`](../../../tooling/WhisperHeim/design.md)
@@ -29,7 +29,7 @@ What we adopt **unchanged**:
 - **Recording controls component spec** — from WhisperHeim design.md section 6 (TTS,
   Section B Voices). The shared recording controls (audio level meter, duration display
   with 5-second minimum + progress bar, start/stop buttons, voice name input, save
-  button) are reused identically in mockingbird's voice-cloning flow.
+  button) are reused identically in utterheim's voice-cloning flow.
 - **Color and contrast principles** — high contrast ratios, Light theme default
   (`ui:ThemesDictionary Theme="Light"` in `App.xaml`). Per ADR 0019 the active
   theme is user-selectable via Settings → Appearance and persists in
@@ -46,7 +46,7 @@ feel, accessible.
 
 ## Brand palette
 
-Mockingbird inherits four brand brushes from WhisperHeim. They are declared once
+Utterheim inherits four brand brushes from WhisperHeim. They are declared once
 in `App.xaml` `<Application.Resources>` (alongside the merged wpfui dictionaries,
 not inside them — wpfui's chain stays untouched) as `SolidColorBrush` resources
 with stable `x:Key` names. Brushes are theme-independent fixed hex values — the
@@ -73,20 +73,20 @@ in-app Light/Dark/System swap re-renders without an app restart.
 
 ---
 
-## Mockingbird divergences
+## Utterheim divergences
 
-The places where mockingbird intentionally departs from WhisperHeim. Each divergence is
+The places where utterheim intentionally departs from WhisperHeim. Each divergence is
 listed here so they don't drift into "every page is slightly different from WhisperHeim
 for no reason".
 
 ### Brand mark (logo)
 
-WhisperHeim uses a microphone silhouette (input — listening). Mockingbird uses a
+WhisperHeim uses a microphone silhouette (input — listening). Utterheim uses a
 **voice-emitting human head** (output — speaking). The contrast is intentional and the
-single most visible piece of brand differentiation: WhisperHeim listens, mockingbird
+single most visible piece of brand differentiation: WhisperHeim listens, utterheim
 speaks.
 
-- Asset: [`assets/branding/mockingbird-logo.svg`](../assets/branding/mockingbird-logo.svg)
+- Asset: [`assets/branding/utterheim-logo.svg`](../assets/branding/utterheim-logo.svg)
 - Design: an opaquely **filled** orange right-facing human-head silhouette in profile,
   with three blue Wi-Fi-style concentric arcs ("C" shapes) fanning outward from the
   mouth, each arc larger than the one in front of it. The arcs sit **behind** the head
@@ -107,8 +107,8 @@ speaks.
 ### Page set
 
 WhisperHeim has seven pages: General, Dictation, Templates, Transcribe Files, Transcripts,
-Text to Speech, About. Mockingbird does **not** ship any of the dictation- or
-transcription-oriented pages — that's WhisperHeim's domain. Mockingbird's pages are:
+Text to Speech, About. Utterheim does **not** ship any of the dictation- or
+transcription-oriented pages — that's WhisperHeim's domain. Utterheim's pages are:
 
 | Page | Equivalent in WhisperHeim | Notes |
 |---|---|---|
@@ -117,7 +117,7 @@ transcription-oriented pages — that's WhisperHeim's domain. Mockingbird's page
 | **Settings** | General | "Start minimized" + "Launch at startup" + future preferences. |
 | **About** | About | Logo, tagline, version, model status (pocket-tts engine status). |
 
-Mockingbird does **not** have: Dictation, Templates, Transcribe Files, Transcripts.
+Utterheim does **not** have: Dictation, Templates, Transcribe Files, Transcripts.
 
 ### Tagline
 
@@ -131,19 +131,19 @@ on the About page and as the window subtitle / `TitleBar` text where appropriate
 
 ### Hotkeys
 
-Mockingbird has exactly **one** global hotkey:
+Utterheim has exactly **one** global hotkey:
 
 | Gesture | Action |
 |---|---|
 | **Double-tap LCtrl** | Stop current speech and (per ADR 0004) drain the speak queue. |
 
-Notably mockingbird does **not** implement WhisperHeim's `Ctrl+Win+Ä` "read selected text
+Notably utterheim does **not** implement WhisperHeim's `Ctrl+Win+Ä` "read selected text
 aloud" gesture. The reason: speak requests come in over HTTP from Claude Code, not from
 the user selecting text on screen. There is no input gesture for "speak this" — only for
 "stop speaking". Documented in ADR 0006 (LCtrl gesture) and the vision.
 
 The Dictation-page-style "hotkey reference card" from WhisperHeim therefore collapses to
-a single line on mockingbird's About or Settings page.
+a single line on utterheim's About or Settings page.
 
 ### Tray menu
 
@@ -155,20 +155,20 @@ Per main-009, the tray menu is fixed at three items:
 3. **Exit** — clean shutdown via the host's exit action.
 
 WhisperHeim's tray menu (Start/Stop Call Recording, Settings, Exit) doesn't apply because
-mockingbird has no recording-of-meetings mode.
+utterheim has no recording-of-meetings mode.
 
 ### Appearance modes
 
 The Settings page hosts a three-tile picker (Light / Dark / System) modelled
 verbatim on WhisperHeim's General-page picker. Selection persists to
 `settings.json` as `appearanceMode: "Light" | "Dark" | "System"` per
-[ADR 0019](../.agenthoff/knowledge/decisions/0019-appearance-mode-in-settings-json.md);
+[ADR 0019](../.agentheim/knowledge/decisions/0019-appearance-mode-in-settings-json.md);
 default for installs missing the field is `Light` (in-memory only — the file
 is not rewritten on read).
 
 Live swap uses `Wpf.Ui.Appearance.ApplicationThemeManager.Apply(...)` /
 `ApplySystemTheme()` per
-[`knowledge/research/wpfui-live-theme-swap-2026-05-04.md`](../.agenthoff/knowledge/research/wpfui-live-theme-swap-2026-05-04.md);
+[`knowledge/research/wpfui-live-theme-swap-2026-05-04.md`](../.agentheim/knowledge/research/wpfui-live-theme-swap-2026-05-04.md);
 no app restart is required. Startup (`EntryPoint`) calls the same helper once
 before `MainWindow.Show()` so the persisted preference applies on first paint
 without flicker.
@@ -181,7 +181,7 @@ all three modes (matches WhisperHeim).
 
 ## Page chrome
 
-Every top-level page in mockingbird wraps its content in a single shared shell
+Every top-level page in utterheim wraps its content in a single shared shell
 so margins, max width, and the Mica-backdrop reveal stay consistent across
 Speak, Voices, Settings, and About:
 
@@ -207,7 +207,7 @@ Speak, Voices, Settings, and About:
 
 Page titles follow one of two patterns:
 
-- **Hero** (Speak, About) — logo + bold "Mockingbird" + version tag + tagline
+- **Hero** (Speak, About) — logo + bold "Utterheim" + version tag + tagline
   per the brand mark spec. Reusable extraction `BrandHeroControl` lives under
   Reusable component map below; placement is per main-030 / main-032.
 - **Small heading** (Voices, Settings) — single `TextBlock`
@@ -317,11 +317,11 @@ restructure; new code should always use the `Border` pattern above.
 
 ## Reusable component map
 
-The components below come from WhisperHeim design.md section 6 and are used in mockingbird
-unchanged. When implementing the corresponding mockingbird page, reuse the spec — do not
+The components below come from WhisperHeim design.md section 6 and are used in utterheim
+unchanged. When implementing the corresponding utterheim page, reuse the spec — do not
 redesign.
 
-| Mockingbird use | WhisperHeim spec source |
+| Utterheim use | WhisperHeim spec source |
 |---|---|
 | Recording controls (level meter, duration display with 5-second minimum + progress bar, start/stop, voice name input, save button) | design.md §6 Section B "Shared controls" |
 | Source toggle (Microphone vs System Audio) — segmented control / tab pair, distinct icons | design.md §6 Section B, "source toggle" |
@@ -332,7 +332,7 @@ redesign.
 
 Components that are **not** reused: anything tied to dictation overlays, template
 placeholders, transcript export, speaker diarization, drag-and-drop file zones — these
-belong to WhisperHeim pages mockingbird doesn't ship.
+belong to WhisperHeim pages utterheim doesn't ship.
 
 ---
 
@@ -340,9 +340,9 @@ belong to WhisperHeim pages mockingbird doesn't ship.
 
 | Asset | Path | Status |
 |---|---|---|
-| Voice human-head logo (vector) | `assets/branding/mockingbird-logo.svg` | **Final** — signed off 2026-05-05 (main-028, draft 3). Filled orange (`#FFff8b00`) right-facing head profile + three blue (`#FF25abfe`) Wi-Fi-style concentric arcs from the mouth; not theme-adaptive. |
-| Logo PNG sizes (16, 24, 32, 48, 64, 128, 256, 512) | `assets/branding/mockingbird-logo-{size}.png` | **Final** — regenerated from the signed-off SVG (originally produced by `main-012`'s rasteriser). Two-colour mark on transparent. |
-| Logo `.ico` (multi-resolution, for tray + taskbar) | `assets/branding/mockingbird.ico` | **Final** — regenerated from the signed-off SVG. Layers: 16, 24, 32, 48, 64, 128, 256 (PNG-compressed). Wired as `<ApplicationIcon>` and bound to `tray:NotifyIcon` in `Views\MainWindow.xaml`. |
+| Voice human-head logo (vector) | `assets/branding/utterheim-logo.svg` | **Final** — signed off 2026-05-05 (main-028, draft 3). Filled orange (`#FFff8b00`) right-facing head profile + three blue (`#FF25abfe`) Wi-Fi-style concentric arcs from the mouth; not theme-adaptive. |
+| Logo PNG sizes (16, 24, 32, 48, 64, 128, 256, 512) | `assets/branding/utterheim-logo-{size}.png` | **Final** — regenerated from the signed-off SVG (originally produced by `main-012`'s rasteriser). Two-colour mark on transparent. |
+| Logo `.ico` (multi-resolution, for tray + taskbar) | `assets/branding/utterheim.ico` | **Final** — regenerated from the signed-off SVG. Layers: 16, 24, 32, 48, 64, 128, 256 (PNG-compressed). Wired as `<ApplicationIcon>` and bound to `tray:NotifyIcon` in `Views\MainWindow.xaml`. |
 
 Notes:
 
@@ -353,10 +353,10 @@ Notes:
   when the source SVG changes, via the standalone helper at
   `Tools\RasteriseLogo\RasteriseLogo.csproj` (run with
   `dotnet run --project Tools\RasteriseLogo\RasteriseLogo.csproj`). The helper lives
-  outside `mockingbird.sln` so day-to-day builds don't pull SkiaSharp into the main
+  outside `utterheim.sln` so day-to-day builds don't pull SkiaSharp into the main
   build graph.
 - The WPF main window references the rasters by stable filename
-  (`mockingbird-logo-256.png`, `mockingbird.ico`) — no hash-busting, so a new SVG +
+  (`utterheim-logo-256.png`, `utterheim.ico`) — no hash-busting, so a new SVG +
   re-rasterise picks up automatically with no `.csproj` or XAML changes.
 - The `.ico` is what Windows uses for the tray, taskbar, and Explorer .exe icon; the
   PNGs are used in-app (e.g. About page hero at 256 → 128 displayed).

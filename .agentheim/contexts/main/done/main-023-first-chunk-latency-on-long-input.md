@@ -19,7 +19,7 @@ looks like" criterion 1, plus the seed glossary entry for **First-chunk
 latency**: "Target ≤2 s; pocket-tts claims ~200 ms").
 
 During main-018 first-run verification:
-- Short sentence ("Hello, this is mockingbird.") → ~1 s to audible. Within budget.
+- Short sentence ("Hello, this is utterheim.") → ~1 s to audible. Within budget.
 - ~200-word paragraph → **~9 s to audible**. ~4.5× over budget.
 
 Streaming itself is working — playback starts before synthesis completes,
@@ -68,7 +68,7 @@ share a reproducible protocol.
 - **First-chunk latency = T1 − T0.** End-to-end, what the user hears.
 - **Sample inputs** (canonical, repeatable, committed to repo under
   `examples/perf/`):
-  - **Short:** "Hello, this is mockingbird." (5 words)
+  - **Short:** "Hello, this is utterheim." (5 words)
   - **Medium:** the same ~200-word paragraph used in main-018 verification
     — record verbatim in `examples/perf/medium-input.txt`.
   - **Long:** a ~1000-word paragraph — record verbatim in
@@ -83,7 +83,7 @@ share a reproducible protocol.
    `cold-short`, `warm-short`, `warm-medium`. Repeat `warm-medium` 3× and
    report the median.
 2. Run the same medium input directly through the **pocket-tts CLI**
-   (no mockingbird involvement) and time the first chunk. If pocket-tts
+   (no utterheim involvement) and time the first chunk. If pocket-tts
    alone is ≤2 s, the entire ~7 s delta lives in our code.
 3. With pocket-tts ruled in or out, walk the C# audio pipeline and the
    Python sidecar with logs / a profiler / strategic stopwatches to
@@ -191,10 +191,10 @@ delay; only later audio. **If first audio is 9 s, H2 alone is not enough.**
 
 Implication: the **first speak request after sidecar boot for voice X**
 pays the prompt-encoding cost — even if that voice is built-in. The CLI
-mockingbird-host launches with `pocket_tts serve --voice <DEFAULT_AUDIO_PROMPT>`
+utterheim-host launches with `pocket_tts serve --voice <DEFAULT_AUDIO_PROMPT>`
 (no `--voice` override in `SidecarHost.cs:221`), so `global_model_state`
 is pre-warmed only for the upstream default — NOT for `alba` or any of
-the eight built-ins mockingbird actually uses.
+the eight built-ins utterheim actually uses.
 
 This means **every first call after sidecar boot to a new voice pays a
 full prompt-encoding warmup**, regardless of how warm the model itself is.
@@ -208,7 +208,7 @@ Two halves to check:
   The generator (`generate_data_with_state` at line 96) yields audio bytes
   as they come off the model thread. So Python is streaming correctly.
 
-- **C# side (suspect):** `src/Mockingbird/Services/Tts/PocketTtsEngine.cs:78`
+- **C# side (suspect):** `src/Utterheim/Services/Tts/PocketTtsEngine.cs:78`
   uses `_http.PostAsync(url, content, ct)`. The default `HttpCompletionOption`
   is `ResponseContentRead`, which **reads the entire response body into
   memory before the awaited Task completes**. That means we wait for
@@ -223,7 +223,7 @@ Two halves to check:
   This is the most likely single-line fix candidate for main-024.
 
 - **Audio dispatch (instrumentation only):**
-  `src/Mockingbird/Services/Speak/AudioPlayer.cs:78` — `FIRST-AUDIO-DISPATCH`
+  `src/Utterheim/Services/Speak/AudioPlayer.cs:78` — `FIRST-AUDIO-DISPATCH`
   log line marks T1 (first PCM chunk handed to NAudio's
   `BufferedWaveProvider`).
 
@@ -238,16 +238,16 @@ Two halves to check:
 - `examples/perf/long-input.source.txt` — sibling source note.
 - `examples/perf/user-sample.txt` — Marco's 65-word voice-transcribed sample (verbatim, garbled).
 - `examples/perf/measure-latency.ps1` — measurement harness (curl.exe + log-tail for FIRST-AUDIO-DISPATCH; supports `-Cold`, `-Repeat`, median).
-- `src/Mockingbird/Services/Speak/AudioPlayer.cs` — added one Serilog `Log.Information` call inside `PlayAsync` that emits exactly once per request, containing the literal substring `FIRST-AUDIO-DISPATCH`. Permanent instrumentation.
+- `src/Utterheim/Services/Speak/AudioPlayer.cs` — added one Serilog `Log.Information` call inside `PlayAsync` that emits exactly once per request, containing the literal substring `FIRST-AUDIO-DISPATCH`. Permanent instrumentation.
 
 ### Log line location
 
-`src/Mockingbird/Services/Speak/AudioPlayer.cs:78` — fires at the moment the first PCM chunk is handed to `BufferedWaveProvider.AddSamples` (which is what NAudio's `WaveOutEvent` will pick up on its next pump). Gated by a local `firstSampleLogged` flag scoped to `PlayAsync`, so it fires at most once per speak request.
+`src/Utterheim/Services/Speak/AudioPlayer.cs:78` — fires at the moment the first PCM chunk is handed to `BufferedWaveProvider.AddSamples` (which is what NAudio's `WaveOutEvent` will pick up on its next pump). Gated by a local `firstSampleLogged` flag scoped to `PlayAsync`, so it fires at most once per speak request.
 
 ### Pocket-tts CLI invocation hint (engine baseline)
 
 The cleanest engine-only first-byte measurement runs pocket-tts's own
-sidecar bypassing mockingbird. The pocket-tts CLI is on the system PATH
+sidecar bypassing utterheim. The pocket-tts CLI is on the system PATH
 (installed at `C:\Users\marco\AppData\Local\Programs\Python\Python312\Scripts\pocket-tts.exe`)
 and via `python -m pocket_tts ...`.
 
@@ -255,14 +255,14 @@ Two options, in increasing fidelity:
 
 1. **Whole-utterance baseline** (bounds first-audio from above):
    ```powershell
-   Stop-Process -Name mockingbird -Force -ErrorAction SilentlyContinue   # don't fight for the model
+   Stop-Process -Name utterheim -Force -ErrorAction SilentlyContinue   # don't fight for the model
    Measure-Command { pocket-tts generate --text (Get-Content -Raw .\examples\perf\medium-input.txt) --voice alba --output-path .\examples\perf\baseline-medium.wav --quiet }
    ```
    Records total wall-clock to render the entire WAV. First-audio is necessarily ≤ this.
 
 2. **First-byte baseline** (apples-to-apples with our HTTP path):
    ```powershell
-   # Terminal A — start a clean pocket-tts server, NOT going through mockingbird:
+   # Terminal A — start a clean pocket-tts server, NOT going through utterheim:
    pocket-tts serve --host 127.0.0.1 --port 8765
    # …wait until "Application startup complete." appears…
 
@@ -277,23 +277,23 @@ Two options, in increasing fidelity:
    ```
    `time_starttransfer` is the engine's true first-byte-out time. If this
    is ≤2 s for medium input but our end-to-end is ~9 s, the entire delta
-   lives in mockingbird (most likely H4 — see code map).
+   lives in utterheim (most likely H4 — see code map).
 
-If either invocation fails (e.g. the mockingbird-bootstrapped runtime
-in `%LOCALAPPDATA%\Mockingbird\runtime\python\` differs from the system
+If either invocation fails (e.g. the utterheim-bootstrapped runtime
+in `%LOCALAPPDATA%\Utterheim\runtime\python\` differs from the system
 Python and you need to use it instead), substitute:
-`& "$env:LOCALAPPDATA\Mockingbird\runtime\python\python.exe" -m pocket_tts ...`
+`& "$env:LOCALAPPDATA\Utterheim\runtime\python\python.exe" -m pocket_tts ...`
 with the same arguments. The runtime dir does not exist yet on the dev
-box at prep time — it will after the first mockingbird run that
+box at prep time — it will after the first utterheim run that
 completes the bootstrap dialog.
 
 ### Measurement runbook
 
 ```
-1. Build mockingbird so the FIRST-AUDIO-DISPATCH log line is live:
-     dotnet build C:\src\heimeshoff\containers\mockingbird\mockingbird.sln
+1. Build utterheim so the FIRST-AUDIO-DISPATCH log line is live:
+     dotnet build C:\src\heimeshoff\containers\utterheim\utterheim.sln
 
-2. Start mockingbird (run the built exe, or F5 from Rider). Wait until
+2. Start utterheim (run the built exe, or F5 from Rider). Wait until
    the tray status footer reads:
      HTTP 127.0.0.1:7223 | Engine: running
 
@@ -306,10 +306,10 @@ completes the bootstrap dialog.
      .\examples\perf\measure-latency.ps1 -InputFile .\examples\perf\long-input.txt  -Repeat 3
      .\examples\perf\measure-latency.ps1 -InputFile .\examples\perf\user-sample.txt -Repeat 3
 
-4. Engine baseline (no mockingbird in the loop) — see "Pocket-tts CLI
+4. Engine baseline (no utterheim in the loop) — see "Pocket-tts CLI
    invocation hint" above. Run option 2 (first-byte baseline) for
    medium-input.txt and record `time_starttransfer`. If that is ≤2 s
-   while the mockingbird end-to-end medium run is ~9 s, H4 is confirmed.
+   while the utterheim end-to-end medium run is ~9 s, H4 is confirmed.
 
 5. Paste all numbers into a new "## Outcome" section at the end of this
    task file:
@@ -325,7 +325,7 @@ completes the bootstrap dialog.
 ### Verdict: H4 confirmed — single change in C# host
 
 Latency scales linearly with input size because `_http.PostAsync(...)` at
-`src/Mockingbird/Services/Tts/PocketTtsEngine.cs:78` uses the default
+`src/Utterheim/Services/Tts/PocketTtsEngine.cs:78` uses the default
 `HttpCompletionOption.ResponseContentRead`, which buffers the entire
 response body before the awaited Task completes. Python's `/tts` endpoint
 streams correctly (`StreamingResponse`, `Transfer-Encoding: chunked`), but
@@ -340,14 +340,14 @@ instead of a pre-buffered MemoryStream.
 
 | Run | Input | Chars | TTFB | end-to-end (first audio) |
 |---|---|---:|---:|---:|
-| cold-short | "Hello, this is mockingbird." | 27 | n/a | **663 ms** ✓ |
+| cold-short | "Hello, this is utterheim." | 27 | n/a | **663 ms** ✓ |
 | warm-short | same | 27 | n/a | **802 ms** ✓ |
 | warm-medium (clean queue) | vision §Purpose paragraph | 1,159 | **63 ms** | **22,968 ms** ❌ |
 | warm-long | vision sections concatenated | 6,855 | n/a | **139,000 ms** ❌ |
 
 (`cold-short` and `warm-short` from the script's own output. `warm-medium`
 from a clean re-run on a drained queue with no `-Repeat`. `warm-long`
-read from the mockingbird log — the script's 30 s tail-poll timed out
+read from the utterheim log — the script's 30 s tail-poll timed out
 but the request itself completed, so the actual T1 timestamp is
 authoritative.)
 

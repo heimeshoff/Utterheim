@@ -37,7 +37,7 @@ the dispatcher. Re-entry-guarded refresh on `OnNavigatedTo` and
 `VoiceCatalog.VoicesChanged` (the same event main-015 will fire on
 save / delete).
 
-Build clean (`dotnet build mockingbird.sln -c Debug` → 0 errors,
+Build clean (`dotnet build utterheim.sln -c Debug` → 0 errors,
 0 warnings). Interactive UI behaviours (preview latency, FIFO ordering
 with concurrent Claude requests, stop-hotkey draining the preview) are
 **not interactively re-tested** in this pass; the code paths are in
@@ -46,12 +46,12 @@ manual run.
 
 Key files:
 
-- `src/Mockingbird/Views/Pages/VoicesPage.xaml` — two-section list +
+- `src/Utterheim/Views/Pages/VoicesPage.xaml` — two-section list +
   loading / failed placeholders.
-- `src/Mockingbird/Views/Pages/VoicesPage.xaml.cs` — INavigationAware
+- `src/Utterheim/Views/Pages/VoicesPage.xaml.cs` — INavigationAware
   hooks, dispatcher-marshalled subscriptions to VoicesChanged /
   StatusChanged / StateChanged.
-- `src/Mockingbird/ViewModels/Pages/VoicesPageViewModel.cs` — page VM
+- `src/Utterheim/ViewModels/Pages/VoicesPageViewModel.cs` — page VM
   + nested `VoiceRowViewModel` (per the spec's worker tip — single
   file, no separate row file).
 
@@ -179,7 +179,7 @@ queue (waiting for an active Claude utterance to finish before the
 preview plays) is acceptable for v1 and is the same trade-off main-013
 made for Play. Lanes / barge are deferred to v1.5 per ADR 0007.
 
-Captured as **ADR 0014** at `.agenthoff/knowledge/decisions/0014-voices-page-preview-via-speak-queue.md`.
+Captured as **ADR 0014** at `.agentheim/knowledge/decisions/0014-voices-page-preview-via-speak-queue.md`.
 
 #### Catalog refresh on page-shown (resolves Q3)
 
@@ -274,7 +274,7 @@ HTTP `/speak`) because they all funnel through `SpeakService.Enqueue`.
 
 **Out of scope for this task and for v1.** Per the BC README's "Claude
 Code integration kit" section: voice routing is caller-side by design,
-delivered via the `MOCKINGBIRD_VOICE` env var per terminal (main-019).
+delivered via the `UTTERHEIM_VOICE` env var per terminal (main-019).
 The Voices page does **not** absorb a per-session UI. If the user
 later wants in-app routing, that's a separate feature with its own
 decision task; surface it then, do not pre-build the surface here.
@@ -332,7 +332,7 @@ decision task; surface it then, do not pre-build the surface here.
 - [ ] Visual matches the styleguide — Mica backdrop, Fluent controls,
   Segoe UI Variable, no bespoke palette. Section headers use
   `FontWeight="SemiBold"`, page header uses `FontWeight="Light"`.
-- [ ] Build clean: `dotnet build mockingbird.sln -c Debug` produces
+- [ ] Build clean: `dotnet build utterheim.sln -c Debug` produces
   0 errors, 0 warnings.
 
 ## Notes
@@ -405,7 +405,7 @@ direction (`main-015 depends_on main-014`) is unchanged.
 ### ADRs that govern this task
 
 - **ADR 0014** —
-  `.agenthoff/knowledge/decisions/0014-voices-page-preview-via-speak-queue.md` —
+  `.agentheim/knowledge/decisions/0014-voices-page-preview-via-speak-queue.md` —
   preview routes through `SpeakService.Enqueue` (the single queue
   arbiter). **New, drafted as part of this refinement; status:
   proposed**, awaiting acceptance alongside this task's promotion.
@@ -427,20 +427,20 @@ direction (`main-015 depends_on main-014`) is unchanged.
 - `docs/styleguide.md` § Reusable component map → "Voices list with
   preview + delete affordances".
 - WhisperHeim `design.md` § 6 Section B.
-- `.agenthoff/contexts/main/README.md` — UI / styleguide gate (open),
+- `.agentheim/contexts/main/README.md` — UI / styleguide gate (open),
   Engine status (`GET /voices` returns the eight built-ins),
   first-chunk-latency budget.
-- `src\Mockingbird\Services\Speak\VoiceCatalog.cs` — already exists
+- `src\Utterheim\Services\Speak\VoiceCatalog.cs` — already exists
   (main-013); this task's view-model consumes it.
-- `src\Mockingbird\Services\Speak\SpeakService.cs` — already exists
+- `src\Utterheim\Services\Speak\SpeakService.cs` — already exists
   (main-013); this task's view-model calls `Enqueue` and subscribes
   to `StatusChanged`.
-- `src\Mockingbird\Services\Tts\SidecarHost.cs` — already exposes
+- `src\Utterheim\Services\Tts\SidecarHost.cs` — already exposes
   `StateChanged`; the page VM subscribes for the loading / error
   states.
-- `src\Mockingbird\ViewModels\Pages\VoicesPageViewModel.cs` — empty
+- `src\Utterheim\ViewModels\Pages\VoicesPageViewModel.cs` — empty
   stub from main-020; this task fills it.
-- `src\Mockingbird\Views\Pages\VoicesPage.xaml(.cs)` — stub from
+- `src\Utterheim\Views\Pages\VoicesPage.xaml(.cs)` — stub from
   main-020 (centred "Voices — coming with main-014." text); this
   task replaces the body.
 

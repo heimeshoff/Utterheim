@@ -16,7 +16,7 @@ related_research: []
 
 `PythonRuntimeBootstrapper` persists `bootstrap-state.json` so a half-finished
 first-run bootstrap survives restarts (per ADR 0008's "model bootstrap UX"
-section). The state file lives in `%LOCALAPPDATA%\Mockingbird\` and tracks
+section). The state file lives in `%LOCALAPPDATA%\Utterheim\` and tracks
 four boolean flags: `PythonExtracted`, `PipInstalled`, `PocketTtsInstalled`,
 `RuntimeReady`.
 
@@ -87,7 +87,7 @@ Negative:
 
 ## Notes
 
-- See `src/Mockingbird/Services/Tts/PythonRuntimeBootstrapper.cs` —
+- See `src/Utterheim/Services/Tts/PythonRuntimeBootstrapper.cs` —
   `PocketTtsActuallyInstalled()`, the defensive flag resets at the top of
   steps 1 and 2, and the file-presence checks in each step's gate.
 - Companion fix in main-021: subprocess stderr is now captured and replayed

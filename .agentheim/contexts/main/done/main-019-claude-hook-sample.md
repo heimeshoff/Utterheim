@@ -15,7 +15,7 @@ tags: [integration, claude, docs]
 ## Why
 
 The whole point of v1 (per the vision) is **Claude Code sessions calling
-mockingbird's speak endpoint so the user gets audible cues per session**.
+utterheim's speak endpoint so the user gets audible cues per session**.
 Without a documented, copy-pasteable hook recipe, the foundation is
 unused. This task delivers the bridge from "the HTTP endpoint exists" to
 "my Claude sessions actually talk to me".
@@ -25,7 +25,7 @@ something call it.
 
 ## What
 
-A small but complete integration kit, shipped in the mockingbird repo:
+A small but complete integration kit, shipped in the utterheim repo:
 
 - **A `examples/claude-hooks/` directory** with at least:
   - A PowerShell script (or similar) that posts `{text, voice}` to
@@ -38,7 +38,7 @@ A small but complete integration kit, shipped in the mockingbird repo:
     voice, demonstrating the session-distinguishing-by-ear payoff.
 
 - **Voice assignment guidance**: how does a session "know" its voice?
-  Probably an env var the user sets per terminal (`MOCKINGBIRD_VOICE=marius`)
+  Probably an env var the user sets per terminal (`UTTERHEIM_VOICE=marius`)
   that the hook script reads. Document the convention; don't try to bake
   it into the server.
 
@@ -73,11 +73,11 @@ A small but complete integration kit, shipped in the mockingbird repo:
 
 Delivered the integration kit under `examples/claude-hooks/`:
 
-- `examples/claude-hooks/mockingbird-hook.ps1` — PowerShell shim that
+- `examples/claude-hooks/utterheim-hook.ps1` — PowerShell shim that
   POSTs `{text, voice}` to the speak endpoint. Resolves voice in this
-  order: `-Voice` parameter → `$env:MOCKINGBIRD_VOICE` → `alba`.
+  order: `-Voice` parameter → `$env:UTTERHEIM_VOICE` → `alba`.
   Resolves endpoint in this order: `-Endpoint` parameter →
-  `$env:MOCKINGBIRD_ENDPOINT` → `http://127.0.0.1:7223` (ADR 0003
+  `$env:UTTERHEIM_ENDPOINT` → `http://127.0.0.1:7223` (ADR 0003
   default). `-Silent` switch swallows all failures and exits 0, so a
   missing sidecar never blocks Claude Code's own flow. Distinct exit
   codes (0 / 2 / 3) for success / HTTP error / unreachable when not
@@ -87,7 +87,7 @@ Delivered the integration kit under `examples/claude-hooks/`:
   exited non-zero, as designed).
 - `examples/claude-hooks/README.md` — wiring recipe for Claude Code's
   `Stop` (task done) and `Notification` (input required) hooks; the
-  per-terminal `MOCKINGBIRD_VOICE` env-var convention; the worked
+  per-terminal `UTTERHEIM_VOICE` env-var convention; the worked
   two-parallel-sessions example; and a troubleshooting section that
   covers the failure modes surfaced by main-018 verification — sidecar
   not running, `Engine: failed` after watchdog gives up, the
@@ -99,7 +99,7 @@ Delivered the integration kit under `examples/claude-hooks/`:
   has shifted between Claude Code versions and was not safely
   determinable from this sandbox.
 
-Also updated `.agenthoff/contexts/main/README.md` with a new "Claude Code
+Also updated `.agentheim/contexts/main/README.md` with a new "Claude Code
 integration kit" section so future sessions discover the bridge from
 domain memory.
 
@@ -118,7 +118,7 @@ troubleshooting section warns about).
 
 Key files:
 
-- `c:\src\heimeshoff\containers\mockingbird\examples\claude-hooks\mockingbird-hook.ps1`
-- `c:\src\heimeshoff\containers\mockingbird\examples\claude-hooks\README.md`
-- `c:\src\heimeshoff\containers\mockingbird\.agenthoff\contexts\main\README.md`
+- `c:\src\heimeshoff\containers\utterheim\examples\claude-hooks\utterheim-hook.ps1`
+- `c:\src\heimeshoff\containers\utterheim\examples\claude-hooks\README.md`
+- `c:\src\heimeshoff\containers\utterheim\.agentheim\contexts\main\README.md`
   (added "Claude Code integration kit" section)

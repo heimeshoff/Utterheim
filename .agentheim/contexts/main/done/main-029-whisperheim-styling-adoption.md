@@ -14,7 +14,7 @@ tags: [styleguide, theming, ui, settings, appearance]
 
 ## Why
 
-The styleguide gate says mockingbird inherits WhisperHeim's design language. In
+The styleguide gate says utterheim inherits WhisperHeim's design language. In
 practice the current pages diverge in several visible ways:
 
 1. **App.xaml uses `Theme="Dark"`**; WhisperHeim uses `Theme="Light"` (see
@@ -26,13 +26,13 @@ practice the current pages diverge in several visible ways:
 2. **No brand palette is wired through.** WhisperHeim leans on `#FF25abfe`
    (cyan-blue, primary brand), `#FFff8b00` (orange, accent), and `#FF005FAA` /
    `#66005FAA` (deep blue used for section-header glyphs, version numbers,
-   muted detail). Mockingbird's pages rely entirely on theme brushes — there's
+   muted detail). Utterheim's pages rely entirely on theme brushes — there's
    no brand colour in sight.
 3. **Card style is inconsistent.** WhisperHeim cards are `Border` with
    `CardBackgroundFillColorDefaultBrush`, `CornerRadius=12`, `Padding=24`,
    uniform vertical spacing — see
    [WhisperHeim GeneralPage.xaml lines 60–101](../../../../tooling/WhisperHeim/src/WhisperHeim/Views/Pages/GeneralPage.xaml).
-   Mockingbird Settings uses `ui:CardControl` with default padding and tight
+   Utterheim Settings uses `ui:CardControl` with default padding and tight
    `Margin="0,0,0,8"` — visibly thinner spacing, no rounded-12 visual rhythm.
 4. **Settings page has its own brighter background.** This is unintended —
    probably comes from `ui:CardControl`'s default chrome. WhisperHeim
@@ -40,11 +40,11 @@ practice the current pages diverge in several visible ways:
    ScrollViewer and let Mica show through. Settings should match.
 5. **No appearance picker.** WhisperHeim's General page has a Light / Dark /
    System scheme selector (see GeneralPage.xaml lines 187–246). The user wants
-   the same in mockingbird's Settings.
+   the same in utterheim's Settings.
 
 ## What
 
-Re-align mockingbird's visual layer to WhisperHeim's actual design wholesale,
+Re-align utterheim's visual layer to WhisperHeim's actual design wholesale,
 update the styleguide so the next task isn't fighting stale guidance, and add
 the appearance picker.
 
@@ -109,7 +109,7 @@ For Speak / Voices / Settings / About:
 
 | Page | Title strategy |
 |---|---|
-| Speak | **Hero** (logo + "Mockingbird" 40 pt ExtraBold + "v1.0" tag + tagline) — placed by main-030. main-029 leaves the page in its current shape minus the chrome refit; main-030 lands the hero. |
+| Speak | **Hero** (logo + "Utterheim" 40 pt ExtraBold + "v1.0" tag + tagline) — placed by main-030. main-029 leaves the page in its current shape minus the chrome refit; main-030 lands the hero. |
 | Voices | **No hero.** Small `TextBlock` "Voices" `FontWeight="Light"` `FontSize="28"` `Foreground="{DynamicResource TextFillColorPrimaryBrush}"` — matches the existing layout. The cloning card (main-030) and voice list both have their own card-level headings; a hero would compete. |
 | Settings | **No hero.** Small `TextBlock` "Settings" `FontWeight="Light"` `FontSize="28"` `Foreground="{DynamicResource TextFillColorPrimaryBrush}"`. Light-theme primary brush renders as dark text on Mica light backdrop — fully readable. The "too dark to read" complaint stemmed from Dark-theme primary (near-black) on a Mica-pulled-towards-white surface; the Light-theme switch above is the actual fix. |
 | About | **Hero** — placed by main-032, same composition as Speak's. |
@@ -193,7 +193,7 @@ Concrete edits, in order:
    in App.xaml). Per ADR 0019 the active theme is user-selectable via
    Settings → Appearance and persists in settings.json.`**
 2. **Add a new §Brand palette section** between "Inherited from
-   WhisperHeim" and "Mockingbird divergences" — a four-row table listing
+   WhisperHeim" and "Utterheim divergences" — a four-row table listing
    the brushes (name, hex, when-to-use), the contrast caveat for
    `BrandDeepMutedBrush` ("supplementary numerals such as version tags
    only — fails WCAG body-text contrast on Light backdrop, accepted as
@@ -217,7 +217,7 @@ Concrete edits, in order:
    (`40,36,40,32`), `MaxWidth=900`, centred `HorizontalAlignment`,
    ScrollViewer `Background="{DynamicResource ApplicationBackgroundBrush}"`
    shell pattern.
-6. **Add a new §Appearance modes section** under §Mockingbird divergences,
+6. **Add a new §Appearance modes section** under §Utterheim divergences,
    noting: three-tile picker on Settings, persisted in `settings.json` as
    `appearanceMode`, default `Light`, live swap via
    `ApplicationThemeManager`. Cross-references ADR 0019 and the
@@ -303,7 +303,7 @@ Concrete edits, in order:
         the explicit "do not use `ui:CardControl`" note.
       - New §Section header section exists.
       - New §Page chrome section exists.
-      - New §Appearance modes section exists under §Mockingbird
+      - New §Appearance modes section exists under §Utterheim
         divergences.
 - [ ] `contexts/main/README.md` "Settings page → Out of scope for v1"
       paragraph removes the "theme … toggles" exclusion (this task
@@ -459,7 +459,7 @@ land via main-030 / main-032).
    shell pattern (40,36,40,32 margin, MaxWidth=900, centred,
    `ApplicationBackgroundBrush` background) plus the hero / small-heading
    title strategies.
-6. New §Appearance modes section under §Mockingbird divergences cross-
+6. New §Appearance modes section under §Utterheim divergences cross-
    referencing ADR 0019 and the wpfui-live-theme-swap research note.
 
 **README.** `contexts/main/README.md` Settings page narrative updated:
@@ -468,7 +468,7 @@ sentence added so the change is auditable), the §Appearance section is
 documented inline, and the surrounding paragraph notes the wholesale
 `ui:CardControl` → `Border` swap.
 
-**Build verification.** `dotnet build mockingbird.sln -c Debug` → 0 errors,
+**Build verification.** `dotnet build utterheim.sln -c Debug` → 0 errors,
 0 warnings. Interactive verification (page renders, tile click swaps
 theme live without restart, settings.json round-trips correctly,
 existing-install migration path) is **assume-pass** per the standing
@@ -476,15 +476,15 @@ project convention — code paths are in place per the spec; the user will
 eyeball after the next launch.
 
 **Key files changed**:
-- `src/Mockingbird/App.xaml`
-- `src/Mockingbird/EntryPoint.cs`
-- `src/Mockingbird/Services/Settings/UserSettings.cs`
-- `src/Mockingbird/Views/Pages/SpeakPage.xaml`
-- `src/Mockingbird/Views/Pages/VoicesPage.xaml`
-- `src/Mockingbird/Views/Pages/SettingsPage.xaml`
-- `src/Mockingbird/Views/Pages/SettingsPage.xaml.cs`
-- `src/Mockingbird/Views/Pages/AboutPage.xaml`
+- `src/Utterheim/App.xaml`
+- `src/Utterheim/EntryPoint.cs`
+- `src/Utterheim/Services/Settings/UserSettings.cs`
+- `src/Utterheim/Views/Pages/SpeakPage.xaml`
+- `src/Utterheim/Views/Pages/VoicesPage.xaml`
+- `src/Utterheim/Views/Pages/SettingsPage.xaml`
+- `src/Utterheim/Views/Pages/SettingsPage.xaml.cs`
+- `src/Utterheim/Views/Pages/AboutPage.xaml`
 - `docs/styleguide.md`
-- `.agenthoff/contexts/main/README.md`
-- `.agenthoff/knowledge/decisions/0019-appearance-mode-in-settings-json.md`
+- `.agentheim/contexts/main/README.md`
+- `.agentheim/knowledge/decisions/0019-appearance-mode-in-settings-json.md`
   (Proposed → Accepted)

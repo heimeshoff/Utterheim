@@ -14,7 +14,7 @@ tags: [frontend, page]
 
 ## Why
 
-The Speak page is mockingbird's main daily surface — the place the user
+The Speak page is utterheim's main daily surface — the place the user
 interacts with directly when not driving via Claude Code hooks. It mirrors
 WhisperHeim's TTS section A (Speak): a text box, a voice picker, play / stop /
 save controls, and a status line. Without this page the tray app's main window
@@ -63,7 +63,7 @@ spacing convention from the styleguide).
    not the page),
    `MinHeight="200"` so the box is still substantial when the window is at
    its minimum size; **no `MaxHeight`** — it grows to fill the window.
-   Placeholder text: "Type or paste something for Mockingbird to say...".
+   Placeholder text: "Type or paste something for Utterheim to say...".
    The intent: the user can paste a multi-paragraph article, see most of it
    without scrolling on a normal-sized window, and edit comfortably.
 2. **Voice picker** — `ui:ComboBox` (or `ComboBox` themed by wpfui) bound to
@@ -153,7 +153,7 @@ status stream.
 #### Save (resolves Q5)
 
 - On click: opens `Microsoft.Win32.SaveFileDialog` with `Filter="WAV|*.wav"`,
-  `DefaultExt=".wav"`, suggested name `mockingbird-{voiceId}-{yyyyMMdd-HHmmss}.wav`.
+  `DefaultExt=".wav"`, suggested name `utterheim-{voiceId}-{yyyyMMdd-HHmmss}.wav`.
 - On confirm: calls
   `SpeakService.RenderToFileAsync(viewModel.Text, viewModel.SelectedVoice.Id, dialog.FileName, ct)`
   with a cancellation token tied to the page's lifetime.
@@ -202,7 +202,7 @@ The picker pre-selects the **configured default voice** read from a new
 main-016 (Settings page) later adds the *UI* to mutate it.
 
 - New service `Services\Settings\UserSettings.cs` (singleton):
-  - Backing file: `%LOCALAPPDATA%\Mockingbird\settings.json` (alongside the
+  - Backing file: `%LOCALAPPDATA%\Utterheim\settings.json` (alongside the
     existing path layout per ADR 0005). Read on startup, written atomically
     on mutation.
   - Single property in v1: `string? DefaultVoiceId`. Other settings slots
@@ -242,7 +242,7 @@ entry:
 3. Subscribe to `VoiceCatalog.VoicesChanged` (with unsubscribe on
    `OnNavigatedFrom()` / `Unloaded`).
 
-This means: launching mockingbird → cloning a new voice on the Voices page
+This means: launching utterheim → cloning a new voice on the Voices page
 (main-015) → returning to Speak → the new voice is in the picker without
 restart.
 
@@ -270,7 +270,7 @@ restart.
   `UserSettings.DefaultVoiceId` if set and present in the catalog;
   otherwise the alphabetical first entry (`alba`).
 - [ ] `UserSettings` service persists `DefaultVoiceId` to
-  `%LOCALAPPDATA%\Mockingbird\settings.json`. v1 has no UI to mutate it
+  `%LOCALAPPDATA%\Utterheim\settings.json`. v1 has no UI to mutate it
   (that's main-016) but the file is read on startup if present, and
   unknown fields are tolerated for forward-compat with main-016.
 - [ ] Voice picker refreshes whenever the page is navigated to (via
@@ -304,7 +304,7 @@ restart.
   longer constructing `SpeakRequest` directly.
 - [ ] Visual matches the styleguide — Mica backdrop, Fluent controls, Segoe
   UI Variable, no bespoke palette.
-- [ ] Build clean: `dotnet build mockingbird.sln -c Debug` produces 0 errors,
+- [ ] Build clean: `dotnet build utterheim.sln -c Debug` produces 0 errors,
   0 warnings.
 
 ## Notes
@@ -342,10 +342,10 @@ restart.
     main-020's spec). Editorial fix applied 2026-05-01: prior wording
     incorrectly named the method as living on `INavigableView<T>`.
 - **ADRs that govern this task:**
-  - **ADR 0009** — `.agenthoff/knowledge/decisions/0009-navigation-shell-wpfui.md`
+  - **ADR 0009** — `.agentheim/knowledge/decisions/0009-navigation-shell-wpfui.md`
     — rationale for splitting the navigation shell out of main-013 into
     main-020 and using `ui:NavigationView` + `INavigableView<T>`.
-  - **ADR 0010** — `.agenthoff/knowledge/decisions/0010-mvvm-via-inotifypropertychanged.md`
+  - **ADR 0010** — `.agentheim/knowledge/decisions/0010-mvvm-via-inotifypropertychanged.md`
     — formalises the `CommunityToolkit.Mvvm` choice this spec assumes.
     `SpeakPageViewModel` derives from `ObservableObject` (or `[ObservableObject] partial class`);
     use `[ObservableProperty]` for `Text` / `SelectedVoice` / `Voices` /
@@ -355,7 +355,7 @@ restart.
     or picks a voice. `[RelayCommand]` on the async Save method gives
     `IsRunning` for the inline `ProgressRing` for free.
 - **New tasks created:**
-  - **main-020** — `.agenthoff/contexts/main/done/main-020-navigation-shell.md`
+  - **main-020** — `.agentheim/contexts/main/done/main-020-navigation-shell.md`
     — landed; the navigation shell exists with a Speak stub for this task to
     replace.
 - **References:**
@@ -364,13 +364,13 @@ restart.
   - ADR 0003 (HTTP transport), ADR 0004 (stop drains), ADR 0007
     (Channel queue), ADR 0009 (navigation shell).
   - Existing skeleton:
-    - `src\Mockingbird\Services\Speak\SpeakQueue.cs` — needs two new events.
-    - `src\Mockingbird\Services\Http\SpeakServer.cs` — refactor to use
+    - `src\Utterheim\Services\Speak\SpeakQueue.cs` — needs two new events.
+    - `src\Utterheim\Services\Http\SpeakServer.cs` — refactor to use
       `SpeakService` + `VoiceCatalog`.
-    - `src\Mockingbird\EntryPoint.cs` — register `SpeakService`,
+    - `src\Utterheim\EntryPoint.cs` — register `SpeakService`,
       `VoiceCatalog`, and `UserSettings` as singletons in DI.
-    - **New:** `src\Mockingbird\Services\Settings\UserSettings.cs` —
-      typed wrapper over `%LOCALAPPDATA%\Mockingbird\settings.json`.
+    - **New:** `src\Utterheim\Services\Settings\UserSettings.cs` —
+      typed wrapper over `%LOCALAPPDATA%\Utterheim\settings.json`.
       Forward-compatible JSON shape so main-016 can extend it without
       breaking v1 reads.
 - **Out of scope (do not creep):**
@@ -392,7 +392,7 @@ Speak page shipped per spec. Three new singletons:
 truth — Q4), `Services\Speak\SpeakService.cs` (request construction +
 status state-machine + off-queue `RenderToFileAsync` for Save — Q2 / Q5 /
 Q6), and `Services\Settings\UserSettings.cs` (typed wrapper over
-`%LOCALAPPDATA%\Mockingbird\settings.json` with `DefaultVoiceId` only in v1,
+`%LOCALAPPDATA%\Utterheim\settings.json` with `DefaultVoiceId` only in v1,
 forward-compatible JSON shape — Q7). `SpeakQueue` gained two events
 (`RequestStarted` / `RequestCompleted`) which `SpeakService` listens to
 for the four-label state machine (idle / synthesising / playing / stopped).
@@ -406,16 +406,16 @@ Save button row (Save shows an inline `ui:ProgressRing` via the
 `SpeakPageViewModel` uses `[ObservableProperty]` /
 `[NotifyCanExecuteChangedFor]` / `[RelayCommand]` per ADR 0010. DI
 registrations added in `EntryPoint.cs`. Build clean: `dotnet build
-mockingbird.sln -c Debug` → 0 errors, 0 warnings. Interactive UI
+utterheim.sln -c Debug` → 0 errors, 0 warnings. Interactive UI
 behaviours (textbox dominates, dialog opens, status transitions visibly)
 were assume-passed — code is in place per spec.
 
 Key files:
-- `src\Mockingbird\Services\Speak\VoiceCatalog.cs` (new)
-- `src\Mockingbird\Services\Speak\SpeakService.cs` (new)
-- `src\Mockingbird\Services\Settings\UserSettings.cs` (new)
-- `src\Mockingbird\Services\Speak\SpeakQueue.cs` (added two events)
-- `src\Mockingbird\Services\Http\SpeakServer.cs` (refactored to use the new seams)
-- `src\Mockingbird\Views\Pages\SpeakPage.xaml`+`.cs` (real Speak surface)
-- `src\Mockingbird\ViewModels\Pages\SpeakPageViewModel.cs` (real VM)
-- `src\Mockingbird\EntryPoint.cs` (DI registrations)
+- `src\Utterheim\Services\Speak\VoiceCatalog.cs` (new)
+- `src\Utterheim\Services\Speak\SpeakService.cs` (new)
+- `src\Utterheim\Services\Settings\UserSettings.cs` (new)
+- `src\Utterheim\Services\Speak\SpeakQueue.cs` (added two events)
+- `src\Utterheim\Services\Http\SpeakServer.cs` (refactored to use the new seams)
+- `src\Utterheim\Views\Pages\SpeakPage.xaml`+`.cs` (real Speak surface)
+- `src\Utterheim\ViewModels\Pages\SpeakPageViewModel.cs` (real VM)
+- `src\Utterheim\EntryPoint.cs` (DI registrations)

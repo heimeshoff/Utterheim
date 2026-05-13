@@ -23,7 +23,7 @@ closes that loop.
 
 ## What
 
-Run mockingbird on a machine with no prior `%LOCALAPPDATA%\Mockingbird\runtime\`
+Run utterheim on a machine with no prior `%LOCALAPPDATA%\Utterheim\runtime\`
 or `models\pocket-tts\` directories — either by deleting those folders on the
 dev machine or by running on a fresh VM / second machine — and walk through
 every pending criterion from main-011:
@@ -31,13 +31,13 @@ every pending criterion from main-011:
 - Bootstrap dialog runs end-to-end, downloads Python 3.12.7 embeddable +
   `pocket-tts>=2.0,<3` (~700 MB), persists progress, hands off to the tray.
 - `curl -X POST http://127.0.0.1:7223/speak -d '{"text":"Hello, this is
-  mockingbird.","voice":"alba"}'` produces audible alba within ~2 s of the
+  utterheim.","voice":"alba"}'` produces audible alba within ~2 s of the
   first warm call.
 - Long text (~200 words) starts audible playback before synthesis completes
   (streaming observable).
 - `GET /status` reports `sidecar.state = "running"` and `sidecar.healthy = true`
   once warm; reflects degraded state if the sidecar is killed externally.
-- Sidecar stdout/stderr appear in `mockingbird-YYYYMMDD.log` under the
+- Sidecar stdout/stderr appear in `utterheim-YYYYMMDD.log` under the
   `sidecar` source.
 - Tray "Exit" terminates the python.exe — no zombie process in Task Manager.
 - Half-finished bootstrap (kill mid-download) resumes correctly on next
@@ -73,7 +73,7 @@ First-run bootstrap **failed** during the user's first attempt at this
 verification: the dialog reported `Python smoke test exited with code 1`
 and refused to hand off to the tray. Reproduced on retry (eight failure
 entries between 22:18:04 and 22:18:36 in
-`%LOCALAPPDATA%\Mockingbird\logs\mockingbird-20260503.log`).
+`%LOCALAPPDATA%\Utterheim\logs\utterheim-20260503.log`).
 
 Root cause traced to two defects in `PythonRuntimeBootstrapper`:
 - **Bug A** — step 3 (`InstallPocketTts`) is gated on the persisted

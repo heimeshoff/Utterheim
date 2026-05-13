@@ -18,14 +18,14 @@ Four small concerns cluster naturally for a personal tool: structured logging, e
 
 ## What
 
-- **Logging**: Serilog with rolling file sink at `%LOCALAPPDATA%\Mockingbird\logs\mockingbird-.log` (daily roll, 7-day retention). A redirect sink captures the Python sidecar's stdout/stderr line-by-line as `sidecar`-tagged log events.
+- **Logging**: Serilog with rolling file sink at `%LOCALAPPDATA%\Utterheim\logs\utterheim-.log` (daily roll, 7-day retention). A redirect sink captures the Python sidecar's stdout/stderr line-by-line as `sidecar`-tagged log events.
 - **Error philosophy**: Fail-loud to `Wpf.Ui.Tray` toast for user-visible failures. Logs for everything else. No telemetry, no crash reporter.
-- **Model + runtime bootstrap**: On first launch (or whenever `%LOCALAPPDATA%\Mockingbird\models\pocket-tts\` is empty / runtime incomplete), show a one-shot dialog mirroring WhisperHeim's `ModelDownloadDialog`. Sequence: prepare embeddable Python → pip install pocket-tts and deps → trigger pocket-tts model download → smoke-test. Persist `bootstrap-state.json` so partial progress survives restarts.
+- **Model + runtime bootstrap**: On first launch (or whenever `%LOCALAPPDATA%\Utterheim\models\pocket-tts\` is empty / runtime incomplete), show a one-shot dialog mirroring WhisperHeim's `ModelDownloadDialog`. Sequence: prepare embeddable Python → pip install pocket-tts and deps → trigger pocket-tts model download → smoke-test. Persist `bootstrap-state.json` so partial progress survives restarts.
 - **Distribution**: v1 ships as a self-contained single-file zip via `dotnet publish -r win-x64 -c Release --self-contained -p:PublishSingleFile=true` plus a `runtime\python\` sibling folder. Same pattern as WhisperHeim. Auto-update / installer / signing deferred to v1.5.
 
 ## Acceptance criteria
 
-- [ ] ADR 0008 committed at `.agenthoff/knowledge/decisions/0008-cross-cutting-concerns.md` with `scope: global`.
+- [ ] ADR 0008 committed at `.agentheim/knowledge/decisions/0008-cross-cutting-concerns.md` with `scope: global`.
 - [ ] ADR matches the draft in Notes (or carries user amendments).
 - [ ] No code yet — implementation lands in main-009.
 
@@ -35,7 +35,7 @@ v1.5 candidates explicitly deferred:
 - Velopack / Squirrel / MSIX auto-update.
 - Code-signing certificate for SmartScreen.
 - Crash reporter (rejected by vision).
-- One-click uninstall entry that wipes `%LOCALAPPDATA%\Mockingbird\` and optionally the `<dataPath>\voices\` folder.
+- One-click uninstall entry that wipes `%LOCALAPPDATA%\Utterheim\` and optionally the `<dataPath>\voices\` folder.
 
 Full ADR draft (drop into `0008-cross-cutting-concerns.md`):
 
@@ -49,7 +49,7 @@ Four small concerns that cluster naturally for a personal tool: structured loggi
 
 ### Logging
 Adopt **Serilog** with:
-- Rolling file sink at `%LOCALAPPDATA%\Mockingbird\logs\mockingbird-.log`, daily roll, 7-day retention, structured JSON on disk and human-readable console in DEBUG.
+- Rolling file sink at `%LOCALAPPDATA%\Utterheim\logs\utterheim-.log`, daily roll, 7-day retention, structured JSON on disk and human-readable console in DEBUG.
 - A redirect sink that captures the Python sidecar's stdout/stderr (line-by-line) and writes them with a `sidecar` source enrichment, so sidecar issues show up in the same log stream.
 - Log level configurable in `settings.json` (default Information).
 
@@ -58,12 +58,12 @@ Fail-loud-to-tray-toast for anything user-visible (sidecar failed to start, voic
 
 ### Model + runtime bootstrap
 Mirror WhisperHeim's `ModelDefinition` / `ModelDownloadDialog` pattern:
-- On first launch, if `%LOCALAPPDATA%\Mockingbird\models\pocket-tts\` is empty *or* the bundled Python runtime is incomplete, show a one-shot dialog: "Mockingbird needs to download the pocket-tts model (~X MB) and prepare its local Python runtime. Continue?"
+- On first launch, if `%LOCALAPPDATA%\Utterheim\models\pocket-tts\` is empty *or* the bundled Python runtime is incomplete, show a one-shot dialog: "Utterheim needs to download the pocket-tts model (~X MB) and prepare its local Python runtime. Continue?"
 - Sequence: prepare embeddable Python → pip install pocket-tts and deps → trigger pocket-tts's own model download → smoke-test a built-in voice.
 - Show per-step progress with cancel/retry. Persist a `bootstrap-state.json` so partial progress survives restarts.
 
 ### Distribution
-v1: `dotnet publish -r win-x64 -c Release --self-contained -p:PublishSingleFile=true` producing a single mockingbird.exe + a `runtime\python\` folder + asset folders. Distribute as a zip; user extracts and runs. Same approach as WhisperHeim.
+v1: `dotnet publish -r win-x64 -c Release --self-contained -p:PublishSingleFile=true` producing a single utterheim.exe + a `runtime\python\` folder + asset folders. Distribute as a zip; user extracts and runs. Same approach as WhisperHeim.
 
 ## Consequences
 ### Positive
@@ -87,12 +87,12 @@ v1: `dotnet publish -r win-x64 -c Release --self-contained -p:PublishSingleFile=
 ## References
 - WhisperHeim ModelDownloadDialog: `C:\src\heimeshoff\tooling\WhisperHeim\src\WhisperHeim\Views\ModelDownloadDialog.xaml.cs`
 - WhisperHeim ModelDefinition: `C:\src\heimeshoff\tooling\WhisperHeim\src\WhisperHeim\Services\Models\ModelDefinition.cs`
-- Vision: `.agenthoff/vision.md`
+- Vision: `.agentheim/vision.md`
 ```
 
 ## Outcome
 
-ADR 0008 written at `.agenthoff/knowledge/decisions/0008-cross-cutting-concerns.md` (`scope: global`, `status: accepted`). Captures the four cross-cutting decisions: Serilog rolling-file logging with a sidecar redirect sink, fail-loud-to-tray-toast error philosophy with no telemetry, WhisperHeim-style first-run model + Python runtime bootstrap dialog with persisted state, and v1 distribution as a self-contained single-file zip via `dotnet publish`. Auto-update, code signing, and crash reporting explicitly deferred. Implementation will follow in main-009.
+ADR 0008 written at `.agentheim/knowledge/decisions/0008-cross-cutting-concerns.md` (`scope: global`, `status: accepted`). Captures the four cross-cutting decisions: Serilog rolling-file logging with a sidecar redirect sink, fail-loud-to-tray-toast error philosophy with no telemetry, WhisperHeim-style first-run model + Python runtime bootstrap dialog with persisted state, and v1 distribution as a self-contained single-file zip via `dotnet publish`. Auto-update, code signing, and crash reporting explicitly deferred. Implementation will follow in main-009.
 
 Key files:
-- `.agenthoff/knowledge/decisions/0008-cross-cutting-concerns.md`
+- `.agentheim/knowledge/decisions/0008-cross-cutting-concerns.md`

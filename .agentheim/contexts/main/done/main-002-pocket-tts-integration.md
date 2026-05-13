@@ -22,7 +22,7 @@ Adopt the **Python sidecar** approach for v1: bundle an embeddable Python distri
 
 ## Acceptance criteria
 
-- [ ] ADR 0002 committed at `.agenthoff/knowledge/decisions/0002-pocket-tts-python-sidecar.md` with `scope: global`.
+- [ ] ADR 0002 committed at `.agentheim/knowledge/decisions/0002-pocket-tts-python-sidecar.md` with `scope: global`.
 - [ ] Decision matches the draft in Notes (or carries user amendments).
 - [ ] No code change beyond the ADR file itself; the sidecar bootstrap and `ITtsEngine` interface are part of the walking skeleton task (main-009).
 
@@ -39,24 +39,24 @@ Open follow-ups (carry into the walking-skeleton task):
 - Choose embeddable-Python + portable site-packages vs PyInstaller one-file (default: embeddable, more transparent).
 - Choose IPC contract for the inner C# ↔ Python channel (HTTP JSON+chunked vs WebSocket vs named pipe). May differ from the outer Claude-facing surface.
 
-Full ADR draft (drop into `.agenthoff/knowledge/decisions/0002-pocket-tts-python-sidecar.md`):
+Full ADR draft (drop into `.agentheim/knowledge/decisions/0002-pocket-tts-python-sidecar.md`):
 
 ```markdown
 # ADR 0002: Run pocket-tts as a managed Python sidecar over loopback HTTP
 
 ## Context
-Pocket-tts is a Python package (PyPI `pocket-tts`, MIT/CC-BY-4.0, ~100M params, CPU-only, ~200ms first-chunk). It's English-only at v1. Kyutai documents a built-in FastAPI server (`pocket-tts serve`). The host language for mockingbird is C#/WPF/.NET 9. Three integration shapes are viable: (a) Python sidecar process managed by C# host. (b) Bundled Python runtime via Python.NET / pythonnet, in-process. (c) sherpa-onnx ONNX port — keep everything in C#.
+Pocket-tts is a Python package (PyPI `pocket-tts`, MIT/CC-BY-4.0, ~100M params, CPU-only, ~200ms first-chunk). It's English-only at v1. Kyutai documents a built-in FastAPI server (`pocket-tts serve`). The host language for utterheim is C#/WPF/.NET 9. Three integration shapes are viable: (a) Python sidecar process managed by C# host. (b) Bundled Python runtime via Python.NET / pythonnet, in-process. (c) sherpa-onnx ONNX port — keep everything in C#.
 
 The vision's hard constraint is that the tray app must be reliable, fast to launch, and updatable without Python-experience friction. The biggest risk is Windows compatibility of pocket-tts itself: Kyutai's own perf numbers are macOS-only.
 
 ## Decision
-Run pocket-tts as a Python sidecar process that mockingbird supervises:
-- Bundle Python 3.12 embeddable + a prepared site-packages folder (containing `pocket-tts`, torch CPU, deps) inside the mockingbird install directory, under `runtime\python\`.
-- On first launch, mockingbird verifies `python.exe` and the pocket-tts package are present; if not, runs the install script (lazy bootstrap).
+Run pocket-tts as a Python sidecar process that utterheim supervises:
+- Bundle Python 3.12 embeddable + a prepared site-packages folder (containing `pocket-tts`, torch CPU, deps) inside the utterheim install directory, under `runtime\python\`.
+- On first launch, utterheim verifies `python.exe` and the pocket-tts package are present; if not, runs the install script (lazy bootstrap).
 - On every launch (or on first speak request), spawn `runtime\python\python.exe -m pocket_tts.server --host 127.0.0.1 --port 0`. Bind only to loopback.
 - The C# host owns the process lifecycle: graceful shutdown on tray exit, restart on crash with backoff, structured logging of stdout/stderr to Serilog.
 - The synthesis engine is wrapped behind an internal `ITtsEngine` interface so a future second engine (sherpa-onnx ONNX, Chatterbox, Kyutai multilingual) can slot in.
-- The voice profile model treats `.safetensors` files as opaque artefacts produced and consumed by the sidecar; mockingbird only handles file paths and metadata.
+- The voice profile model treats `.safetensors` files as opaque artefacts produced and consumed by the sidecar; utterheim only handles file paths and metadata.
 
 ## Consequences
 ### Positive
@@ -71,7 +71,7 @@ Run pocket-tts as a Python sidecar process that mockingbird supervises:
 - We own the Python venv dependency tree on Windows. Real risk; budget time for it.
 
 ### Neutral
-- The sidecar can be managed independently for debugging — start it manually and point mockingbird at it for development.
+- The sidecar can be managed independently for debugging — start it manually and point utterheim at it for development.
 
 ## Alternatives considered
 - **(b) Python.NET / pythonnet** — rejected: in-process Python crashes the tray; more fragile interop; harder to upgrade pocket-tts independently.
@@ -79,8 +79,8 @@ Run pocket-tts as a Python sidecar process that mockingbird supervises:
 - **Cloud TTS (ElevenLabs/OpenAI)** — rejected by vision (privacy, offline, cost).
 
 ## References
-- Kyutai TTS research: `.agenthoff/knowledge/research/kyutai-tts-2026-05-01.md`
-- Vision: `.agenthoff/vision.md`
+- Kyutai TTS research: `.agentheim/knowledge/research/kyutai-tts-2026-05-01.md`
+- Vision: `.agentheim/vision.md`
 - Pocket-tts repo: `kyutai-labs/pocket-tts` (GitHub)
 ```
 
@@ -88,5 +88,5 @@ Run pocket-tts as a Python sidecar process that mockingbird supervises:
 
 Decision recorded as ADR 0002: pocket-tts runs as a managed Python sidecar (loopback HTTP), with sherpa-onnx ONNX kept as a documented fallback, and an `ITtsEngine` interface as the swap seam. No code changes; bootstrap and engine interface are deferred to the walking-skeleton task (main-009).
 
-- ADR: `.agenthoff/knowledge/decisions/0002-pocket-tts-python-sidecar.md`
+- ADR: `.agentheim/knowledge/decisions/0002-pocket-tts-python-sidecar.md`
 

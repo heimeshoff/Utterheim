@@ -77,12 +77,12 @@ scripts/utterheim-notification.ps1    # speaks attention prompts (filters idle n
 commands/narrator.md                  # /narrator slash command
 ```
 
-## Migrating from agenthoff
+## Migrating from agentheim
 
-If you previously had this functionality through the `agenthoff` plugin:
+If you previously had this functionality through the `agentheim` plugin:
 
-1. `/plugin uninstall agenthoff@agenthoff` (or upgrade to the renamed `agentheim` which no longer carries the narrator).
+1. `/plugin uninstall agentheim@agentheim` (or upgrade to the renamed `agentheim` which no longer carries the narrator).
 2. Install this plugin as shown above.
-3. In each repo where you had a voice pinned, rename `./.claude/agenthoff-voice` → `./.claude/utterheim-voice`.
-4. If you had a global mute, rename `~/.agenthoff/sound-disabled` → `~/.utterheim/sound-disabled`.
-5. Replace any `$env:MOCKINGBIRD_VOICE` / `$env:MOCKINGBIRD_ENDPOINT` env vars with `UTTERHEIM_VOICE` / `UTTERHEIM_ENDPOINT`.
+3. In each repo where you had a voice pinned, rename `./.claude/agentheim-voice` → `./.claude/utterheim-voice`.
+4. If you had a global mute, rename `~/.agentheim/sound-disabled` → `~/.utterheim/sound-disabled`.
+5. Replace any `$env:UTTERHEIM_VOICE` / `$env:UTTERHEIM_ENDPOINT` env vars with `UTTERHEIM_VOICE` / `UTTERHEIM_ENDPOINT`.

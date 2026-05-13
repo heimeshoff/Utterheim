@@ -1,24 +1,24 @@
-# Claude Code → Mockingbird hooks
+# Claude Code → Utterheim hooks
 
 This directory is the **bridge from "the speak endpoint exists" to "my Claude
 sessions actually talk to me"**. It ships:
 
-- `mockingbird-hook.ps1` — a small PowerShell shim that POSTs `{text, voice}` to
+- `utterheim-hook.ps1` — a small PowerShell shim that POSTs `{text, voice}` to
   `http://127.0.0.1:7223/speak`.
 - The wiring recipe below for Claude Code's **Stop** and **Notification** hooks.
 - A worked example for two parallel sessions in audibly different voices —
-  the v1 payoff (per `.agenthoff/vision.md`).
+  the v1 payoff (per `.agentheim/vision.md`).
 
 The transport is the one nailed down in **ADR 0003** (HTTP loopback on `:7223`,
 `{text, voice}` body, no auth, single-user). If you want to skip the script
-entirely, raw `curl` and the bundled `mockingbird-speak.exe` CLI both work
+entirely, raw `curl` and the bundled `utterheim-speak.exe` CLI both work
 against the same endpoint.
 
 ---
 
 ## Prerequisites
 
-1. Mockingbird is running (tray icon visible). The status footer in the tray
+1. Utterheim is running (tray icon visible). The status footer in the tray
    window should read `HTTP 127.0.0.1:7223 • Engine: running` once the
    sidecar warms up.
 2. PowerShell 5.1+ (ships with Windows) or PowerShell 7+.
@@ -28,7 +28,7 @@ against the same endpoint.
 Sanity-check the endpoint before touching Claude config:
 
 ```powershell
-.\mockingbird-hook.ps1 -Text "mockingbird is alive" -Voice alba
+.\utterheim-hook.ps1 -Text "utterheim is alive" -Voice alba
 ```
 
 You should hear `alba` say it within ~1–2 s. If not, jump to **Troubleshooting**
@@ -38,22 +38,22 @@ at the bottom.
 
 ## Voice assignment — per-session via env var
 
-Mockingbird does **not** know which Claude session is calling. Voice routing
-is a caller-side convention: each terminal sets `MOCKINGBIRD_VOICE` before
+Utterheim does **not** know which Claude session is calling. Voice routing
+is a caller-side convention: each terminal sets `UTTERHEIM_VOICE` before
 launching `claude`, and the hook script reads it.
 
 ```powershell
 # Terminal A — Claude session "alba"
-$env:MOCKINGBIRD_VOICE = 'alba'
+$env:UTTERHEIM_VOICE = 'alba'
 claude
 
 # Terminal B — Claude session "marius"
-$env:MOCKINGBIRD_VOICE = 'marius'
+$env:UTTERHEIM_VOICE = 'marius'
 claude
 ```
 
-Both sessions share the same `mockingbird-hook.ps1`. Each speaks in its own
-voice because each inherited a different `MOCKINGBIRD_VOICE` from its parent
+Both sessions share the same `utterheim-hook.ps1`. Each speaks in its own
+voice because each inherited a different `UTTERHEIM_VOICE` from its parent
 shell. That's the whole "session-distinguishing-by-ear" mechanism — there is
 no server-side session identity in v1, by design.
 
@@ -79,7 +79,7 @@ in a different voice (see the Notification hook example below).
 > this README as a recipe to **adapt**, not paste verbatim.
 
 The general idea is: register an external command for the `Stop` and
-`Notification` events that runs `mockingbird-hook.ps1`. A typical Claude
+`Notification` events that runs `utterheim-hook.ps1`. A typical Claude
 Code hook configuration block (in your project- or user-scoped Claude
 settings file) looks something like:
 
@@ -92,7 +92,7 @@ settings file) looks something like:
         "args": [
           "-NoProfile",
           "-ExecutionPolicy", "Bypass",
-          "-File", "C:\\path\\to\\mockingbird\\examples\\claude-hooks\\mockingbird-hook.ps1",
+          "-File", "C:\\path\\to\\utterheim\\examples\\claude-hooks\\utterheim-hook.ps1",
           "-Text", "task done",
           "-Silent"
         ]
@@ -104,7 +104,7 @@ settings file) looks something like:
         "args": [
           "-NoProfile",
           "-ExecutionPolicy", "Bypass",
-          "-File", "C:\\path\\to\\mockingbird\\examples\\claude-hooks\\mockingbird-hook.ps1",
+          "-File", "C:\\path\\to\\utterheim\\examples\\claude-hooks\\utterheim-hook.ps1",
           "-Text", "input required",
           "-Silent"
         ]
@@ -120,7 +120,7 @@ Notes:
   never break Claude's own flow. The script will still exit 0 if the
   endpoint is unreachable, just without sound.
 - We don't pass `-Voice` here — the script falls back to
-  `$env:MOCKINGBIRD_VOICE`, which is exactly what you want for
+  `$env:UTTERHEIM_VOICE`, which is exactly what you want for
   per-session voices.
 - `-ExecutionPolicy Bypass` is scoped to this single invocation; it
   doesn't change machine-wide policy.
@@ -138,7 +138,7 @@ This is the demo that makes the v1 payoff tangible.
 **Terminal A** (PowerShell):
 
 ```powershell
-$env:MOCKINGBIRD_VOICE = 'alba'
+$env:UTTERHEIM_VOICE = 'alba'
 cd C:\some\repo-A
 claude
 # … work with Claude here. Each time it finishes a turn, alba says "task done".
@@ -147,7 +147,7 @@ claude
 **Terminal B** (a *separate* PowerShell window):
 
 ```powershell
-$env:MOCKINGBIRD_VOICE = 'marius'
+$env:UTTERHEIM_VOICE = 'marius'
 cd C:\some\repo-B
 claude
 # … work in parallel. Marius says "task done" on this side.
@@ -167,20 +167,20 @@ takes seconds.
 ## Troubleshooting
 
 These are the failure modes that surfaced during the clean-machine
-verification of mockingbird's bootstrap (`main-018`). If something doesn't
+verification of utterheim's bootstrap (`main-018`). If something doesn't
 sound right, work down the list.
 
 ### "Nothing happens — no error, no sound"
 
-Most likely the hook fired but mockingbird isn't running. Run the script
+Most likely the hook fired but utterheim isn't running. Run the script
 manually without `-Silent`:
 
 ```powershell
-.\mockingbird-hook.ps1 -Text "test" -Voice alba
+.\utterheim-hook.ps1 -Text "test" -Voice alba
 ```
 
-If it prints `cannot reach http://127.0.0.1:7223/speak — is mockingbird
-running?`, start mockingbird from the tray. The `-Silent` flag in your
+If it prints `cannot reach http://127.0.0.1:7223/speak — is utterheim
+running?`, start utterheim from the tray. The `-Silent` flag in your
 hook config is *deliberately* swallowing this error so it doesn't break
 Claude's flow — that's working as intended.
 
@@ -195,7 +195,7 @@ Open the tray window. The status footer should read
   seconds.
 - `Engine: failed` — the sidecar crashed and the auto-restart watchdog
   gave up after 5 attempts. Check
-  `%LOCALAPPDATA%\Mockingbird\logs\mockingbird-YYYYMMDD.log`; sidecar
+  `%LOCALAPPDATA%\Utterheim\logs\utterheim-YYYYMMDD.log`; sidecar
   stdout/stderr appear under the `sidecar` source (Python tracebacks
   included since `main-021`).
 - `Engine: stopping` immediately after Exit — expected; the host kills
@@ -220,12 +220,12 @@ Claude Code is launched in:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass `
-  -File C:\path\to\mockingbird\examples\claude-hooks\mockingbird-hook.ps1 `
+  -File C:\path\to\utterheim\examples\claude-hooks\utterheim-hook.ps1 `
   -Text "manual test"
 ```
 
 If this works but the Claude Code hook doesn't, it's a Claude config
-issue, not a mockingbird issue:
+issue, not a utterheim issue:
 
 - Double-check the path is absolute and the JSON is valid (Claude Code
   silently ignores malformed hook config in some versions).
@@ -234,21 +234,21 @@ issue, not a mockingbird issue:
 - Some Claude Code versions log hook execution; check that log to see
   whether the hook is even firing.
 
-### "Port 7223 is in use" on mockingbird startup
+### "Port 7223 is in use" on utterheim startup
 
 Something else grabbed the port first. Either stop the offender or
-override the port in mockingbird's settings (`appsettings.json`). The
-hook script reads `$env:MOCKINGBIRD_ENDPOINT` if you want to point it
+override the port in utterheim's settings (`appsettings.json`). The
+hook script reads `$env:UTTERHEIM_ENDPOINT` if you want to point it
 at a non-default URL:
 
 ```powershell
-$env:MOCKINGBIRD_ENDPOINT = 'http://127.0.0.1:17223'
+$env:UTTERHEIM_ENDPOINT = 'http://127.0.0.1:17223'
 ```
 
-### "Voice doesn't match what I set in `MOCKINGBIRD_VOICE`"
+### "Voice doesn't match what I set in `UTTERHEIM_VOICE`"
 
 Environment variables are inherited at process spawn. If you set
-`$env:MOCKINGBIRD_VOICE` *after* launching `claude`, the running session
+`$env:UTTERHEIM_VOICE` *after* launching `claude`, the running session
 won't see it — close and relaunch `claude` from the same shell. The
 hook script reads the env var fresh on each invocation, so once the
 parent shell's value is right, every subsequent hook call uses it.
@@ -266,9 +266,9 @@ disable the network so health probes fail, or attach a debugger.
 
 ## See also
 
-- `.agenthoff/knowledge/decisions/0003-claude-transport-http.md` — the
+- `.agentheim/knowledge/decisions/0003-claude-transport-http.md` — the
   ADR that froze the wire format.
-- `.agenthoff/contexts/main/README.md` — speak endpoint vocabulary,
+- `.agentheim/contexts/main/README.md` — speak endpoint vocabulary,
   voice profile model, engine status.
-- `src/Mockingbird.Cli/Program.cs` — the bundled `mockingbird-speak.exe`
+- `src/Utterheim.Cli/Program.cs` — the bundled `utterheim-speak.exe`
   CLI, equivalent to this script for shells that prefer a binary.

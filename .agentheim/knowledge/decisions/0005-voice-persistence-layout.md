@@ -18,18 +18,18 @@ Voice profiles are `.safetensors` kvcache files plus metadata (name, source, dat
 ## Decision
 - One folder per voice under `<dataPath>\voices\<voice-id>\` containing `profile.safetensors`, `meta.json`, and optionally `sample.wav`.
 - A single `library.json` at `<dataPath>\voices\library.json` holding the master index (id → display name, engine, source, created, tags). Loaded on startup, reconciled against actual folder contents (orphan folders / missing entries surface a tray warning, never silently dropped).
-- Settings live in `<dataPath>\settings.json` (synced) and bootstrap `%APPDATA%\Mockingbird\bootstrap.json` (machine-local pointer to the data path). Same pattern as WhisperHeim.
-- Pocket-tts model weights and the bundled Python runtime live in `%LOCALAPPDATA%\Mockingbird\` (machine-local, not synced).
+- Settings live in `<dataPath>\settings.json` (synced) and bootstrap `%APPDATA%\Utterheim\bootstrap.json` (machine-local pointer to the data path). Same pattern as WhisperHeim.
+- Pocket-tts model weights and the bundled Python runtime live in `%LOCALAPPDATA%\Utterheim\` (machine-local, not synced).
 
 Layout:
 
 ```
-%APPDATA%\Mockingbird\
+%APPDATA%\Utterheim\
   bootstrap.json
   settings.json
   logs\
 
-<dataPath>\                    (default = %APPDATA%\Mockingbird; override via bootstrap.json)
+<dataPath>\                    (default = %APPDATA%\Utterheim; override via bootstrap.json)
   voices\
     library.json               (master index)
     <voice-id>\
@@ -37,7 +37,7 @@ Layout:
       meta.json
       sample.wav               (optional)
 
-%LOCALAPPDATA%\Mockingbird\
+%LOCALAPPDATA%\Utterheim\
   runtime\python\              (bundled embeddable Python + venv)
   models\pocket-tts\           (model weights)
   cache\
@@ -92,5 +92,5 @@ Atomic writes: both `library.json` and per-voice `meta.json` use write-temp-then
 
 ## References
 - WhisperHeim DataPathService: `C:\src\heimeshoff\tooling\WhisperHeim\src\WhisperHeim\Services\Settings\DataPathService.cs`
-- Vision: `.agenthoff/vision.md`
-- Kyutai research: `.agenthoff/knowledge/research/kyutai-tts-2026-05-01.md`
+- Vision: `.agentheim/vision.md`
+- Kyutai research: `.agentheim/knowledge/research/kyutai-tts-2026-05-01.md`

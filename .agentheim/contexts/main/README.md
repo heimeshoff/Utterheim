@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The single bounded context for Mockingbird. Owns everything from voice acquisition through synthesis to delivery: voice profile management, sample capture, speak-request queueing, streaming TTS playback, the Claude Code integration surface, and the tray UI that wraps it all.
+The single bounded context for Utterheim. Owns everything from voice acquisition through synthesis to delivery: voice profile management, sample capture, speak-request queueing, streaming TTS playback, the Claude Code integration surface, and the tray UI that wraps it all.
 
 This is a personal tool with one user and one primary consumer (Claude Code). The whole app is one coherent subject; see `../../context-map.md` for why the candidate sub-boundaries (synthesis, voice-library, voice-capture, claude-bridge, tray-ui) were rejected as separate BCs.
 
@@ -38,19 +38,19 @@ From the vision's seed glossary, plus terms that surfaced during boundary analys
 | **Voice library** | The on-disk catalog of cloned voices: `<dataPath>\voices\library.json` (master index) plus `<dataPath>\voices\<id>\` (per-voice profile + meta + optional sample). Persistence layer for "own-your-voices". |
 | **Voice id** | Stable lowercase-kebab folder name (`marco`, `marco-a3f2`). Generated from display name; never renamed. Collisions with built-in voice ids are rejected; collisions among cloned voices get a 4-hex disambiguator. |
 | **Library reconciliation** | Startup pass that brings `library.json` and on-disk voice folders into agreement: prune missing-on-disk entries, reinsert orphan folders from `meta.json`, log warnings for unreadable / future-schema files. |
-| **Sidecar wrapper** | The `mockingbird_sidecar` Python module that mounts mockingbird-owned routes (`/export-voice`, `/tts-with-state`) on top of pocket-tts's FastAPI app, sharing its resident `tts_model`. Per ADR 0015. |
+| **Sidecar wrapper** | The `utterheim_sidecar` Python module that mounts utterheim-owned routes (`/export-voice`, `/tts-with-state`) on top of pocket-tts's FastAPI app, sharing its resident `tts_model`. Per ADR 0015. |
 
 ## Key actors
 
 - **The user** (single developer) — clones voices, manages the library, configures settings, hits the stop hotkey, watches the tray status. Episodic interaction.
 - **Claude Code sessions** (multiple, parallel) — the primary speak-request producers. They call the speak endpoint and expect audio to come out within ~2 s. They do not know about the queue, the voice library, or the engine; they only know `{text, voice}`.
-- **pocket-tts** (external engine, consumed) — the conformist dependency. Mockingbird adapts to its API.
+- **pocket-tts** (external engine, consumed) — the conformist dependency. Utterheim adapts to its API.
 
 ## Relationships
 
 This BC is the only domain BC. External relationships:
 
-- **Upstream conformist** to **pocket-tts**: mockingbird adapts to whatever shape pocket-tts exposes (`TTSModel`, voice states, Mimi encoding, `.safetensors`). Wrapped behind a thin internal engine interface to leave room for a second engine later.
+- **Upstream conformist** to **pocket-tts**: utterheim adapts to whatever shape pocket-tts exposes (`TTSModel`, voice states, Mimi encoding, `.safetensors`). Wrapped behind a thin internal engine interface to leave room for a second engine later.
 - **Open host (published language)** to **Claude Code**: the speak endpoint is a stable, documented localhost surface that any Claude hook can call. The wire format (`{text, voice}` plus stop / status) is the published language.
 - **Library consumer** of **WhisperHeim shared services**: audio capture, hotkeys, settings, startup. Not a BC relationship — these are technical libraries with no domain language.
 
@@ -68,9 +68,9 @@ The walking skeleton (main-009) materialises ADRs 0001–0008 as code. main-020
 adds the navigation shell on top per ADRs 0009 and 0010. Top-level layout:
 
 ```
-mockingbird.sln
+utterheim.sln
 src\
-  Mockingbird\                        WPF tray app, net9.0-windows x64
+  Utterheim\                        WPF tray app, net9.0-windows x64
     EntryPoint.cs                     composition root + IHost lifecycle
     App.xaml(.cs)                     WPF Application + WPF-UI theme dictionary
     Views\
@@ -100,7 +100,7 @@ src\
                                       affordance on cloned voices (main-026).
       Controls\
         BrandHeroControl.xaml(.cs)    Reusable hero block (main-030) — 88x88
-                                      logo badge + "Mockingbird" 40pt ExtraBold
+                                      logo badge + "Utterheim" 40pt ExtraBold
                                       + version tag in BrandDeepMutedBrush +
                                       optional `Tagline` DependencyProperty
                                       (collapsed when null/empty). Reads version
@@ -190,7 +190,7 @@ src\
                                       `AssemblyName.Version` 3-part, then `"unknown"`);
                                       `AppInfo.KofiUrl` = "https://ko-fi.com/heimeshoff"
                                       and `AppInfo.GithubUrl` =
-                                      "https://github.com/heimeshoff/mockingbird" are
+                                      "https://github.com/heimeshoff/utterheim" are
                                       the support links the About page surfaces
                                       (main-032). Single-app, no DI seam.
       Navigation\PageService.cs       Thin IPageService → IServiceProvider adapter (ADR 0009)
@@ -199,7 +199,7 @@ src\
         StubTtsEngine.cs              440 Hz test tone (replaced by main-011)
         SidecarHost.cs                Owns python sidecar lifecycle; raises
                                       StateChanged for the footer VM. Spawns
-                                      `python -m mockingbird_sidecar serve`
+                                      `python -m utterheim_sidecar serve`
                                       (per ADR 0015) — same uvicorn banner so
                                       port discovery is unchanged from pocket_tts.
                                       RestartAsync (main-017 / ADR 0018) is the
@@ -275,7 +275,7 @@ src\
                                         through VoiceLibraryService per ADR 0005.
         HighQualityLoopbackService.cs WasapiLoopbackCapture impl writing the
                                         captured audio to a temp WAV under
-                                        %TEMP%\Mockingbird\.
+                                        %TEMP%\Utterheim\.
         AudioDeviceInfo.cs            Shared device-info record.
         AudioDeviceResolver.cs        WaveIn + WaveOut enumeration with Core Audio
                                         name resolution. EnumerateOutputDevices added
@@ -284,7 +284,7 @@ src\
                                         AudioCaptureService.
       Hotkey\
         NativeMethods.cs              copied from WhisperHeim @ 911bff0
-        DoubleTapDetector.cs          mockingbird-specific RCtrl gesture (ADR 0006;
+        DoubleTapDetector.cs          utterheim-specific RCtrl gesture (ADR 0006;
                                       switched from LCtrl to RCtrl in main-033 for
                                       right-hand reachability on Marco's keyboard)
       Settings\
@@ -292,54 +292,54 @@ src\
                                       main-031: ValidatePath + SetDataPath + DataPathChanged
                                       event for runtime data-path swap (pointer-only per
                                       ADR 0020); bootstrap.json writes via temp+rename.
-        UserSettings.cs               Typed wrapper over %LOCALAPPDATA%\Mockingbird\
+        UserSettings.cs               Typed wrapper over %LOCALAPPDATA%\Utterheim\
                                       settings.json — DefaultVoiceId (main-013),
                                       OutputDeviceId, StartMinimised (main-016).
                                       Forward-compatible JSON shape; unknown fields
                                       ignored on read.
-        StartupRegistration.cs        HKCU\…\Run\Mockingbird helper (main-016) —
+        StartupRegistration.cs        HKCU\…\Run\Utterheim helper (main-016) —
                                       IsRegistered / Register / Unregister. Registry
                                       is the source of truth for "Launch at startup";
                                       not stored in settings.json (ADR 0017).
     appsettings.json                  default port + hotkey window
     PythonSidecar\
-      mockingbird_sidecar\            mockingbird-owned Python wrapper around pocket_tts
+      utterheim_sidecar\            utterheim-owned Python wrapper around pocket_tts
                                       (ADR 0015 / main-015). Bundled next to the .exe;
                                       bootstrapper copies into runtime\python\Lib\
-                                      site-packages\mockingbird_sidecar\ on first launch.
+                                      site-packages\utterheim_sidecar\ on first launch.
                                       Adds /export-voice and /tts-with-state to the
                                       pocket_tts FastAPI app while keeping its TTSModel
                                       resident across requests.
         __init__.py                   package marker
-        __main__.py                   `python -m mockingbird_sidecar` entry point
+        __main__.py                   `python -m utterheim_sidecar` entry point
         main.py                       FastAPI route definitions + typer `serve` command
-  Mockingbird.Cli\                    mockingbird-speak — single-file CLI wrapper
+  Utterheim.Cli\                    utterheim-speak — single-file CLI wrapper
 assets\branding\                      brand mark + raster outputs
-  mockingbird-logo.svg                source artwork — final, signed off 2026-05-05
+  utterheim-logo.svg                source artwork — final, signed off 2026-05-05
                                       (main-028 draft 3): filled orange head profile
                                       + three blue Wi-Fi-style arcs from the mouth.
                                       Two-colour, not theme-adaptive.
-  mockingbird-logo-{16..512}.png      rasterised PNGs (rasteriser from main-012;
+  utterheim-logo-{16..512}.png      rasterised PNGs (rasteriser from main-012;
                                       regenerated from the final SVG by main-028)
-  mockingbird.ico                     multi-resolution tray + taskbar icon (final)
+  utterheim.ico                     multi-resolution tray + taskbar icon (final)
 assets\people\                        portraits used by identity surfaces
   heimeshoff.jpg                      Marco's portrait (main-032) — copied verbatim
                                       from WhisperHeim's Assets/heimeshoff.jpg so the
                                       About profile card stays in sync across the two
                                       apps. Rendered as a 140x140 ringed ImageBrush.
 Tools\RasteriseLogo\                  one-shot helper that produces the PNG/ICO
-                                      from the source SVG. Outside mockingbird.sln.
+                                      from the source SVG. Outside utterheim.sln.
 README.md
 ```
 
 Path layout at runtime (per ADR 0005):
 
 ```
-%APPDATA%\Mockingbird\bootstrap.json    machine-local data-path pointer
-%LOCALAPPDATA%\Mockingbird\
-  logs\mockingbird-YYYYMMDD.log         Serilog rolling sink (ADR 0008)
+%APPDATA%\Utterheim\bootstrap.json    machine-local data-path pointer
+%LOCALAPPDATA%\Utterheim\
+  logs\utterheim-YYYYMMDD.log         Serilog rolling sink (ADR 0008)
   runtime\python\                       embeddable Python + pocket_tts +
-                                        mockingbird_sidecar (main-011 / main-015)
+                                        utterheim_sidecar (main-011 / main-015)
   models\pocket-tts\                    (main-011 will populate this)
   cache\
   bootstrap-state.json                  first-run completion marker
@@ -362,9 +362,9 @@ main-032 split the placement: Speak / Voices / Settings sit in
 (bottom-left of the nav pane), mirroring WhisperHeim and visually
 separating the everyday workflow from the identity / credits surface.
 main-033 brought the chrome itself in line with WhisperHeim: the sidebar
-header now renders the Speak-page brand mark (`mockingbird-logo-256.png`
+header now renders the Speak-page brand mark (`utterheim-logo-256.png`
 via the same `Image` source the `BrandHeroControl` uses) beside a
-**16pt Bold** "Mockingbird" wordmark, and the four nav items use the
+**16pt Bold** "Utterheim" wordmark, and the four nav items use the
 WhisperHeim list typography (uppercased label, `FontSize=11`,
 `FontWeight=Medium`, applied via the `NavItemStyle` resource). The
 inline-drawn portrait that previously sat next to the wordmark is gone.
@@ -382,7 +382,7 @@ A persistent **status footer** below the navigation area shows
 `EngineStatusViewModel`; the engine label updates live as
 `SidecarHost.StateChanged` fires (`starting` → `running` → `restarting` →
 `failed` → `stopping`). When the stub engine is selected
-(`MOCKINGBIRD_USE_STUB_ENGINE=1`) the label reads `stub` and never changes.
+(`UTTERHEIM_USE_STUB_ENGINE=1`) the label reads `stub` and never changes.
 The four feature pages (main-013/014/016/017) replace each stub with real
 content. Per main-017 Q2 the persistent footer **stays** alongside the
 richer status panel — main-032 / ADR 0021 relocated the panel from About
@@ -405,7 +405,7 @@ As of main-011 the **real pocket-tts engine is wired in**:
   `ResponseContentRead` would buffer the entire WAV, scaling first-chunk latency
   linearly with input size and breaking the ≤2 s budget on anything beyond a short
   sentence.
-- `SidecarHost` owns the `python.exe -m mockingbird_sidecar serve --host 127.0.0.1
+- `SidecarHost` owns the `python.exe -m utterheim_sidecar serve --host 127.0.0.1
   --port 0` process (per ADR 0015 — the wrapper module imports pocket_tts's FastAPI
   app and mounts `/export-voice` + `/tts-with-state` so cloning + cloned-voice
   synthesis share the same resident `tts_model`): parses the assigned port from
@@ -419,28 +419,28 @@ As of main-011 the **real pocket-tts engine is wired in**:
   auto-restart loop during host shutdown so the supervisor cannot respawn the
   python we just killed.
 - `PythonRuntimeBootstrapper` runs once on first launch: downloads Python 3.12.7
-  embeddable to `%LOCALAPPDATA%\Mockingbird\runtime\python\`, enables `site` in the
+  embeddable to `%LOCALAPPDATA%\Utterheim\runtime\python\`, enables `site` in the
   `._pth` file, bootstraps pip, pip-installs `pocket-tts>=2.0,<3` (which pulls torch
-  CPU plus deps, ~600 MB), copies the bundled `mockingbird_sidecar` wrapper from the
-  install folder into `runtime\python\Lib\site-packages\mockingbird_sidecar\`
+  CPU plus deps, ~600 MB), copies the bundled `utterheim_sidecar` wrapper from the
+  install folder into `runtime\python\Lib\site-packages\utterheim_sidecar\`
   (main-015), and smoke-tests both imports. Progress is persisted to
   `bootstrap-state.json` so a half-finished run resumes on restart. Per ADR 0011,
   on-disk sentinel files (`python.exe`, `pip`, `pocket_tts/__init__.py`,
-  `mockingbird_sidecar/__init__.py` + `mockingbird_sidecar/main.py`) are
+  `utterheim_sidecar/__init__.py` + `utterheim_sidecar/main.py`) are
   authoritative — a stale state file cannot trick the bootstrapper into skipping a
   step whose artefacts have been wiped — and any subprocess that exits non-zero
   surfaces its captured stderr tail in both the file log (at `Error`) and the
   thrown exception (visible in the `BootstrapDialog`). Per ADR 0016 / main-027,
   the launch-time gate (`IsBootstrapped`) is **strict and version-aware**: it
   delegates to the same helpers the install path uses (`PocketTtsActuallyInstalled`
-  / `MockingbirdSidecarActuallyInstalled`) and additionally compares the bundled
-  `mockingbird_sidecar/__init__.py`'s `__version__` against the installed copy's
+  / `UtterheimSidecarActuallyInstalled`) and additionally compares the bundled
+  `utterheim_sidecar/__init__.py`'s `__version__` against the installed copy's
   `__version__`. Any missing wrapper file or version mismatch returns false →
   bootstrap dialog opens → install step re-runs and `File.Copy(overwrite: true)`
   heals the tree. Bumping `__version__` in the bundled `__init__.py` is therefore
   the wrapper's update mechanism — no separate migration code path.
 - `BootstrapDialog` drives the bootstrapper with per-step progress, cancel, and retry.
-- `StubTtsEngine` is preserved behind `MOCKINGBIRD_USE_STUB_ENGINE=1` for offline /
+- `StubTtsEngine` is preserved behind `UTTERHEIM_USE_STUB_ENGINE=1` for offline /
   CI testing; the env flag also disables the sidecar and bootstrap-dialog wiring.
 - `GET /voices` returns the union of the eight pocket-tts built-ins (`alba`, `marius`,
   `javert`, `jean`, `fantine`, `cosette`, `eponine`, `azelma`) with `isBuiltIn: true`
@@ -529,7 +529,7 @@ were added on `SpeakQueue` to drive the machine.
 The voice picker pre-selects `UserSettings.DefaultVoiceId` if it is set and
 present in the catalog; otherwise it falls back to the alphabetically-first
 voice (`alba` for the eight pocket-tts built-ins). `UserSettings` reads /
-writes `%LOCALAPPDATA%\Mockingbird\settings.json` with an atomic
+writes `%LOCALAPPDATA%\Utterheim\settings.json` with an atomic
 temp+replace; unknown JSON fields are ignored so main-016 can extend the
 schema without breaking v1 reads. v1 ships only the storage layer — UI to
 mutate the default voice is main-016's responsibility. The HTTP `/speak`
@@ -537,7 +537,7 @@ endpoint is unaffected (callers always specify a voice explicitly).
 
 ### Verification note
 
-The build is clean (`dotnet build mockingbird.sln -c Debug` → 0 errors,
+The build is clean (`dotnet build utterheim.sln -c Debug` → 0 errors,
 0 warnings). The interactive UI behaviours — textbox dominates the layout,
 SaveFileDialog opens with the correct filter, Stop drains the queue,
 status line transitions visibly, picker refreshes on navigation — are
@@ -649,7 +649,7 @@ running (no collapse / expand in v1). Its view-model is
   resampling). Default device is `-1` (system default, NAudio maps to 0).
 - **System Audio mode** uses `IHighQualityLoopbackService` (WASAPI loopback
   at the native render-endpoint format, typically 48 kHz IEEE-float stereo).
-  Capture writes a temp WAV under `%TEMP%\Mockingbird\` for the duration of
+  Capture writes a temp WAV under `%TEMP%\Utterheim\` for the duration of
   the session; the path is consumed by Save and deleted on success.
 - **Rainbow Passage prompt** (main-034) — Mic mode only: a subtle-fill
   `Border` (`SubtleFillColorSecondaryBrush`, 1-pt `ControlStrokeColorDefault`,
@@ -689,7 +689,7 @@ running (no collapse / expand in v1). Its view-model is
 - **Save flow** (in `SaveAsync`):
   1. Re-validate name client-side (mirror of `VoiceLibraryService` rules).
   2. Render to a temp WAV — mic mode writes float→16-bit PCM to a fresh
-     file under `%TEMP%\Mockingbird\`; loopback mode reuses the file the
+     file under `%TEMP%\Utterheim\`; loopback mode reuses the file the
      capture service already wrote.
   3. Quiet-buffer guard — peak RMS < 0.01 short-circuits with
      "Recording was very quiet. Try again closer to the mic." (no POST).
@@ -823,7 +823,7 @@ Settings page.
   instead of an activated window. The HTTP / hotkey / sidecar surfaces
   are independent of window visibility.
 - **Launch at startup** — `ui:ToggleSwitch`, persists by writing /
-  removing the `Mockingbird` value under
+  removing the `Utterheim` value under
   `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` via
   `StartupRegistration`. **Not stored in `settings.json`** — the registry
   is the source of truth (ADR 0017), so an external uninstaller / cleanup
@@ -847,7 +847,7 @@ Settings page.
   before the pointer in `bootstrap.json` is flipped via temp+rename, and
   a MessageBox info reminds the user to restart for full effect. A
   `Reset` button (no MessageBox) clears the override back to
-  `%APPDATA%\Mockingbird\`. **Pointer-swap only** — old voices at the
+  `%APPDATA%\Utterheim\`. **Pointer-swap only** — old voices at the
   previous path are not moved, copied, or deleted (ADR 0020). Only
   `<dataPath>\voices\` follows the swap; `runtime/`, `models/`,
   `cache/`, `logs/`, `bootstrap-state.json`, `settings.json` stay
@@ -865,7 +865,7 @@ Settings page.
   `EngineStatus.Detach()`. `Restart Engine` calls
   `SidecarHost.RestartAsync`; disabled mid-transition.
 - **View logs** — `ui:HyperlinkButton` underneath the engine card, opens
-  `%LOCALAPPDATA%\Mockingbird\logs\` in Explorer (falls back to
+  `%LOCALAPPDATA%\Utterheim\logs\` in Explorer (falls back to
   `LocalRoot` if the directory hasn't been created yet). Bound to
   `EngineStatus.OpenLogsCommand`.
 
@@ -922,7 +922,7 @@ styleguide's 40,36,40,32 page chrome and MaxWidth=900:
 
 1. **Hero** — `<controls:BrandHeroControl Tagline="Local voices for Claude
    Code" />` from main-030. 88x88 brand-blue badge with the main-028
-   mockingbird mark inside, "Mockingbird" 40pt ExtraBold, version tag in
+   utterheim mark inside, "Utterheim" 40pt ExtraBold, version tag in
    `BrandDeepMutedBrush`, and the signed-off tagline beneath.
 2. **Profile & Contact card** — `Border` with
    `CardBackgroundFillColorSecondaryBrush`, `CornerRadius=12`, `Padding=28`.
@@ -930,27 +930,27 @@ styleguide's 40,36,40,32 page chrome and MaxWidth=900:
    sourced from `assets/people/heimeshoff.jpg` (verbatim copy of
    WhisperHeim's), Marco's two-paragraph bio (paragraph 1 verbatim from
    WhisperHeim about DDD + collaborative modeling, paragraph 2
-   mockingbird-specific: *"I built Mockingbird so my Claude Code sessions
+   utterheim-specific: *"I built Utterheim so my Claude Code sessions
    could speak in different voices — local, offline, with whatever voices I
    want to clone."*), divider, and the "Get in Touch" rows
    (heimeshoff.de Globe, Bluesky butterfly @Heimeshoff.de,
    linkedin.com/in/heimeshoff). Glyph paths and hyperlinks are lifted
    verbatim from WhisperHeim.
 3. **Support & GitHub card** — `Border` with the same card chrome as the
-   profile card. Contains the "If you enjoy Mockingbird and want to support
+   profile card. Contains the "If you enjoy Utterheim and want to support
    my open-source work…" line, a Ko-fi gradient button (`#FF25abfe →
    #FF005FAA`, `CornerRadius=10`, "Buy me a coffee on Ko-fi" white text)
    that opens `AppInfo.KofiUrl` in the default browser, the closing
-   "Otherwise, just enjoy using Mockingbird for free" line, and a
+   "Otherwise, just enjoy using Utterheim for free" line, and a
    "View on GitHub" link routed through `AppInfo.GithubUrl` (=
-   `https://github.com/heimeshoff/mockingbird`, distinct from
+   `https://github.com/heimeshoff/utterheim`, distinct from
    WhisperHeim's repo).
 4. **Credits** — `Synthesis powered by pocket-tts (Kyutai Labs).` Minimal,
    unchanged from main-017.
 
 The Bento grid (Philosophy + AI Models) at the bottom of WhisperHeim's
 About is **not** copied — it's WhisperHeim-specific and overlaps with
-mockingbird's Settings → Engine status.
+utterheim's Settings → Engine status.
 
 ### Code shape
 
@@ -974,7 +974,7 @@ ships, "Copy logs path" / "Open log file") moved with the panel — see
 
 ### Verification note
 
-The build is clean (`dotnet build mockingbird.sln -c Debug` → 0 errors,
+The build is clean (`dotnet build utterheim.sln -c Debug` → 0 errors,
 0 warnings). The interactive UI behaviours — Ko-fi / GitHub / hyperlink
 navigation, About appearing in the nav footer rather than the main menu,
 the engine-status card on Settings → Diagnostics responding to live state
@@ -1011,13 +1011,13 @@ main-025 builds the cloning sub-flow and main-026 the per-row delete):
   the C# host then hands to `VoiceLibraryService.AddAsync` for persistence. The
   sidecar is stateless between requests — no on-disk profile lives on the Python
   side.
-- **Sidecar wrapper module** `mockingbird_sidecar` is bundled next to the binary
-  under `src\Mockingbird\PythonSidecar\mockingbird_sidecar\` and copied into the
+- **Sidecar wrapper module** `utterheim_sidecar` is bundled next to the binary
+  under `src\Utterheim\PythonSidecar\utterheim_sidecar\` and copied into the
   Python runtime's site-packages by the bootstrapper (per ADR 0015). It mounts
   `POST /export-voice` and `POST /tts-with-state` on top of pocket-tts's existing
   FastAPI app, and re-exports a `serve` typer command that mirrors
   `pocket_tts serve` — so `SidecarHost.cs`'s spawn argument string only changes
-  the module name (`pocket_tts` → `mockingbird_sidecar`).
+  the module name (`pocket_tts` → `utterheim_sidecar`).
 
 ### Voice profile schema (locked v1)
 
@@ -1099,10 +1099,10 @@ As of main-019, the bridge from "the speak endpoint exists" to "Claude
 Code sessions actually talk to me" ships as documentation + a sample
 script under `examples/claude-hooks/`:
 
-- `mockingbird-hook.ps1` — small PowerShell shim that POSTs `{text, voice}`
+- `utterheim-hook.ps1` — small PowerShell shim that POSTs `{text, voice}`
   to `http://127.0.0.1:7223/speak`. Reads voice from
-  `$env:MOCKINGBIRD_VOICE` (default `alba`) and endpoint from
-  `$env:MOCKINGBIRD_ENDPOINT` (default per ADR 0003). `-Silent` swallows
+  `$env:UTTERHEIM_VOICE` (default `alba`) and endpoint from
+  `$env:UTTERHEIM_ENDPOINT` (default per ADR 0003). `-Silent` swallows
   all failures so a missing sidecar can never block Claude Code itself.
 - `README.md` — wiring recipe for Claude Code's `Stop` and `Notification`
   hooks, voice-assignment convention (env var per terminal), the parallel
@@ -1128,6 +1128,6 @@ Historical: the boundary analysis surfaced four architectural decisions which
 have now been resolved by the ADRs above:
 
 1. Python-vs-C# integration shape for pocket-tts → ADR 0002 (Python sidecar).
-2. Claude-to-mockingbird transport → ADR 0003 (HTTP loopback on :7223).
+2. Claude-to-utterheim transport → ADR 0003 (HTTP loopback on :7223).
 3. Stop-signal semantics → ADR 0004 (drain queue by default).
 4. WhisperHeim reuse form → ADR 0006 (copy-and-modify in v1).

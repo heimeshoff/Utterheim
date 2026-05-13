@@ -1,13 +1,13 @@
-// One-shot rasteriser for the Mockingbird placeholder logo.
+// One-shot rasteriser for the Utterheim placeholder logo.
 //
-// Reads ../../assets/branding/mockingbird-logo.svg, produces PNGs at the
-// canonical sizes plus a multi-resolution mockingbird.ico (PNG-compressed
+// Reads ../../assets/branding/utterheim-logo.svg, produces PNGs at the
+// canonical sizes plus a multi-resolution utterheim.ico (PNG-compressed
 // frames, which Windows accepts since Vista).
 
 using SkiaSharp;
 using Svg.Skia;
 
-namespace Mockingbird.Tools.RasteriseLogo;
+namespace Utterheim.Tools.RasteriseLogo;
 
 internal static class Program
 {
@@ -18,7 +18,7 @@ internal static class Program
     {
         var repoRoot = FindRepoRoot();
         var brandingDir = Path.Combine(repoRoot, "assets", "branding");
-        var svgPath = Path.Combine(brandingDir, "mockingbird-logo.svg");
+        var svgPath = Path.Combine(brandingDir, "utterheim-logo.svg");
 
         if (!File.Exists(svgPath))
         {
@@ -47,13 +47,13 @@ internal static class Program
         foreach (var size in Sizes)
         {
             var png = Rasterise(svg, size);
-            var pngPath = Path.Combine(brandingDir, $"mockingbird-logo-{size}.png");
+            var pngPath = Path.Combine(brandingDir, $"utterheim-logo-{size}.png");
             File.WriteAllBytes(pngPath, png);
             pngBytesBySize[size] = png;
             Console.WriteLine($"Wrote {pngPath} ({png.Length} bytes)");
         }
 
-        var icoPath = Path.Combine(brandingDir, "mockingbird.ico");
+        var icoPath = Path.Combine(brandingDir, "utterheim.ico");
         WriteIco(icoPath, IcoSizes.Select(s => (s, pngBytesBySize[s])).ToList());
         Console.WriteLine($"Wrote {icoPath}");
 
@@ -136,12 +136,12 @@ internal static class Program
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "mockingbird.sln")))
+            if (File.Exists(Path.Combine(dir.FullName, "utterheim.sln")))
             {
                 return dir.FullName;
             }
             dir = dir.Parent;
         }
-        throw new InvalidOperationException("Could not locate repo root (mockingbird.sln).");
+        throw new InvalidOperationException("Could not locate repo root (utterheim.sln).");
     }
 }

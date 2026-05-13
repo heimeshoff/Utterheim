@@ -8,7 +8,7 @@ Accepted — ratified by main-029 (2026-05-05).
 
 ## Context
 
-mockingbird's Settings page (post main-029) gains a Light / Dark / System
+utterheim's Settings page (post main-029) gains a Light / Dark / System
 appearance picker, modelled on WhisperHeim's General-page picker. The
 selection needs to persist across launches.
 
@@ -28,7 +28,7 @@ Two storage choices, parallel to ADR 0017:
    `ApplicationThemeManager.Apply(...)`; read on every Settings-page
    navigation by the picker to highlight the active tile.
 
-2. **Registry** under e.g. `HKCU\Software\Mockingbird\Theme`.
+2. **Registry** under e.g. `HKCU\Software\Utterheim\Theme`.
 
 ## Decision
 

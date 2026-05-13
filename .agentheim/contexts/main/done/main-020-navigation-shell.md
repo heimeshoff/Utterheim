@@ -69,7 +69,7 @@ package, and add a thin persistent status footer below the navigation area.
 
 ### Page abstraction
 
-- New folder `src\Mockingbird\Views\Pages\` containing four `Page` subclasses
+- New folder `src\Utterheim\Views\Pages\` containing four `Page` subclasses
   (real WPF `System.Windows.Controls.Page`, not `UserControl` — the `Page`
   type is what `ui:NavigationView` navigates to and what `IPageService`
   resolves):
@@ -99,10 +99,10 @@ package, and add a thin persistent status footer below the navigation area.
 ### MVVM toolkit (new — captured by ADR 0010)
 
 - Add `<PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />`
-  to `Mockingbird.csproj`.
+  to `Utterheim.csproj`.
 - View-models derive from `CommunityToolkit.Mvvm.ComponentModel.ObservableObject`
   (or are declared `partial` and decorated with `[ObservableObject]`).
-- The convention for **all** mockingbird view-models, starting with the four
+- The convention for **all** utterheim view-models, starting with the four
   placeholder VMs created here:
   - Bindable fields: `[ObservableProperty] private T _name;` →
     generator produces the public property + change-notification.
@@ -117,7 +117,7 @@ package, and add a thin persistent status footer below the navigation area.
 
 A thin persistent footer along the bottom of the window, below the
 `NavigationView`, surfaces engine + transport health so the user keeps the
-"is mockingbird healthy?" signal that the splash provides today.
+"is utterheim healthy?" signal that the splash provides today.
 
 - Layout: a small `Border` (height ~28 px) anchored at the bottom of the
   window's row-1 (the existing `MainWindow.xaml` outer Grid gets a third row
@@ -129,7 +129,7 @@ A thin persistent footer along the bottom of the window, below the
   `"HTTP 127.0.0.1:7223  •  Engine: pocket-tts"` or
   `"HTTP 127.0.0.1:7223  •  Engine: starting"`.
 - Backed by a tiny `EngineStatusViewModel` (in
-  `src\Mockingbird\ViewModels\EngineStatusViewModel.cs`) that exposes
+  `src\Utterheim\ViewModels\EngineStatusViewModel.cs`) that exposes
   `[ObservableProperty] private string _httpEndpoint;` and
   `[ObservableProperty] private string _engineState;` and subscribes to the
   same signals the existing `MainWindow.xaml.cs` already wires in (sidecar
@@ -147,7 +147,7 @@ A thin persistent footer along the bottom of the window, below the
   `PageNavigationService`). Reasoning: they exist in 3.1.1, integrate
   natively with `NavigationView` via `NavigationView.SetPageService(...)`,
   and resolve through `IServiceProvider` via a thin adapter.
-- `src\Mockingbird\Services\Navigation\PageService.cs` — a small
+- `src\Utterheim\Services\Navigation\PageService.cs` — a small
   `IPageService` implementation that delegates to `IServiceProvider` (one
   method, `T GetPage<T>() where T : class => (T)_provider.GetRequiredService(typeof(T))`).
 - In `EntryPoint.cs`'s `ConfigureServices`:
@@ -177,9 +177,9 @@ A thin persistent footer along the bottom of the window, below the
   inline duplicated; main-017's About page will revisit if not extracted
   here. Either way works for this task — the only acceptance criterion is
   "brand mark appears at the top of the sidebar pane".
-- The window's `Title="Mockingbird — Local voices for Claude Code"` is
+- The window's `Title="Utterheim — Local voices for Claude Code"` is
   unchanged.
-- The `ui:TitleBar` text stays **static** (`<ui:TitleBar Title="Mockingbird" />`).
+- The `ui:TitleBar` text stays **static** (`<ui:TitleBar Title="Utterheim" />`).
   Active page is already obvious from the sidebar selection; dynamic
   per-page title binding adds plumbing for marginal value and matches
   WhisperHeim's static titlebar pattern.
@@ -188,7 +188,7 @@ A thin persistent footer along the bottom of the window, below the
 
 ## Acceptance criteria
 
-- [ ] Running `mockingbird.exe` shows a `ui:NavigationView` with four sidebar
+- [ ] Running `utterheim.exe` shows a `ui:NavigationView` with four sidebar
   entries (Speak, Voices, Settings, About), in that order, each with a Fluent
   icon and label.
 - [ ] **Speak is the active page** when the window first opens (no extra
@@ -202,7 +202,7 @@ A thin persistent footer along the bottom of the window, below the
   is reachable for feature tasks).
 - [ ] The brand mark (speaking-person silhouette) appears at the top of the
   sidebar pane (in `NavigationView.PaneHeader`).
-- [ ] `Mockingbird.csproj` references `CommunityToolkit.Mvvm` 8.x. All four
+- [ ] `Utterheim.csproj` references `CommunityToolkit.Mvvm` 8.x. All four
   placeholder `*PageViewModel` classes derive from `ObservableObject` (or
   are decorated with `[ObservableObject]`).
 - [ ] Pages resolve through DI via `IPageService`. Each page class has
@@ -215,7 +215,7 @@ A thin persistent footer along the bottom of the window, below the
 - [ ] No regression in the existing skeleton: HTTP server still listens on
   127.0.0.1:7223; tray menu still shows Show / Stop / Exit; double-tap LCtrl
   still drains the queue; closing the window still hides to tray.
-- [ ] Build clean: `dotnet build mockingbird.sln -c Debug` produces 0 errors,
+- [ ] Build clean: `dotnet build utterheim.sln -c Debug` produces 0 errors,
   0 warnings.
 - [ ] Visual matches the styleguide — Mica backdrop unchanged, Fluent
   controls, Segoe UI Variable.
@@ -243,13 +243,13 @@ A thin persistent footer along the bottom of the window, below the
   - **Q5 Brand mark extraction.** **Worker time.** Inline duplication or
     extracted UserControl, both fine. main-017 (About) will revisit if
     needed.
-  - **Q6 TitleBar text.** **Static** (`Title="Mockingbird"`). Active page
+  - **Q6 TitleBar text.** **Static** (`Title="Utterheim"`). Active page
     is already visible in sidebar selection; dynamic binding adds plumbing
     for marginal value.
-- **ADR 0009** (`.agenthoff/knowledge/decisions/0009-navigation-shell-wpfui.md`)
+- **ADR 0009** (`.agentheim/knowledge/decisions/0009-navigation-shell-wpfui.md`)
   captures the wpfui-NavigationView choice and the rationale for splitting
   this out of main-013.
-- **ADR 0010** (`.agenthoff/knowledge/decisions/0010-mvvm-via-inotifypropertychanged.md`)
+- **ADR 0010** (`.agentheim/knowledge/decisions/0010-mvvm-via-inotifypropertychanged.md`)
   captures the choice of `CommunityToolkit.Mvvm`. Filename retains its
   original slug for stability; the title and content reflect the final
   decision.
@@ -264,7 +264,7 @@ A thin persistent footer along the bottom of the window, below the
   "matches WhisperHeim's shell"), does NOT use `ui:NavigationView`,
   `INavigableView<T>`, `IPageService`, or WPF `Page`. Its shell is hand-rolled
   `ListBox` + `ContentPresenter` with `UserControl` pages and a
-  `NavigateTo(string)` switch. Mockingbird deliberately diverges per ADR 0009
+  `NavigateTo(string)` switch. Utterheim deliberately diverges per ADR 0009
   — for theme-aware transitions, accessibility, and Fluent control parity.
   The worker **must not copy-paste WhisperHeim's nav code**; the patterns
   are related but not interchangeable. WhisperHeim's `Loaded += OnPageLoaded`
@@ -315,17 +315,17 @@ on `OnNavigatedTo`. The brand mark sits in the `NavigationView.PaneHeader`
 slot — inline duplication of the existing `Viewbox`/`Canvas` geometry
 (Q5: worker chose not to extract a UserControl; main-017 may revisit).
 
-`CommunityToolkit.Mvvm` 8.x is wired into `Mockingbird.csproj`; the four
+`CommunityToolkit.Mvvm` 8.x is wired into `Utterheim.csproj`; the four
 placeholder `*PageViewModel` classes derive from `ObservableObject` and
-sit in `src\Mockingbird\ViewModels\Pages\`. `EngineStatusViewModel` (in
-`src\Mockingbird\ViewModels\`) backs a thin always-visible status footer
+sit in `src\Utterheim\ViewModels\Pages\`. `EngineStatusViewModel` (in
+`src\Utterheim\ViewModels\`) backs a thin always-visible status footer
 showing `HTTP {host}:{port}  •  Engine: {state}` — bound live to a new
 `SidecarHost.StateChanged` event so the engine field tracks
 `starting → running → restarting → failed → stopping` transitions. The
-stub-engine path (`MOCKINGBIRD_USE_STUB_ENGINE=1`) reads `stub`.
+stub-engine path (`UTTERHEIM_USE_STUB_ENGINE=1`) reads `stub`.
 
 Pages resolve through DI via wpfui's built-in `IPageService`. A thin
-`PageService` adapter (`src\Mockingbird\Services\Navigation\PageService.cs`)
+`PageService` adapter (`src\Utterheim\Services\Navigation\PageService.cs`)
 delegates to the host's `IServiceProvider`. `MainWindow.xaml.cs` calls
 `RootNavigation.SetPageService(...)` in its constructor and explicitly
 `Navigate(typeof(SpeakPage))` in `Loaded` (worker tip: wpfui 3.1.x does not
@@ -339,18 +339,18 @@ with a fresh `SidecarStatus` snapshot whenever its internal lifecycle bucket
 flips; the footer VM marshals to the WPF dispatcher before mutating bound
 properties.
 
-Build clean: `dotnet build mockingbird.sln -c Debug` → 0 warnings, 0 errors.
+Build clean: `dotnet build utterheim.sln -c Debug` → 0 warnings, 0 errors.
 
 Key files:
-- `src\Mockingbird\Views\MainWindow.xaml(.cs)` — shell + footer
-- `src\Mockingbird\Views\Pages\{Speak,Voices,Settings,About}Page.xaml(.cs)`
-- `src\Mockingbird\ViewModels\EngineStatusViewModel.cs`
-- `src\Mockingbird\ViewModels\Pages\{Speak,Voices,Settings,About}PageViewModel.cs`
-- `src\Mockingbird\Services\Navigation\PageService.cs`
-- `src\Mockingbird\Services\Tts\SidecarHost.cs` — added `StateChanged` event
-- `src\Mockingbird\Services\Http\SpeakServer.cs` — exposed `Host` / `Port`
-- `src\Mockingbird\EntryPoint.cs` — DI registrations
-- `src\Mockingbird\Mockingbird.csproj` — `CommunityToolkit.Mvvm` reference
+- `src\Utterheim\Views\MainWindow.xaml(.cs)` — shell + footer
+- `src\Utterheim\Views\Pages\{Speak,Voices,Settings,About}Page.xaml(.cs)`
+- `src\Utterheim\ViewModels\EngineStatusViewModel.cs`
+- `src\Utterheim\ViewModels\Pages\{Speak,Voices,Settings,About}PageViewModel.cs`
+- `src\Utterheim\Services\Navigation\PageService.cs`
+- `src\Utterheim\Services\Tts\SidecarHost.cs` — added `StateChanged` event
+- `src\Utterheim\Services\Http\SpeakServer.cs` — exposed `Host` / `Port`
+- `src\Utterheim\EntryPoint.cs` — DI registrations
+- `src\Utterheim\Utterheim.csproj` — `CommunityToolkit.Mvvm` reference
 
 ADRs 0009 (navigation shell) and 0010 (CommunityToolkit.Mvvm) were already
 drafted on this branch and accepted as-is — review confirmed they describe

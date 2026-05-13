@@ -156,7 +156,7 @@ green `#10B981` for `Running` + healthy, amber `#F59E0B` for
 
 ## Verification
 
-- Build: `dotnet build mockingbird.sln -c Debug` → 0 warnings, 0 errors.
+- Build: `dotnet build utterheim.sln -c Debug` → 0 warnings, 0 errors.
 - Subscription correctness: `OnNavigatedTo` calls `Attach`,
   `OnNavigatedFrom` calls `Detach`. `Attach` defensively removes the
   handler before re-adding so navigating in-out-in can't double-fire.

@@ -118,8 +118,8 @@ Concretely:
 ## References
 - Styleguide: `docs/styleguide.md` § Inherited from WhisperHeim ("Sidebar nav
   layout"), § Page set (canonical four pages).
-- ADR 0001: `.agenthoff/knowledge/decisions/0001-stack-net9-wpf-x64.md`
+- ADR 0001: `.agentheim/knowledge/decisions/0001-stack-net9-wpf-x64.md`
   (commits to wpfui as the control library).
-- BC README: `.agenthoff/contexts/main/README.md` (UI / styleguide gate).
+- BC README: `.agentheim/contexts/main/README.md` (UI / styleguide gate).
 - WPF UI documentation: `Wpf.Ui.Controls.NavigationView`,
   `Wpf.Ui.Controls.INavigableView<T>`.

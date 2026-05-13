@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Measure first-chunk latency end-to-end for a single mockingbird speak request.
+    Measure first-chunk latency end-to-end for a single utterheim speak request.
 
 .DESCRIPTION
     Runs the measurement protocol pinned in main-023:
@@ -23,19 +23,19 @@
     Pocket-tts voice id. Default: alba (one of the eight built-ins).
 
 .PARAMETER Endpoint
-    Mockingbird speak endpoint base URL. Default: http://127.0.0.1:7223 (ADR 0003).
+    Utterheim speak endpoint base URL. Default: http://127.0.0.1:7223 (ADR 0003).
 
 .PARAMETER Repeat
     Number of measurement passes. Default: 1. With Repeat > 1 we print a final
     median end-to-end across the runs.
 
 .PARAMETER Cold
-    If set, prompt the user to restart mockingbird before the measurement so
+    If set, prompt the user to restart utterheim before the measurement so
     the first call is genuinely first-call-after-fresh-sidecar-boot.
 
 .PARAMETER LogDir
-    Directory holding mockingbird-YYYYMMDD.log files. Default:
-    %LOCALAPPDATA%\Mockingbird\logs (matches EntryPoint.cs).
+    Directory holding utterheim-YYYYMMDD.log files. Default:
+    %LOCALAPPDATA%\Utterheim\logs (matches EntryPoint.cs).
 
 .EXAMPLE
     .\measure-latency.ps1 -InputFile .\short-input.txt -Cold
@@ -53,7 +53,7 @@ param(
     [string]$Endpoint = 'http://127.0.0.1:7223',
     [int]$Repeat = 1,
     [switch]$Cold,
-    [string]$LogDir = "$env:LOCALAPPDATA\Mockingbird\logs"
+    [string]$LogDir = "$env:LOCALAPPDATA\Utterheim\logs"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -65,11 +65,11 @@ function Get-CurrentLogFile {
     if (-not (Test-Path $Dir)) {
         throw "Log directory not found: $Dir"
     }
-    $candidate = Get-ChildItem -Path $Dir -Filter 'mockingbird-*.log' -File |
+    $candidate = Get-ChildItem -Path $Dir -Filter 'utterheim-*.log' -File |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1
     if ($null -eq $candidate) {
-        throw "No mockingbird-*.log found under $Dir. Is mockingbird running?"
+        throw "No utterheim-*.log found under $Dir. Is utterheim running?"
     }
     return $candidate.FullName
 }
@@ -245,7 +245,7 @@ if ([string]::IsNullOrWhiteSpace($text)) {
 
 if ($Cold) {
     Write-Host ""
-    Write-Host "[COLD] Restart mockingbird now (Exit from tray, then relaunch)."
+    Write-Host "[COLD] Restart utterheim now (Exit from tray, then relaunch)."
     Write-Host "       Wait until the tray status footer reads:"
     Write-Host "         HTTP $($Endpoint -replace '^https?://','') | Engine: running"
     Write-Host "       Then press Enter to begin the cold measurement..."

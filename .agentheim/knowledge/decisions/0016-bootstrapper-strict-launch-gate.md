@@ -5,7 +5,7 @@ Status: Accepted
 Context: main BC, `PythonRuntimeBootstrapper`
 Supersedes: nothing (extends ADR 0011)
 Related: main-027, ADR 0011 (bootstrap-state reconciliation),
-ADR 0015 (mockingbird sidecar wrapper)
+ADR 0015 (utterheim sidecar wrapper)
 
 ## Context
 
@@ -14,21 +14,21 @@ The bootstrapper has two file-presence checks that gate work:
 - `IsBootstrapped` — consulted by `EntryPoint.cs` on every launch. If true, the
   bootstrap dialog is skipped and the host comes up assuming the runtime is
   ready.
-- `MockingbirdSidecarActuallyInstalled` / `PocketTtsActuallyInstalled` —
+- `UtterheimSidecarActuallyInstalled` / `PocketTtsActuallyInstalled` —
   consulted at the start of each install step in `BootstrapAsync`, defending
   against a stale `bootstrap-state.json` that outlived a wiped runtime
   (ADR 0011 / main-021).
 
 These two layers checked different files. `IsBootstrapped` only asserted
-`mockingbird_sidecar/__init__.py`; the install-time guard also asserted
-`mockingbird_sidecar/main.py`. A half-installed state with `__init__.py`
+`utterheim_sidecar/__init__.py`; the install-time guard also asserted
+`utterheim_sidecar/main.py`. A half-installed state with `__init__.py`
 present but `main.py` missing therefore looked "installed" to the launch path
 and "not installed" to the install path, but the install path was never
 reached because the launch path short-circuited first. The user saw
 "Voice engine failed to start" with no path forward short of manually
 deleting the runtime.
 
-The same shape covers a second scenario: a future mockingbird upgrade ships
+The same shape covers a second scenario: a future utterheim upgrade ships
 a new wrapper. The on-disk wrapper from the previous install is intact, so
 `IsBootstrapped` returns true and the install path is skipped — the user
 runs the **stale** wrapper indefinitely.
@@ -41,7 +41,7 @@ same helpers the install path uses. `IsBootstrapped` is the composition of:
 1. `state.RuntimeReady` (last-step smoke test passed at least once).
 2. `File.Exists(PythonExePath)`.
 3. `PocketTtsActuallyInstalled()` — `pocket_tts/__init__.py` is on disk.
-4. `MockingbirdSidecarActuallyInstalled()` — `mockingbird_sidecar/__init__.py`
+4. `UtterheimSidecarActuallyInstalled()` — `utterheim_sidecar/__init__.py`
    AND `main.py` are both on disk.
 5. `BundledSidecarMatchesInstalled()` — the bundled wrapper's `__version__`
    equals the installed wrapper's `__version__`.
@@ -61,7 +61,7 @@ Future wrapper changes:
 
 - Bump the version string with each behavioural change.
 - The mismatch triggers a silent re-install (sub-second copy operation;
-  the bootstrap dialog's existing progress text "Installing mockingbird
+  the bootstrap dialog's existing progress text "Installing utterheim
   sidecar wrapper…" names the step if it runs).
 - No migration code, ever — the install step is "copy bundled bytes over
   installed bytes", and that's the entire migration story.

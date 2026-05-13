@@ -33,7 +33,7 @@ plausible code paths for that synthesis:
    how `SpeakService.RenderToFileAsync` bypasses the queue to write a
    `.wav` file from the Save button.
 
-The trade-off matters because mockingbird's queue invariant — "exactly
+The trade-off matters because utterheim's queue invariant — "exactly
 one playback worker decides what plays next" — is what makes the stop
 semantics (ADR 0004) and the multi-Claude-session ordering story (ADR
 0007) coherent. A second player would race the queue.

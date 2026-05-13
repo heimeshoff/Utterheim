@@ -22,7 +22,7 @@ spec names a `SpeakPageViewModel` with bindable properties (`Voices`,
 tasks (main-013/014/016/017) all assume some kind of view-model lives next to
 each page.
 
-No MVVM library is currently referenced by `Mockingbird.csproj`. The choice has
+No MVVM library is currently referenced by `Utterheim.csproj`. The choice has
 to be made before the page tasks land, because it shapes view-model conventions
 across every page: every VM looks the same way, or the codebase splits.
 
@@ -44,12 +44,12 @@ Three options were on the table:
 
 ## Decision
 
-**Option 1: `CommunityToolkit.Mvvm`.** Add the package to `Mockingbird.csproj`
+**Option 1: `CommunityToolkit.Mvvm`.** Add the package to `Utterheim.csproj`
 and use its source-generator attributes on every view-model.
 
 Concretely:
 
-- `Mockingbird.csproj` gains `<PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />`.
+- `Utterheim.csproj` gains `<PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />`.
 - Page view-models (`SpeakPageViewModel`, `VoicesPageViewModel`, etc.) derive
   from `CommunityToolkit.Mvvm.ComponentModel.ObservableObject` (or are decorated
   with `[ObservableObject]` on a `partial class`).
@@ -95,7 +95,7 @@ from `ObservableObject` (or applying `[ObservableObject]`).
 
 ### Negative
 
-- **One package dependency mockingbird wouldn't otherwise need.** Trades
+- **One package dependency utterheim wouldn't otherwise need.** Trades
   zero-dep purity for an ergonomic win. The dependency is small and
   high-pedigree, but it's still an extra moving part.
 - **Diverges from WhisperHeim's convention.** WhisperHeim uses hand-rolled
@@ -114,7 +114,7 @@ from `ObservableObject` (or applying `[ObservableObject]`).
 
 ### Neutral
 
-- The package adds one line to `Mockingbird.csproj`. If at some future
+- The package adds one line to `Utterheim.csproj`. If at some future
   point parity with WhisperHeim becomes more important than ergonomics
   (e.g., if WhisperHeim's VMs are unified into a shared library), removing
   the toolkit is a mechanical rewrite — every `[ObservableProperty]`
@@ -156,4 +156,4 @@ from `ObservableObject` (or applying `[ObservableObject]`).
   `[RelayCommand]` from the start.
 - WhisperHeim VM precedent (the convention this ADR knowingly diverges
   from): `c:\src\heimeshoff\tooling\WhisperHeim\src\WhisperHeim\Views\Pages\TranscriptsPage.xaml.cs`
-  uses hand-rolled `INotifyPropertyChanged`. Mockingbird does not.
+  uses hand-rolled `INotifyPropertyChanged`. Utterheim does not.

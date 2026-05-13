@@ -16,7 +16,7 @@ tags: [settings, data-path, persistence]
 
 The Settings page exposes the data path as read-only text plus an
 "Open in Explorer" button (main-016 `OpenDataPathCommand`, see
-[SettingsPage.xaml lines 141–164](../../../src/Mockingbird/Views/Pages/SettingsPage.xaml)).
+[SettingsPage.xaml lines 141–164](../../../src/Utterheim/Views/Pages/SettingsPage.xaml)).
 The user wants to **change** the data path from the UI — pick a new folder via a
 dialog, persist the choice, have the app use that folder. The current
 "Open in Explorer" affordance only shows the folder; it does not change it.
@@ -35,10 +35,10 @@ and
 
 ### Scope of relocation (smaller than WhisperHeim's)
 
-In Mockingbird, `<dataPath>` only relocates the **voice library**
+In Utterheim, `<dataPath>` only relocates the **voice library**
 (`<dataPath>\voices\` — `library.json` + per-voice folders). Everything
 else is anchored to `DataPathService.LocalRoot`
-(`%LOCALAPPDATA%\Mockingbird\`) and stays put across a path change:
+(`%LOCALAPPDATA%\Utterheim\`) and stays put across a path change:
 
 - `runtime\python\` (embedded Python + pocket-tts + sidecar)
 - `models\pocket-tts\`
@@ -48,7 +48,7 @@ else is anchored to `DataPathService.LocalRoot`
 - `settings.json` (per `UserSettings`'s ctor — uses `LocalRoot` directly,
   ignoring `DataPathService.SettingsPath`)
 
-`bootstrap.json` itself stays at `RoamingRoot` (`%APPDATA%\Mockingbird\`)
+`bootstrap.json` itself stays at `RoamingRoot` (`%APPDATA%\Utterheim\`)
 because that's where the pointer lives.
 
 So the **only** service that needs to react to a data-path change is
@@ -66,7 +66,7 @@ public static bool ValidatePath(string path)
     try
     {
         Directory.CreateDirectory(path);
-        var testFile = Path.Combine(path, $".mockingbird_write_test_{Guid.NewGuid():N}.tmp");
+        var testFile = Path.Combine(path, $".utterheim_write_test_{Guid.NewGuid():N}.tmp");
         File.WriteAllText(testFile, "test");
         File.Delete(testFile);
         return true;
@@ -129,7 +129,7 @@ entirely — easy to add back later if missed in v1.5):
 ```
 var dialog = new Microsoft.Win32.OpenFolderDialog
 {
-    Title = "Select data folder for Mockingbird",
+    Title = "Select data folder for Utterheim",
     InitialDirectory = _dataPathService.DataPath,
 };
 if (dialog.ShowDialog() != true) return;
@@ -146,7 +146,7 @@ if (!DataPathService.ValidatePath(newPath))
 if (_dataPathService.SetDataPath(newPath))
 {
     MessageBox.Show(
-        "Data folder changed. Please restart Mockingbird for the change to take full effect.",
+        "Data folder changed. Please restart Utterheim for the change to take full effect.",
         "Restart required",
         MessageBoxButton.OK, MessageBoxImage.Information);
 }
@@ -185,14 +185,14 @@ self-explanatory (matches WhisperHeim).
 - [ ] Selecting a writable folder: persists the new path through
       `SetDataPath`, fires `DataPathChanged`, the on-page display
       updates immediately, and a MessageBox info appears:
-      *"Data folder changed. Please restart Mockingbird for the change
+      *"Data folder changed. Please restart Utterheim for the change
       to take full effect."*
 - [ ] Selecting an unwritable folder: a MessageBox warning appears
       ("The selected folder is not writable…") and `bootstrap.json` is
       unchanged.
 - [ ] `Reset` clears the `DataPath` override in `bootstrap.json`,
       refreshes the on-page display to the default
-      (`%APPDATA%\Mockingbird\`), fires `DataPathChanged`. **No
+      (`%APPDATA%\Utterheim\`), fires `DataPathChanged`. **No
       MessageBox** on Reset.
 - [ ] `VoiceLibraryService` re-runs `LoadAsync` on `DataPathChanged`,
       and the Voices page rows reflect the new path's library.json
@@ -202,9 +202,9 @@ self-explanatory (matches WhisperHeim).
       deleted.
 - [ ] `runtime/`, `models/`, `cache/`, `logs/`, `bootstrap-state.json`,
       `settings.json` are unaffected by a data-path change.
-- [ ] `bootstrap.json` itself stays at `%APPDATA%\Mockingbird\` (the
+- [ ] `bootstrap.json` itself stays at `%APPDATA%\Utterheim\` (the
       pointer file does not relocate).
-- [ ] Build is clean (`dotnet build mockingbird.sln -c Debug` →
+- [ ] Build is clean (`dotnet build utterheim.sln -c Debug` →
       0 errors, 0 warnings).
 
 ## Notes
@@ -213,7 +213,7 @@ self-explanatory (matches WhisperHeim).
   Browse → restart cycle and the live `library.json` swap don't require
   full interactive re-test if the code path is in place.
 - `OpenFolderDialog` is in `Microsoft.Win32` and ships with WPF on
-  net8+ — no new package reference needed (mockingbird is `net9.0-windows`).
+  net8+ — no new package reference needed (utterheim is `net9.0-windows`).
 - The `DataPathChanged` subscription in `VoiceLibraryService` should be
   detached on dispose so test fixtures that swap the service don't leak.
 - `bootstrap.json` temp+rename: write to `bootstrap.json.tmp`,
@@ -242,26 +242,26 @@ follows after consulting the WhisperHeim sibling pattern:
 
 Implemented end-to-end per the spec.
 
-- `DataPathService` (`src\Mockingbird\Services\Settings\DataPathService.cs`)
+- `DataPathService` (`src\Utterheim\Services\Settings\DataPathService.cs`)
   gained `static bool ValidatePath(string)`, `bool SetDataPath(string?)`,
   and `event EventHandler<string>? DataPathChanged`. `Save()` now writes
   `bootstrap.json` via temp+rename (`bootstrap.json.tmp` →
   `File.Move(..., overwrite: true)`).
 - `VoiceLibraryStartup`
-  (`src\Mockingbird\Services\Voices\VoiceLibraryStartup.cs`) subscribes
+  (`src\Utterheim\Services\Voices\VoiceLibraryStartup.cs`) subscribes
   to `DataPathChanged` in `StartAsync` and re-runs
   `VoiceLibraryService.LoadAsync` on each event (off the dispatcher via
   `Task.Run`); detaches in `StopAsync`. `LibraryChanged → VoicesChanged`
   refreshes the Voices page rows live without re-navigation.
 - `SettingsPageViewModel`
-  (`src\Mockingbird\ViewModels\Pages\SettingsPageViewModel.cs`) replaces
+  (`src\Utterheim\ViewModels\Pages\SettingsPageViewModel.cs`) replaces
   `OpenDataPathCommand` with `BrowseDataPathCommand` and
   `ResetDataPathCommand`; subscribes to `DataPathChanged` via
   `Attach()` / `Detach()` so the displayed `DataPath` stays live.
   `BrowseDataPath` invokes `Microsoft.Win32.OpenFolderDialog` with
   `InitialDirectory = _dataPathService.DataPath`, validates writability,
   surfaces a MessageBox warning on failure or a MessageBox info
-  ("Restart Mockingbird for the change to take full effect.") on
+  ("Restart Utterheim for the change to take full effect.") on
   success.
 - `SettingsPage.xaml` data-path card swapped to `Browse...` (Primary)
   + `Reset` (Secondary); description text now reads "Where voices are
@@ -269,7 +269,7 @@ Implemented end-to-end per the spec.
   calls `ViewModel.Attach()` in `OnNavigatedTo` and `Detach()` in
   `OnNavigatedFrom`.
 - ADR 0020
-  (`.agenthoff\knowledge\decisions\0020-data-path-runtime-swap-pointer-only.md`)
+  (`.agentheim\knowledge\decisions\0020-data-path-runtime-swap-pointer-only.md`)
   records the pointer-only-no-migration decision so a future maintainer
   doesn't wonder why old voices stay behind.
 - BC README updated: Settings → Diagnostics → Data path subsection now
@@ -278,7 +278,7 @@ Implemented end-to-end per the spec.
   `DataPathService.cs`, `SettingsPageViewModel.cs`, and
   `VoiceLibraryStartup.cs` reflect the new responsibilities.
 
-Build clean: `dotnet build mockingbird.sln -c Debug` → 0 errors,
+Build clean: `dotnet build utterheim.sln -c Debug` → 0 errors,
 0 warnings. Interactive verification (Browse → restart cycle, Reset
 clear, live `library.json` swap) is assume-pass per the standing
 convention; the code is in place per the acceptance criteria and any

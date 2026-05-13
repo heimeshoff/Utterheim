@@ -42,6 +42,6 @@ The speak queue is a `System.Threading.Channels.Channel<SpeakRequest>` owned by 
 - **Multiple lanes (notification cue lane vs read-aloud lane)** — vision marks this as a "decide after running sessions in anger." Defer to v1.5; the `Channel<T>` design doesn't preclude adding lanes (one channel per priority).
 
 ## References
-- Vision: `.agenthoff/vision.md`
+- Vision: `.agentheim/vision.md`
 - Stop semantics: ADR 0004
 - Sidecar shape: ADR 0002

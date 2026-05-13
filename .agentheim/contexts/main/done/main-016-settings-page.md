@@ -19,7 +19,7 @@ double-tap LCtrl with the window from `appsettings.json`, data path picked
 once on first run, default voice null. The user needs a UI to change the
 **user-tunable** subset of these without editing JSON files. The
 **non-tunable** subset (port, hotkey, data path) still belongs on this page
-as read-only diagnostics — answering "what is mockingbird actually using
+as read-only diagnostics — answering "what is utterheim actually using
 right now?" in one place. Mirrors WhisperHeim's General settings page
 (WhisperHeim `design.md` §1).
 
@@ -57,7 +57,7 @@ aesthetic and what the styleguide signs off as the v1 settings shape.
   the tray instead of activating.
 - **Launch at startup** — `ToggleSwitch`, persists by writing /
   removing the value
-  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Mockingbird`
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Utterheim`
   pointing at the current process executable path. **Not stored in
   `settings.json`** — the registry IS the source of truth (so an
   external uninstaller / cleanup tool that drops the Run entry stays
@@ -94,7 +94,7 @@ aesthetic and what the styleguide signs off as the v1 settings shape.
 - [ ] **Start minimised** toggle persists across restart and, when on,
   causes the next launch to start hidden in the tray.
 - [ ] **Launch at startup** toggle writes / removes the HKCU\Run entry
-  for `Mockingbird` (verify with `reg query
+  for `Utterheim` (verify with `reg query
   HKCU\Software\Microsoft\Windows\CurrentVersion\Run`); state survives
   restart by re-reading the registry on page load.
 - [ ] **HTTP port** displays the live `SpeakServer` bound port (verify
@@ -106,7 +106,7 @@ aesthetic and what the styleguide signs off as the v1 settings shape.
   (`Process.Start("explorer.exe", path)`).
 - [ ] Visual matches the styleguide — Fluent cards, Mica backdrop,
   Segoe UI Variable, sectioned by Audio / App / Diagnostics.
-- [ ] Page builds clean (`dotnet build mockingbird.sln -c Debug`,
+- [ ] Page builds clean (`dotnet build utterheim.sln -c Debug`,
   zero errors / zero warnings).
 
 ## Notes
@@ -137,7 +137,7 @@ aesthetic and what the styleguide signs off as the v1 settings shape.
   `Services\Settings\StartupRegistration.cs`. Single class with
   `IsRegistered` (read), `Register()` (write
   `Application.ExecutablePath` to
-  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Mockingbird`)
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Utterheim`)
   and `Unregister()` (delete the value). Use `Microsoft.Win32.Registry`,
   not a process spawn.
 - **Start minimised wiring** — `Views\MainWindow.xaml.cs`
@@ -164,7 +164,7 @@ aesthetic and what the styleguide signs off as the v1 settings shape.
 - Stop-hotkey rebinding UI.
 - Data-path change with migration flow (move voices, runtime, models).
 - Theme / language / update-check toggles (WhisperHeim's General page
-  hints at these but mockingbird doesn't have them yet).
+  hints at these but utterheim doesn't have them yet).
 - Per-Claude-session voice routing UI — vision-deferred; the
   contract is env-var-only via `examples/claude-hooks/` (main-019).
 - Output device level meter / test-tone button.
@@ -199,7 +199,7 @@ aesthetic and what the styleguide signs off as the v1 settings shape.
 Settings page replaces the main-020 stub with three sections of Fluent
 setting cards (Audio / App / Diagnostics) per the styleguide. All eight
 acceptance criteria are met against a clean build (`dotnet build
-mockingbird.sln -c Debug` → 0 errors, 0 warnings). Interactive UI
+utterheim.sln -c Debug` → 0 errors, 0 warnings). Interactive UI
 behaviours — toggle persistence, per-utterance device routing, registry
 state survival across restart — are **not interactively re-tested** in
 this pass; the code is in place per the task spec and any regression
@@ -207,29 +207,29 @@ will surface during the next manual run.
 
 ### Key files
 
-- `src\Mockingbird\Services\Settings\UserSettings.cs` — extended with
+- `src\Utterheim\Services\Settings\UserSettings.cs` — extended with
   `OutputDeviceId` (`int?`) and `StartMinimised` (`bool`) plus matching
   `*Changed` events. JSON-forward-compatible per main-013's design.
-- `src\Mockingbird\Services\Settings\StartupRegistration.cs` — new
-  helper around `HKCU\…\Run\Mockingbird`. Registry is the source of
+- `src\Utterheim\Services\Settings\StartupRegistration.cs` — new
+  helper around `HKCU\…\Run\Utterheim`. Registry is the source of
   truth (ADR 0017) — not mirrored in `settings.json`.
-- `src\Mockingbird\Services\Speak\AudioPlayer.cs` — reads
+- `src\Utterheim\Services\Speak\AudioPlayer.cs` — reads
   `UserSettings.OutputDeviceId` at `WaveOutEvent` construction time
   (one read per utterance — no live-switch invariants).
-- `src\Mockingbird\Services\Audio\AudioDeviceResolver.cs` — added
+- `src\Utterheim\Services\Audio\AudioDeviceResolver.cs` — added
   `EnumerateOutputDevices()` mirroring `EnumerateInputDevices()`.
-- `src\Mockingbird\ViewModels\Pages\SettingsPageViewModel.cs` — VM
+- `src\Utterheim\ViewModels\Pages\SettingsPageViewModel.cs` — VM
   with `[ObservableProperty]` for each control + `OnXChanged` partial
   methods that persist on change. `LoadAsync` re-populates everything
   on `OnNavigatedTo` (the registry can be mutated externally between
   visits).
-- `src\Mockingbird\Views\Pages\SettingsPage.xaml(.cs)` — `ui:CardControl`
+- `src\Utterheim\Views\Pages\SettingsPage.xaml(.cs)` — `ui:CardControl`
   per setting, sectioned with `SemiBold` headers, `ScrollViewer`
   outer container, 16 px page margin.
-- `src\Mockingbird\EntryPoint.cs` — registered `StartupRegistration`
+- `src\Utterheim\EntryPoint.cs` — registered `StartupRegistration`
   singleton and wired `UserSettings.StartMinimised` into the launch
   flow (Show + immediate Hide so the tray icon initialises).
-- `.agenthoff\knowledge\decisions\0017-launch-at-startup-registry-as-source-of-truth.md`
+- `.agentheim\knowledge\decisions\0017-launch-at-startup-registry-as-source-of-truth.md`
   — captures why the Run entry is the source of truth, not mirrored
   in `settings.json`.
 

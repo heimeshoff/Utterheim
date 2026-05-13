@@ -25,7 +25,7 @@ already satisfied (audio precedes synthesis end); only the latency
 ## What
 
 main-023 diagnosed H4 (HTTP transport buffering) as the sole cause:
-`_http.PostAsync(...)` at `src/Mockingbird/Services/Tts/PocketTtsEngine.cs:78`
+`_http.PostAsync(...)` at `src/Utterheim/Services/Tts/PocketTtsEngine.cs:78`
 uses the default `HttpCompletionOption.ResponseContentRead`, which
 buffers the entire WAV before the awaited Task returns. Python's
 `/tts` is already a proper `StreamingResponse` with chunked transfer
@@ -96,14 +96,14 @@ time varied per content).
 
 ### Verdict: fix landed, budget met with ~10× headroom
 
-The two-line change at `src/Mockingbird/Services/Tts/PocketTtsEngine.cs`
+The two-line change at `src/Utterheim/Services/Tts/PocketTtsEngine.cs`
 (line 78 → 82–84 after the edit) replaces the default-buffered
 `PostAsync` with `SendAsync(... ResponseHeadersRead, ct)`. This is
 exactly the change main-023 prescribed. Build clean, no other code
 changes required.
 
 The mechanism is recorded in **ADR 0013**
-(`.agenthoff/knowledge/decisions/0013-httpclient-streaming-completion-for-sidecar.md`)
+(`.agentheim/knowledge/decisions/0013-httpclient-streaming-completion-for-sidecar.md`)
 because it sets a permanent invariant on how this BC consumes the
 sidecar — the obvious "simplify this back to PostAsync" refactor would
 silently re-break the budget, so a future maintainer needs to know
@@ -123,7 +123,7 @@ median taken across them).
 
 | Run | Input | Chars | TTFB (after) | end-to-end (after) | end-to-end (before, main-023) | budget | verdict |
 |---|---|---:|---:|---:|---:|---:|:---:|
-| cold-short | "Hello, this is mockingbird." | 27 | n/a | not re-measured (no regression — see warm-short and the cold-short main-023 baseline of 663 ms, which is dominated by sidecar warmup the fix doesn't touch) | 663 ms | ≤2 s | ✓ |
+| cold-short | "Hello, this is utterheim." | 27 | n/a | not re-measured (no regression — see warm-short and the cold-short main-023 baseline of 663 ms, which is dominated by sidecar warmup the fix doesn't touch) | 663 ms | ≤2 s | ✓ |
 | warm-short | same | 27 | 12 ms | **423 ms** | 802 ms | ≤2 s | ✓ no regression |
 | cold-medium | vision §Purpose paragraph | 1,159 | 8 ms | **318 ms** | (not measured by main-023) | acceptable to be slower than warm | ✓ |
 | warm-medium (3 runs) | same | 1,159 | 1–2 ms | **169 / 192 / 212 ms (median 192)** | 22,968 ms | ≤2 s | ✓ |
@@ -156,11 +156,11 @@ Improvement factors at the median:
 
 ### Files changed
 
-- `src/Mockingbird/Services/Tts/PocketTtsEngine.cs` — two lines + a
+- `src/Utterheim/Services/Tts/PocketTtsEngine.cs` — two lines + a
   4-line code comment at the call site (the mechanism is in ADR 0013;
   the comment is just a "see ADR 0013" pointer for the next reader).
-- `.agenthoff/knowledge/decisions/0013-httpclient-streaming-completion-for-sidecar.md` — new ADR.
-- `.agenthoff/contexts/main/README.md` — glossary entry for
+- `.agentheim/knowledge/decisions/0013-httpclient-streaming-completion-for-sidecar.md` — new ADR.
+- `.agentheim/contexts/main/README.md` — glossary entry for
   **First-chunk latency** updated with measured warm/cold numbers; the
   Engine status section now references ADR 0013 for the
   `ResponseHeadersRead` invariant.
@@ -187,7 +187,7 @@ something other than HTTP buffering.
   `playing:false` between repeats) would fix this; not filed as a
   task because the harness is internal-only and the workaround is one
   line of bash.
-- `mockingbird-host` was not re-checked for the side issues
+- `utterheim-host` was not re-checked for the side issues
   main-023 listed (pocket-tts chunk-too-long warning, tray-Exit
   TerminateProcess warning) — both are unrelated to this fix and
   remain non-blocking exactly as main-023 documented them.

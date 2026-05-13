@@ -57,9 +57,9 @@ wires through `App.OnExit` / equivalent.
 
 ## Acceptance criteria
 
-- [ ] After tray Exit, no `python.exe` belonging to Mockingbird remains
+- [ ] After tray Exit, no `python.exe` belonging to Utterheim remains
   in Task Manager. Verify with `Get-Process python | Where CommandLine
-  -match mockingbird` returning empty.
+  -match utterheim` returning empty.
 - [ ] Repeated launch + exit (5 cycles) leaves no zombies and the port
   (7223) is free immediately after each exit.
 - [ ] If the sidecar's graceful shutdown path stalls, the host still
@@ -71,8 +71,8 @@ wires through `App.OnExit` / equivalent.
 ## Notes
 
 - Affected files (educated guess; confirm during the work):
-  `src/Mockingbird/Services/Tts/SidecarProcessManager.cs` (or the
-  class that holds the `Process` reference), `src/Mockingbird/App.xaml.cs`
+  `src/Utterheim/Services/Tts/SidecarProcessManager.cs` (or the
+  class that holds the `Process` reference), `src/Utterheim/App.xaml.cs`
   (Exit handler), and whatever supervises auto-restart.
 - Reference: ADR 0002 (Python sidecar shape), main-018 Outcome.
 - Related: criterion 4 of main-018 ("/status reflects degraded when
@@ -87,7 +87,7 @@ wires through `App.OnExit` / equivalent.
 
 Fixed by binding every spawned `python.exe` to a Win32 Job Object with
 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` (per **ADR 0012**, see
-`.agenthoff/knowledge/decisions/0012-sidecar-jobobject-kill-on-close.md`).
+`.agentheim/knowledge/decisions/0012-sidecar-jobobject-kill-on-close.md`).
 This solves the root cause behind acceptance criteria 1–4:
 
 - **Criterion 1 (no zombie after tray Exit):** `SidecarHost.StopAsync`
@@ -122,21 +122,21 @@ shutdown path.
 
 ### Files
 
-- `src/Mockingbird/Services/Tts/ProcessJobObject.cs` — new P/Invoke
+- `src/Utterheim/Services/Tts/ProcessJobObject.cs` — new P/Invoke
   wrapper for the Job Object. Created lazily in `SidecarHost`'s field
   initializer; disposed on `StopAsync` and `Dispose`.
-- `src/Mockingbird/Services/Tts/SidecarHost.cs` — assigns each spawned
+- `src/Utterheim/Services/Tts/SidecarHost.cs` — assigns each spawned
   process to the job, sets `_shuttingDown` first, escalates with
   `LogError` if the tree is still alive after the kill paths.
-- `.agenthoff/knowledge/decisions/0012-sidecar-jobobject-kill-on-close.md`
+- `.agentheim/knowledge/decisions/0012-sidecar-jobobject-kill-on-close.md`
   — ADR documenting *why* the JobObject was chosen over a `/shutdown`
   POST or a `CTRL_BREAK_EVENT` process group.
-- `.agenthoff/contexts/main/README.md` — engine-status block updated
+- `.agentheim/contexts/main/README.md` — engine-status block updated
   with the new KILL_ON_JOB_CLOSE guarantee.
 
 ### Verification
 
-- `dotnet build mockingbird.sln -c Debug` — clean (0 warnings, 0 errors).
+- `dotnet build utterheim.sln -c Debug` — clean (0 warnings, 0 errors).
 - Acceptance criteria 1, 2, 7 (main-018 spot-check) require an in-app
   walkthrough on the user's Windows machine; queued as part of the
   resumed main-018 verification pass.

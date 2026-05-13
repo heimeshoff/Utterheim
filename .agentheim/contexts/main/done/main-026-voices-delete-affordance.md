@@ -69,7 +69,7 @@ Composition:
   destructive).
 
 The dialog reuses wpfui's `ContentDialog` shell rather than copying
-WhisperHeim's `Window`-based dialog verbatim, because mockingbird's
+WhisperHeim's `Window`-based dialog verbatim, because utterheim's
 nav-shell pattern (main-020) prefers in-window content dialogs over
 secondary windows. The visual composition (icon, copy, button colours)
 matches WhisperHeim — that's the consistency we owe — but the
@@ -168,8 +168,8 @@ against active playback. Per main-015 Q10:
   voice in catalog).
 - [ ] Visual matches the styleguide. The destructive red
   (`#FFE81224`) matches WhisperHeim and is the only place this
-  colour appears in mockingbird's UI.
-- [ ] Build clean: `dotnet build mockingbird.sln -c Debug` produces
+  colour appears in utterheim's UI.
+- [ ] Build clean: `dotnet build utterheim.sln -c Debug` produces
   0 errors, 0 warnings.
 
 ## Notes
@@ -235,28 +235,28 @@ stays open with an inline red error message; the user can retry or cancel.
 Built-in rows are unmodified — they keep the original 3-column layout (no
 Delete column allocated) because the cloned + built-in sections live in
 separate `ItemsControl.ItemTemplate`s. Build is clean (`dotnet build
-mockingbird.sln -c Debug` → 0 errors, 0 warnings).
+utterheim.sln -c Debug` → 0 errors, 0 warnings).
 
 ### Key files
 
-- `src/Mockingbird/ViewModels/Dialogs/DeleteVoiceDialogViewModel.cs` — new
+- `src/Utterheim/ViewModels/Dialogs/DeleteVoiceDialogViewModel.cs` — new
   VM; holds voice id + name, drives `IsDeleting` / `ErrorMessage`, exposes
   Delete / Cancel commands.
-- `src/Mockingbird/Views/Dialogs/DeleteVoiceDialog.xaml(.cs)` — new
+- `src/Utterheim/Views/Dialogs/DeleteVoiceDialog.xaml(.cs)` — new
   ContentDialog view (`IsFooterVisible="False"`, custom button row with
   `#FFE81224` Delete button template).
-- `src/Mockingbird/ViewModels/Pages/VoicesPageViewModel.cs` — added
+- `src/Utterheim/ViewModels/Pages/VoicesPageViewModel.cs` — added
   `VoiceLibraryService` + `IContentDialogService` dependencies, wired
   `RequestDelete(VoiceRowViewModel)` that constructs the dialog VM and
   shows the dialog. `VoiceRowViewModel` gained `DeleteCommand` +
   `IsCloned` and a nullable delete-action ctor parameter.
-- `src/Mockingbird/Views/Pages/VoicesPage.xaml` — cloned `ItemsControl`
+- `src/Utterheim/Views/Pages/VoicesPage.xaml` — cloned `ItemsControl`
   template extended to a 4-column grid (name+meta | Preview | Delete |
   active indicator).
-- `src/Mockingbird/Views/MainWindow.xaml(.cs)` — added
+- `src/Utterheim/Views/MainWindow.xaml(.cs)` — added
   `RootContentDialogPresenter` and `IContentDialogService` ctor param;
   `OnLoaded` calls `SetDialogHost`.
-- `src/Mockingbird/EntryPoint.cs` — registered `IContentDialogService` as
+- `src/Utterheim/EntryPoint.cs` — registered `IContentDialogService` as
   singleton; passed it to `MainWindow`.
 
 ### Verification note

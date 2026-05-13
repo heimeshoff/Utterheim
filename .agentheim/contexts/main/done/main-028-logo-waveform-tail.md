@@ -16,7 +16,7 @@ tags: [branding, design, logo]
 
 The current logo is the `main-010` placeholder: a generic speaking-person silhouette
 (head + shoulders + concentric arcs). It was approved as a stand-in, not as the final
-brand mark. The user wants the real thing: a logo that says "mockingbird" *and* "TTS"
+brand mark. The user wants the real thing: a logo that says "utterheim" *and* "TTS"
 at a glance, and that visually pairs with WhisperHeim (the dictation sibling) without
 being identical.
 
@@ -60,24 +60,24 @@ placeholder.
 
 ## Acceptance criteria
 
-- [x] `assets/branding/mockingbird-logo.svg` is replaced with the final voice
+- [x] `assets/branding/utterheim-logo.svg` is replaced with the final voice
       human-head mark — filled orange (`#FFff8b00`) right-facing head profile +
       three blue (`#FF25abfe`) Wi-Fi-style concentric arcs fanning from the mouth,
       arcs behind the head.
 - [x] User has signed off on the rasterised outputs at 16 / 24 / 48 / 128 / 256 px
       before the task moves to done. (Sign-off captured 2026-05-05 on draft 3 — see
       ## Sign-off log.)
-- [x] `assets/branding/mockingbird-logo-{16,24,32,48,64,128,256,512}.png` are
+- [x] `assets/branding/utterheim-logo-{16,24,32,48,64,128,256,512}.png` are
       regenerated from the new SVG — head silhouette stays recognisable at
       16 / 24 px even if the arcs merge into the head at that scale.
-- [x] `assets/branding/mockingbird.ico` (multi-res, layered for tray + taskbar)
+- [x] `assets/branding/utterheim.ico` (multi-res, layered for tray + taskbar)
       is regenerated and shows the new mark in Explorer / taskbar / tray.
-- [x] The existing About page hero (`mockingbird-logo-256.png`, see
+- [x] The existing About page hero (`utterheim-logo-256.png`, see
       `AboutPage.xaml` line 740 in main README) and any other in-app
       reference to the brand asset (nav header brand mark, BootstrapDialog,
       tray icon) pick up the regenerated rasters with no asset caching from
       the old design. (Verified by grep: every reference uses stable filenames
-      — `mockingbird-logo-256.png`, `mockingbird.ico` — so re-rasterising lands
+      — `utterheim-logo-256.png`, `utterheim.ico` — so re-rasterising lands
       automatically.)
 - [x] `docs/styleguide.md` "Brand mark (logo)" section is updated: status flips
       from PLACEHOLDER to **signed off / final**, design description swapped to
@@ -91,7 +91,7 @@ placeholder.
 - Reference WhisperHeim's microphone hero composition for proportions and badge
   framing: `Border 88x88 CornerRadius=18 BorderThickness=3 BorderBrush=#FF25abfe
   Background=#1025abfe`, `Viewbox` inside with the icon at 24-unit canvas. The
-  badge convention should carry over to mockingbird's hero — same shape, new mark.
+  badge convention should carry over to utterheim's hero — same shape, new mark.
   Note: inside that badge the background is a ~6%-alpha cyan-blue tint, and the
   arcs are full-opacity cyan-blue. The arcs should still read as
   distinct against the badge tint at 88 px; if they wash out during drafting,
@@ -102,7 +102,7 @@ placeholder.
   hard-coded in the SVG, not `currentColor`. This trades theme-flexibility for
   brand-consistency — same mark, every backdrop.
 - ~~Refinement decisions (locked 2026-05-04):~~ **Superseded by sign-off** — the
-  original locked direction below described a perched mockingbird with three
+  original locked direction below described a perched utterheim with three
   horizontal waveform-tail bars in line-art treatment. During drafting the user
   pivoted away from the bird metaphor entirely toward a voice-emitting human head
   with Wi-Fi-style arcs. The pre-pivot decisions are preserved here for history:
@@ -128,8 +128,8 @@ placeholder.
 
 ## Sign-off log
 
-- **2026-05-05** — Draft 1 (perched mockingbird, straight bars): user asked for curves instead of straight lines.
-- **2026-05-05** — Draft 2 (perched mockingbird, sinusoidal curves): user pivoted the direction entirely — wanted human head profile + Wi-Fi-style concentric arcs.
+- **2026-05-05** — Draft 1 (perched utterheim, straight bars): user asked for curves instead of straight lines.
+- **2026-05-05** — Draft 2 (perched utterheim, sinusoidal curves): user pivoted the direction entirely — wanted human head profile + Wi-Fi-style concentric arcs.
 - **2026-05-05** — Draft 3 (orange human head profile facing right + three concentric blue Wi-Fi arcs from the mouth): **approved**. Final.
 
 ## Outcome
@@ -139,22 +139,22 @@ silhouette in profile + three blue (`#FF25abfe`) Wi-Fi-style concentric arcs
 fanning from the mouth (arcs sit behind the head). Two-colour, not theme-adaptive.
 
 Approved by Marco Heimeshoff on 2026-05-05 after a three-draft pivot from the
-originally-locked perched-mockingbird direction (see ## Sign-off log). Pivot
+originally-locked perched-utterheim direction (see ## Sign-off log). Pivot
 documented under ## Notes so the history reads cleanly without confusing the
 as-shipped description.
 
 Files of record:
 
-- `assets/branding/mockingbird-logo.svg` — source artwork (final).
-- `assets/branding/mockingbird-logo-{16,24,32,48,64,128,256,512}.png` — rasters.
-- `assets/branding/mockingbird.ico` — multi-resolution tray / taskbar icon.
+- `assets/branding/utterheim-logo.svg` — source artwork (final).
+- `assets/branding/utterheim-logo-{16,24,32,48,64,128,256,512}.png` — rasters.
+- `assets/branding/utterheim.ico` — multi-resolution tray / taskbar icon.
 - `docs/styleguide.md` — Brand mark (logo) section flipped to **signed off /
   final**, design description and palette refreshed.
-- `.agenthoff/contexts/main/README.md` — brand-asset entries in the code-structure
+- `.agentheim/contexts/main/README.md` — brand-asset entries in the code-structure
   tree updated to "final".
 
-In-app references (`src/Mockingbird/Views/Pages/AboutPage.xaml`,
-`src/Mockingbird/Views/MainWindow.xaml`, `src/Mockingbird/Mockingbird.csproj`)
-use stable filenames (`mockingbird-logo-256.png`, `mockingbird.ico`) — no
+In-app references (`src/Utterheim/Views/Pages/AboutPage.xaml`,
+`src/Utterheim/Views/MainWindow.xaml`, `src/Utterheim/Utterheim.csproj`)
+use stable filenames (`utterheim-logo-256.png`, `utterheim.ico`) — no
 hash-busting, no XAML changes needed; the new bytes are picked up on the next
 build.

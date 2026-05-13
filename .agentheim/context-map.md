@@ -1,8 +1,8 @@
-# Context map: Mockingbird
+# Context map: Utterheim
 
 ## Decision: single bounded context
 
-Mockingbird is a personal tool with a single user, a single primary consumer (Claude Code), and a tightly coupled language. After pressure-testing five candidate boundaries (synthesis, voice-library, voice-capture, claude-bridge, tray-ui), all five collapse into one coherent context.
+Utterheim is a personal tool with a single user, a single primary consumer (Claude Code), and a tightly coupled language. After pressure-testing five candidate boundaries (synthesis, voice-library, voice-capture, claude-bridge, tray-ui), all five collapse into one coherent context.
 
 The single BC lives at `contexts/main/`.
 
@@ -50,6 +50,6 @@ See `contexts/main/README.md` for the full BC description, language, and actors.
 
 These are outside the context frame — they are consumed but not owned:
 
-- **pocket-tts** (Kyutai) — the synthesis engine. Python package or sherpa-onnx ONNX port. Conformist relationship: mockingbird adapts to pocket-tts's API shape (TTSModel, voice state, .safetensors, Mimi encoder). Wrap it behind a thin engine interface so a future second engine can slot in.
+- **pocket-tts** (Kyutai) — the synthesis engine. Python package or sherpa-onnx ONNX port. Conformist relationship: utterheim adapts to pocket-tts's API shape (TTSModel, voice state, .safetensors, Mimi encoder). Wrap it behind a thin engine interface so a future second engine can slot in.
 - **WhisperHeim shared services** — audio capture (`HighQualityLoopbackService`, `LoopbackCaptureService`, `AudioCaptureService`), global hotkeys (`GlobalHotkeyService`), settings/data path (`DataPathService`, `SettingsService`), startup (`StartupService`). Reused as a library dependency. Form (shared lib vs copy-and-modify vs submodule) is a foundation-step decision.
 - **Windows platform APIs** — WASAPI (via NAudio), Win32 hotkey hooks, tray icon, Mica/Fluent UI shell. Conformist to the platform.

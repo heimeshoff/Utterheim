@@ -28,11 +28,11 @@ matching the styleguide's Fluent / Mica / Segoe UI Variable look:
 
 ### 1. Brand mark + identity
 
-- Logo: `assets/branding/mockingbird-logo-256.png` (white silhouette on
+- Logo: `assets/branding/utterheim-logo-256.png` (white silhouette on
   transparent — already shipped by main-012), rendered at **128×128** with
   `RenderOptions.BitmapScalingMode="HighQuality"`. Use the PNG, not the SVG —
   WPF doesn't render SVG natively and we already have rasters.
-- App name: `Mockingbird` (`FontWeight="Light"`, page-title sized).
+- App name: `Utterheim` (`FontWeight="Light"`, page-title sized).
 - Tagline: **`Local voices for Claude Code`** — exact string, signed off
   in styleguide §Sign-off (2026-05-01). Dimmer secondary text under the name.
 
@@ -94,9 +94,9 @@ That's it. No NAudio / wpfui line — minimal per styleguide vibe.
 - [ ] About page reachable from the sidebar nav
   (`AboutPage` slot in `MainWindow`'s `NavigationView` — already stubbed by
   main-020).
-- [ ] Logo renders as 128×128 from `mockingbird-logo-256.png`, sharp on
+- [ ] Logo renders as 128×128 from `utterheim-logo-256.png`, sharp on
   100% and 200% DPI (visual check).
-- [ ] App name `Mockingbird` and tagline `Local voices for Claude Code`
+- [ ] App name `Utterheim` and tagline `Local voices for Claude Code`
   render as specified — exact strings.
 - [ ] Version reads from `AssemblyInformationalVersionAttribute` and shows
   as `Version {value}`. Verify by editing the project's
@@ -115,7 +115,7 @@ That's it. No NAudio / wpfui line — minimal per styleguide vibe.
   fresh state. Verify: hit Restart on a `Running` engine; observe state
   goes `stopping` → `notstarted` / `starting` → `running`, with the
   button correctly disabled during the transitional states.
-- [ ] **View logs** button opens `%LOCALAPPDATA%\Mockingbird\logs\` in
+- [ ] **View logs** button opens `%LOCALAPPDATA%\Utterheim\logs\` in
   Explorer (verify: the folder window opens; if logs exist, they're listed).
   Does not throw if the directory is missing — opens the parent instead.
 - [ ] Credits line shows `Synthesis powered by pocket-tts (Kyutai Labs).`
@@ -125,7 +125,7 @@ That's it. No NAudio / wpfui line — minimal per styleguide vibe.
   inspecting that `OnNavigatedFrom` removes the handler.
 - [ ] Visual matches the styleguide (Fluent layout, Mica backdrop,
   Segoe UI Variable, single-column page with section spacing).
-- [ ] Page builds clean (`dotnet build mockingbird.sln -c Debug`,
+- [ ] Page builds clean (`dotnet build utterheim.sln -c Debug`,
   zero errors / zero warnings).
 
 ## Notes
@@ -146,7 +146,7 @@ That's it. No NAudio / wpfui line — minimal per styleguide vibe.
   `EngineStatusViewModel.OnSidecarStateChanged` (lines 46–55).
 - **State formatting** — reuse the exact `FormatState` mapping from
   `EngineStatusViewModel` (lines 57–66). Refactor to a static helper
-  in `Mockingbird.Services.Tts` (e.g. `SidecarStateLabels.Format(...)`)
+  in `Utterheim.Services.Tts` (e.g. `SidecarStateLabels.Format(...)`)
   so the footer and About page can't drift apart. Optional but
   recommended.
 - **`SidecarHost.RestartAsync()`** — new public method on
@@ -158,12 +158,12 @@ That's it. No NAudio / wpfui line — minimal per styleguide vibe.
   `await StartAsync(ct);`. Surface the operation under
   `_state = SidecarState.Restarting` so subscribers see the transition.
   Mirror the existing logging style.
-- **Logs path source** — `Mockingbird\appsettings.json` configures
-  Serilog's rolling file sink at `%LOCALAPPDATA%\Mockingbird\logs\
-  mockingbird-YYYYMMDD.log` (per ADR 0008). Resolve the directory via
+- **Logs path source** — `Utterheim\appsettings.json` configures
+  Serilog's rolling file sink at `%LOCALAPPDATA%\Utterheim\logs\
+  utterheim-YYYYMMDD.log` (per ADR 0008). Resolve the directory via
   `Environment.GetFolderPath(SpecialFolder.LocalApplicationData)` +
-  `\Mockingbird\logs\` rather than re-parsing the Serilog config.
-- **Logo asset** — `<Image Source="pack://application:,,,/assets/branding/mockingbird-logo-256.png"
+  `\Utterheim\logs\` rather than re-parsing the Serilog config.
+- **Logo asset** — `<Image Source="pack://application:,,,/assets/branding/utterheim-logo-256.png"
   Width="128" Height="128" RenderOptions.BitmapScalingMode="HighQuality"/>`.
   Confirm the PNG is set as `Resource` in the .csproj (it should be —
   main-012 wired this).
@@ -234,8 +234,8 @@ That's it. No NAudio / wpfui line — minimal per styleguide vibe.
 ## Outcome
 
 Shipped the canonical four-page set's final page. The About surface lays out
-the brand mark (128x128 raster of `mockingbird-logo-256.png`, scaled with
-`HighQuality` bitmap), `Mockingbird` page title (`FontWeight="Light"`), the
+the brand mark (128x128 raster of `utterheim-logo-256.png`, scaled with
+`HighQuality` bitmap), `Utterheim` page title (`FontWeight="Light"`), the
 signed-off `Local voices for Claude Code` tagline, a `Version {value}` line
 sourced from `AssemblyInformationalVersionAttribute` (with `+sha` suffix
 stripped, falling back to `AssemblyName.Version` then `"unknown"`), the
@@ -257,27 +257,27 @@ anti-zombie invariant from ADR 0012 / main-022 survives. The button is
 disabled during transitional states via `[NotifyCanExecuteChangedFor]` on
 `EngineState`.
 
-`OpenLogs` opens `%LOCALAPPDATA%\Mockingbird\logs\` via Explorer, falling
+`OpenLogs` opens `%LOCALAPPDATA%\Utterheim\logs\` via Explorer, falling
 back to its parent (`LocalRoot`) when the directory doesn't exist yet.
 
-Build: `dotnet build mockingbird.sln -c Debug` → 0 warnings, 0 errors.
+Build: `dotnet build utterheim.sln -c Debug` → 0 warnings, 0 errors.
 
 ### Key files
 
-- `src/Mockingbird/ViewModels/Pages/AboutPageViewModel.cs` — typed VM with
+- `src/Utterheim/ViewModels/Pages/AboutPageViewModel.cs` — typed VM with
   `[ObservableProperty]` on `Version` / `EngineState` / `Healthy` / `Port` /
   `LastError` and `[RelayCommand]` for `RestartEngine` / `OpenLogs`.
-- `src/Mockingbird/ViewModels/Pages/AboutPageConverters.cs` —
+- `src/Utterheim/ViewModels/Pages/AboutPageConverters.cs` —
   `EngineStateToPipBrushConverter` (`IMultiValueConverter`) maps
   `(SidecarState, healthy)` to a frozen pip brush.
-- `src/Mockingbird/Views/Pages/AboutPage.xaml(.cs)` — five-block layout +
+- `src/Utterheim/Views/Pages/AboutPage.xaml(.cs)` — five-block layout +
   `INavigationAware` lifecycle wiring (`Attach` / `Detach`).
-- `src/Mockingbird/Services/Tts/SidecarHost.cs` — added `RestartAsync`.
-- `src/Mockingbird/Services/Tts/SidecarStateLabels.cs` — extracted shared
+- `src/Utterheim/Services/Tts/SidecarHost.cs` — added `RestartAsync`.
+- `src/Utterheim/Services/Tts/SidecarStateLabels.cs` — extracted shared
   state-label helper.
-- `src/Mockingbird/ViewModels/EngineStatusViewModel.cs` — refactored to
+- `src/Utterheim/ViewModels/EngineStatusViewModel.cs` — refactored to
   consume the helper.
-- `src/Mockingbird/Mockingbird.csproj` — added the 256-px logo PNG as
+- `src/Utterheim/Utterheim.csproj` — added the 256-px logo PNG as
   `<Resource>` so the `pack://application:,,,/...` URI resolves.
-- `.agenthoff/knowledge/decisions/0018-about-page-engine-status-in-process.md`
+- `.agentheim/knowledge/decisions/0018-about-page-engine-status-in-process.md`
   — records Q1/Q2 (in-process subscription + Stop+Start composition).

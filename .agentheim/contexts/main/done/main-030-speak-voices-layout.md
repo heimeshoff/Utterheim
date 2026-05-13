@@ -18,7 +18,7 @@ Two layout problems on the daily-use surfaces:
 
 1. **Speak page has no identity** — opens straight into a textbox. WhisperHeim's
    pages all open with the hero (logo + name + version + tagline). Without it,
-   Mockingbird feels like a textarea with controls, not an app.
+   Utterheim feels like a textarea with controls, not an app.
 2. **Speak controls are below the textbox.** Voice picker is row 1, then a
    row of Play / Stop / Save buttons below it. The user wants the picker and
    buttons in **one row above the text input**: voice on the left, then Play /
@@ -34,9 +34,9 @@ Two layout problems on the daily-use surfaces:
 ### Reusable pieces (this task ships them)
 
 `BrandHeroControl` — a new `UserControl` in
-`src/Mockingbird/Views/Controls/BrandHeroControl.xaml(.cs)`. Composition matches
+`src/Utterheim/Views/Controls/BrandHeroControl.xaml(.cs)`. Composition matches
 WhisperHeim's hero exactly: 88×88 logo badge (brand-blue border + tinted
-background) on top, "Mockingbird" 40 pt ExtraBold beneath, version tag in
+background) on top, "Utterheim" 40 pt ExtraBold beneath, version tag in
 `BrandDeepMutedBrush` next to or below the name, optional tagline in 14 pt
 secondary at the bottom. Logo and app name are app-wide constants; version
 comes from the new `AppInfo` helper (see below); tagline is the only
@@ -49,7 +49,7 @@ per-instance variable.
 - The control reads the version through `AppInfo.Version` (no per-instance
   version property — there's only one running app).
 
-`AppInfo` — a new static helper in `src/Mockingbird/Services/AppInfo.cs` that
+`AppInfo` — a new static helper in `src/Utterheim/Services/AppInfo.cs` that
 encapsulates the assembly-version lookup currently inlined in
 `AboutPageViewModel`. Returns the same string the About page already shows:
 `AssemblyInformationalVersionAttribute` with any `+sha` suffix stripped,
@@ -105,11 +105,11 @@ change for the layout swap.
 ## Acceptance criteria
 
 - [ ] `BrandHeroControl` `UserControl` ships under
-      `src/Mockingbird/Views/Controls/`. Renders 88×88 logo badge + name
-      "Mockingbird" 40 pt ExtraBold + version tag in `BrandDeepMutedBrush`,
+      `src/Utterheim/Views/Controls/`. Renders 88×88 logo badge + name
+      "Utterheim" 40 pt ExtraBold + version tag in `BrandDeepMutedBrush`,
       with optional tagline `TextBlock` (visibility-collapsed when
       `Tagline` `DependencyProperty` is null/empty).
-- [ ] `AppInfo.Version` static property in `src/Mockingbird/Services/`
+- [ ] `AppInfo.Version` static property in `src/Utterheim/Services/`
       returns the same version string `AboutPageViewModel`'s inline lookup
       currently produces (`AssemblyInformationalVersionAttribute` + `+sha`
       stripping + fallback chain).
@@ -133,7 +133,7 @@ change for the layout swap.
       preview + per-row delete affordances intact.
 - [ ] Page chrome matches main-029 styleguide spec (40,36,40,32 outer margin,
       MaxWidth=900, centered, brand palette).
-- [ ] Build is clean (`dotnet build mockingbird.sln -c Debug` →
+- [ ] Build is clean (`dotnet build utterheim.sln -c Debug` →
       0 errors, 0 warnings).
 
 ## Notes
@@ -170,20 +170,20 @@ migrates `AboutPageViewModel`'s inline version lookup over to it.
 ## Outcome
 
 Reusable `BrandHeroControl` shipped at
-`src/Mockingbird/Views/Controls/BrandHeroControl.xaml(.cs)` — 88x88 logo
+`src/Utterheim/Views/Controls/BrandHeroControl.xaml(.cs)` — 88x88 logo
 badge (`BrandPrimaryBrush` border + `#1025abfe` tinted background) + name
 in 40pt ExtraBold + `vX.Y.Z` tag in `BrandDeepMutedBrush` + optional
 `Tagline` `DependencyProperty` whose backing read-only `HasTagline` DP
 collapses the tagline `TextBlock` when null/whitespace. Version is read
 from `AppInfo.Version` on construction.
 
-`AppInfo` static helper shipped at `src/Mockingbird/Services/AppInfo.cs` —
+`AppInfo` static helper shipped at `src/Utterheim/Services/AppInfo.cs` —
 encapsulates the `AssemblyInformationalVersionAttribute` lookup with `+sha`
 stripping and 3-part / `"unknown"` fallback. Same algorithm
 `AboutPageViewModel.ResolveVersion` already used; main-032 will migrate
 the inline lookup over to the helper as part of its scope.
 
-Speak page (`src/Mockingbird/Views/Pages/SpeakPage.xaml`) restructured
+Speak page (`src/Utterheim/Views/Pages/SpeakPage.xaml`) restructured
 into a 4-row `Grid` (replacing the prior `ScrollViewer`+`StackPanel` so the
 `*` row can actually expand): hero with no tagline, single horizontal
 controls row (voice picker MinWidth=240 + Play Primary + Stop Secondary +
@@ -192,7 +192,7 @@ multi-line `ui:TextBox` filling the `*` row (`AcceptsReturn=True`,
 `MinHeight=240`), status `TextBlock` at the bottom. Save's inline
 `ui:ProgressRing` tied to `SaveCommand.IsRunning` preserved verbatim.
 
-Voices page (`src/Mockingbird/Views/Pages/VoicesPage.xaml`) reordered:
+Voices page (`src/Utterheim/Views/Pages/VoicesPage.xaml`) reordered:
 small Light/28 "Voices" title (unchanged from main-029), then the
 **Clone a new voice** card (now styled as a single WhisperHeim
 `Border CornerRadius=12 Padding=24` per styleguide §Card spec) **above**
@@ -202,15 +202,15 @@ Save flow, error UX, and post-save `LibraryChanged` → `VoicesChanged`
 refresh chain all unchanged (XAML-only swap). Empty-cloned-section
 copy updated to "No cloned voices yet — clone one above."
 
-Build is clean: `dotnet build mockingbird.sln -c Debug` → 0 errors,
+Build is clean: `dotnet build utterheim.sln -c Debug` → 0 errors,
 0 warnings.
 
 ### Key files
 
-- `src/Mockingbird/Views/Controls/BrandHeroControl.xaml(.cs)` — new control
-- `src/Mockingbird/Services/AppInfo.cs` — new static helper
-- `src/Mockingbird/Views/Pages/SpeakPage.xaml` — 4-row Grid layout
-- `src/Mockingbird/Views/Pages/VoicesPage.xaml` — clone card moved above list
+- `src/Utterheim/Views/Controls/BrandHeroControl.xaml(.cs)` — new control
+- `src/Utterheim/Services/AppInfo.cs` — new static helper
+- `src/Utterheim/Views/Pages/SpeakPage.xaml` — 4-row Grid layout
+- `src/Utterheim/Views/Pages/VoicesPage.xaml` — clone card moved above list
 
 ### BC README
 

@@ -18,17 +18,17 @@ Voice profiles are `.safetensors` kvcache files plus metadata. Vision target: 5�
 
 ## What
 
-Filesystem-folder-per-voice + a single `library.json` index file. Mirror WhisperHeim's `DataPathService` pattern: bootstrap in `%APPDATA%\Mockingbird`, optional remappable data path (so the user can sync `voices\` via OneDrive), runtime + models in `%LOCALAPPDATA%\Mockingbird` (machine-local, never synced).
+Filesystem-folder-per-voice + a single `library.json` index file. Mirror WhisperHeim's `DataPathService` pattern: bootstrap in `%APPDATA%\Utterheim`, optional remappable data path (so the user can sync `voices\` via OneDrive), runtime + models in `%LOCALAPPDATA%\Utterheim` (machine-local, never synced).
 
 Layout:
 
 ```
-%APPDATA%\Mockingbird\
+%APPDATA%\Utterheim\
   bootstrap.json
   settings.json
   logs\
 
-<dataPath>\                    (default = %APPDATA%\Mockingbird; override via bootstrap.json)
+<dataPath>\                    (default = %APPDATA%\Utterheim; override via bootstrap.json)
   voices\
     library.json               (master index)
     <voice-id>\
@@ -36,7 +36,7 @@ Layout:
       meta.json
       sample.wav               (optional)
 
-%LOCALAPPDATA%\Mockingbird\
+%LOCALAPPDATA%\Utterheim\
   runtime\python\              (bundled embeddable Python + venv)
   models\pocket-tts\           (model weights)
   cache\
@@ -44,7 +44,7 @@ Layout:
 
 ## Acceptance criteria
 
-- [ ] ADR 0005 committed at `.agenthoff/knowledge/decisions/0005-voice-persistence-layout.md` with `scope: global`.
+- [ ] ADR 0005 committed at `.agentheim/knowledge/decisions/0005-voice-persistence-layout.md` with `scope: global`.
 - [ ] ADR matches the draft in Notes (or carries user amendments).
 - [ ] No code yet — implementation lands in main-009.
 - [ ] `meta.json` schema is sketched in the ADR (fields: `name`, `engine`, `pocketTtsVersion`, `source` (mic/loopback/import), `createdAt`, `tags`, optional `samplePath`).
@@ -68,8 +68,8 @@ Voice profiles are `.safetensors` kvcache files plus metadata (name, source, dat
 ## Decision
 - One folder per voice under `<dataPath>\voices\<voice-id>\` containing `profile.safetensors`, `meta.json`, and optionally `sample.wav`.
 - A single `library.json` at `<dataPath>\voices\library.json` holding the master index (id → display name, engine, source, created, tags). Loaded on startup, reconciled against actual folder contents (orphan folders / missing entries surface a tray warning, never silently dropped).
-- Settings live in `<dataPath>\settings.json` (synced) and bootstrap `%APPDATA%\Mockingbird\bootstrap.json` (machine-local pointer to the data path). Same pattern as WhisperHeim.
-- Pocket-tts model weights and the bundled Python runtime live in `%LOCALAPPDATA%\Mockingbird\` (machine-local, not synced).
+- Settings live in `<dataPath>\settings.json` (synced) and bootstrap `%APPDATA%\Utterheim\bootstrap.json` (machine-local pointer to the data path). Same pattern as WhisperHeim.
+- Pocket-tts model weights and the bundled Python runtime live in `%LOCALAPPDATA%\Utterheim\` (machine-local, not synced).
 
 `meta.json` schema (sketch):
 
@@ -107,13 +107,13 @@ Voice profiles are `.safetensors` kvcache files plus metadata (name, source, dat
 
 ## References
 - WhisperHeim DataPathService: `C:\src\heimeshoff\tooling\WhisperHeim\src\WhisperHeim\Services\Settings\DataPathService.cs`
-- Vision: `.agenthoff/vision.md`
-- Kyutai research: `.agenthoff/knowledge/research/kyutai-tts-2026-05-01.md`
+- Vision: `.agentheim/vision.md`
+- Kyutai research: `.agentheim/knowledge/research/kyutai-tts-2026-05-01.md`
 ```
 
 ## Outcome
 
-Decision recorded as ADR 0005 (`scope: global`, `status: accepted`). Voice profiles persist as one folder per voice under `<dataPath>\voices\<voice-id>\` (containing `profile.safetensors`, `meta.json`, optional `sample.wav`), indexed by a single `library.json` at `<dataPath>\voices\library.json`. Path layering matches WhisperHeim: bootstrap + settings in `%APPDATA%\Mockingbird` (with optional remapped `<dataPath>` for OneDrive sync), runtime + model weights in `%LOCALAPPDATA%\Mockingbird` (machine-local, never synced). `meta.json` schema fixed: `id`, `name`, `engine`, `pocketTtsVersion`, `source` (`mic|loopback|import`), `createdAt` (ISO-8601 UTC), `tags`, optional `samplePath`. Atomic writes via write-temp-then-rename. Migration to SQLite deferred until ~200+ voices. No code changed — implementation lands in main-009 (walking skeleton) and main-010 (voice CRUD).
+Decision recorded as ADR 0005 (`scope: global`, `status: accepted`). Voice profiles persist as one folder per voice under `<dataPath>\voices\<voice-id>\` (containing `profile.safetensors`, `meta.json`, optional `sample.wav`), indexed by a single `library.json` at `<dataPath>\voices\library.json`. Path layering matches WhisperHeim: bootstrap + settings in `%APPDATA%\Utterheim` (with optional remapped `<dataPath>` for OneDrive sync), runtime + model weights in `%LOCALAPPDATA%\Utterheim` (machine-local, never synced). `meta.json` schema fixed: `id`, `name`, `engine`, `pocketTtsVersion`, `source` (`mic|loopback|import`), `createdAt` (ISO-8601 UTC), `tags`, optional `samplePath`. Atomic writes via write-temp-then-rename. Migration to SQLite deferred until ~200+ voices. No code changed — implementation lands in main-009 (walking skeleton) and main-010 (voice CRUD).
 
 Key files:
-- `.agenthoff/knowledge/decisions/0005-voice-persistence-layout.md`
+- `.agentheim/knowledge/decisions/0005-voice-persistence-layout.md`

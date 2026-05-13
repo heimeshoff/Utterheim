@@ -182,7 +182,7 @@ main-032 (relocate engine diagnostics; redesign About):
   also lifts to `AppInfo.GithubUrl`.
 - About copy: keep WhisperHeim's bio paragraph 1 verbatim (Marco's
   identity is the same on both apps); replace paragraph 2 with the
-  mockingbird-specific voice-diversity framing the user proposed.
+  utterheim-specific voice-diversity framing the user proposed.
 - Engine status VM: extract `EngineStatusCardViewModel`, compose into
   `SettingsPageViewModel.EngineStatus`. Mirrors
   `VoicesPageViewModel.Cloning` composition pattern. Strips
@@ -242,7 +242,7 @@ shapes.
 
 **Type:** Work / Task completion
 **Task:** main-028 - Logo redesign — voice human-head mark
-**Summary:** Pivoted the locked perched-mockingbird direction during sign-off iteration to a filled orange right-facing human-head profile with three blue Wi-Fi-style concentric arcs from the mouth. Three drafts to user approval; new SVG + regenerated PNGs (16..512) + multi-res .ico; styleguide brand-mark section + BC README brand asset table flipped from PLACEHOLDER to Final.
+**Summary:** Pivoted the locked perched-utterheim direction during sign-off iteration to a filled orange right-facing human-head profile with three blue Wi-Fi-style concentric arcs from the mouth. Three drafts to user approval; new SVG + regenerated PNGs (16..512) + multi-res .ico; styleguide brand-mark section + BC README brand asset table flipped from PLACEHOLDER to Final.
 **Commit:** 13a82e8
 **Files changed:** 13
 **ADRs written:** none
@@ -252,7 +252,7 @@ shapes.
 ## 2026-05-05 -- Batch started: [main-028]
 
 **Type:** Work / Batch start
-**Tasks:** main-028 - Logo redesign — waveform-tail mockingbird
+**Tasks:** main-028 - Logo redesign — waveform-tail utterheim
 **Parallel:** no (1 worker — design-bearing, user sign-off gate makes solo dispatch safer)
 
 ---
@@ -301,7 +301,7 @@ pattern; no new architectural decision needed.
 
 ---
 
-## 2026-05-04 22:35 -- Model / Promoted: main-028 - Logo redesign (waveform-tail mockingbird)
+## 2026-05-04 22:35 -- Model / Promoted: main-028 - Logo redesign (waveform-tail utterheim)
 
 **Type:** Model / Promote
 **BC:** main
@@ -309,7 +309,7 @@ pattern; no new architectural decision needed.
 
 ---
 
-## 2026-05-04 22:30 -- Model / Refined: main-028 - Logo redesign (waveform-tail mockingbird)
+## 2026-05-04 22:30 -- Model / Refined: main-028 - Logo redesign (waveform-tail utterheim)
 
 **Type:** Model / Refine
 **BC:** main
@@ -325,7 +325,7 @@ pattern; no new architectural decision needed.
 **Type:** Model / Capture
 **BC:** main
 **Filed to:** backlog (5 tasks)
-**Summary:** User refinement pass aligning Mockingbird's visual language with WhisperHeim. Captured five backlog items: main-028 (waveform-tail mockingbird logo with WhisperHeim palette), main-029 (Light theme + brand brushes + WhisperHeim card spec + Appearance picker on Settings + styleguide update), main-030 (Speak page hero + controls row above text input; Voices clone-card above list), main-031 (editable data path with Vista folder picker — re-opens main-016's deferred migration question), main-032 (move engine status + restart + view logs to Settings end; About moves to nav FooterMenuItems with WhisperHeim-style hero + profile/contact + Ko-fi/GitHub composition pointing at mockingbird repo). 028+029 are independent foundations; 030/032 depend on both; 031 is independent.
+**Summary:** User refinement pass aligning Utterheim's visual language with WhisperHeim. Captured five backlog items: main-028 (waveform-tail utterheim logo with WhisperHeim palette), main-029 (Light theme + brand brushes + WhisperHeim card spec + Appearance picker on Settings + styleguide update), main-030 (Speak page hero + controls row above text input; Voices clone-card above list), main-031 (editable data path with Vista folder picker — re-opens main-016's deferred migration question), main-032 (move engine status + restart + view logs to Settings end; About moves to nav FooterMenuItems with WhisperHeim-style hero + profile/contact + Ko-fi/GitHub composition pointing at utterheim repo). 028+029 are independent foundations; 030/032 depend on both; 031 is independent.
 
 ---
 
@@ -398,11 +398,11 @@ alongside; (Q3) ship a `Restart Engine` button backed by a new
 `SidecarHost.RestartAsync()` (StopAsync + reset + StartAsync), disabled
 during transitional states; (Q4) credits trim to a single line:
 "Synthesis powered by pocket-tts (Kyutai Labs)." Rewrote the task with
-concrete blocks (logo from `mockingbird-logo-256.png` at 128×128, exact
+concrete blocks (logo from `utterheim-logo-256.png` at 128×128, exact
 tagline from styleguide §Sign-off, version from
 `AssemblyInformationalVersionAttribute`, status panel composition with
 state pip + healthy tick + lastError + retry, view-logs path resolution
-via `%LOCALAPPDATA%\Mockingbird\logs\`), tactical pointers (refactor
+via `%LOCALAPPDATA%\Utterheim\logs\`), tactical pointers (refactor
 `FormatState` into a shared helper, pip via `Ellipse` + converter, VM
 mirroring the `EngineStatusViewModel` subscribe pattern), and tightened
 acceptance criteria to be live-testable (kill-the-sidecar + force-failed
@@ -456,7 +456,7 @@ expanded from 7 abstract bullets to 9 concrete verifiable ones.
 ## 2026-05-04 18:04 -- Task completed: main-027 - Bootstrapper self-heal
 
 **Type:** Work / Task completion
-**Task:** main-027 — Bootstrapper self-heal for stale/partial mockingbird_sidecar
+**Task:** main-027 — Bootstrapper self-heal for stale/partial utterheim_sidecar
 **Summary:** IsBootstrapped now delegates to the install-path file-presence helpers and additionally compares bundled vs. installed wrapper __version__, so half-installed and stale wrappers self-heal at next launch.
 **Commit:** d57a6a9
 **Files changed:** 6
@@ -467,7 +467,7 @@ expanded from 7 abstract bullets to 9 concrete verifiable ones.
 ## 2026-05-04 17:59 -- Batch started: [main-027]
 
 **Type:** Work / Batch start
-**Tasks:** main-027 — Bootstrapper self-heal for stale/partial mockingbird_sidecar
+**Tasks:** main-027 — Bootstrapper self-heal for stale/partial utterheim_sidecar
 **Parallel:** no (1 worker)
 
 ---
@@ -498,7 +498,7 @@ expanded from 7 abstract bullets to 9 concrete verifiable ones.
 **From → To:** backlog → todo
 **Tasks:**
 - main-026 — Voices page per-row delete affordance for cloned voices
-- main-027 — Bootstrapper self-heal for stale/partial mockingbird_sidecar
+- main-027 — Bootstrapper self-heal for stale/partial utterheim_sidecar
 **Readiness:** both verified — concrete acceptance criteria, dependencies (main-014, main-015) already done, scope and worker tips in place.
 
 ---
@@ -556,10 +556,10 @@ Task was already deeply refined as part of the main-015 split (mic + loopback ca
 
 **Type:** Work / Task completion
 **Task:** main-015 - Voice cloning backend — VoiceLibraryService + sidecar /export-voice
-**Summary:** Voice cloning backend landed end-to-end — `mockingbird_sidecar` Python wrapper adds `/export-voice` and `/tts-with-state` on the resident pocket-tts model, `VoiceLibraryService` persists `<dataPath>\voices\<id>\` per ADR 0005 with temp+rename and startup reconciliation, and `PocketTtsEngine` routes built-in vs cloned voices to the correct endpoint via the catalog union. No UI in this task.
+**Summary:** Voice cloning backend landed end-to-end — `utterheim_sidecar` Python wrapper adds `/export-voice` and `/tts-with-state` on the resident pocket-tts model, `VoiceLibraryService` persists `<dataPath>\voices\<id>\` per ADR 0005 with temp+rename and startup reconciliation, and `PocketTtsEngine` routes built-in vs cloned voices to the correct endpoint via the catalog union. No UI in this task.
 **Commit:** f299df5
 **Files changed:** 15
-**ADRs written:** 0015-mockingbird-sidecar-wrapper.md (accepted as drafted)
+**ADRs written:** 0015-utterheim-sidecar-wrapper.md (accepted as drafted)
 
 ---
 
@@ -576,7 +576,7 @@ Task was already deeply refined as part of the main-015 split (mic + loopback ca
 **Type:** Model / Promote
 **BC:** main
 **From → To:** backlog → todo
-**ADR 0015 status:** proposed → accepted (Mockingbird-owned Python sidecar wrapper)
+**ADR 0015 status:** proposed → accepted (Utterheim-owned Python sidecar wrapper)
 
 ---
 
@@ -585,9 +585,9 @@ Task was already deeply refined as part of the main-015 split (mic + loopback ca
 **Type:** Model / Refine
 **BC:** main
 **Status after:** backlog (all three children); main-015 promote-blocked on ADR 0015 acceptance
-**Summary:** Resolved Q1–Q13. Split main-015 from one bundled task into three: main-015 (backend — `VoiceLibraryService` + sidecar `POST /export-voice` + schema), main-025 (cloning UI — recording controls, source toggle, WhisperHeim audio-capture copy per ADR 0006), main-026 (per-row delete affordance on Voices page). Ratified `meta.json` / `library.json` schema with `schemaVersion: 1`, slim master index, transactional write order (profile → meta → library). Confirmed C# ↔ pocket-tts integration via mockingbird-owned Python wrapper module that imports `pocket_tts.main:web_app` and adds `/export-voice` (ADR 0015). Active-playback delete guard rejected; reconciler heals orphans on next launch. Import-existing-clip path deferred post-v1 (`source: "import"` reserved). main-014 in `done/` had `blocks` updated to `[main-015, main-025, main-026]`.
+**Summary:** Resolved Q1–Q13. Split main-015 from one bundled task into three: main-015 (backend — `VoiceLibraryService` + sidecar `POST /export-voice` + schema), main-025 (cloning UI — recording controls, source toggle, WhisperHeim audio-capture copy per ADR 0006), main-026 (per-row delete affordance on Voices page). Ratified `meta.json` / `library.json` schema with `schemaVersion: 1`, slim master index, transactional write order (profile → meta → library). Confirmed C# ↔ pocket-tts integration via utterheim-owned Python wrapper module that imports `pocket_tts.main:web_app` and adds `/export-voice` (ADR 0015). Active-playback delete guard rejected; reconciler heals orphans on next launch. Import-existing-clip path deferred post-v1 (`source: "import"` reserved). main-014 in `done/` had `blocks` updated to `[main-015, main-025, main-026]`.
 **Split into:** main-025 (Voice cloning UI), main-026 (Voices delete affordance)
-**ADRs written:** 0015 (Mockingbird-owned Python sidecar wrapper, status: proposed — awaits user acceptance before main-015 can promote)
+**ADRs written:** 0015 (Utterheim-owned Python sidecar wrapper, status: proposed — awaits user acceptance before main-015 can promote)
 
 ---
 
@@ -799,7 +799,7 @@ ADR 0013 (HttpClient streaming) does not affect the Speak UI path.
 
 **Type:** Work / Task completion
 **Task:** main-019 - Claude Code hook sample — make the speak endpoint actually used
-**Summary:** Shipped `examples/claude-hooks/` with a PowerShell hook posting {text, voice} to /speak, plus a README covering Stop/Notification hook wiring, the per-terminal `MOCKINGBIRD_VOICE` convention, a parallel two-session worked example, and troubleshooting drawn from main-018 verification findings.
+**Summary:** Shipped `examples/claude-hooks/` with a PowerShell hook posting {text, voice} to /speak, plus a README covering Stop/Notification hook wiring, the per-terminal `UTTERHEIM_VOICE` convention, a parallel two-session worked example, and troubleshooting drawn from main-018 verification findings.
 **Commit:** 0723c7f
 **Files changed:** 4 (incl. moved task file + BC README)
 **ADRs written:** none
@@ -919,7 +919,7 @@ ADR 0013 (HttpClient streaming) does not affect the Speak UI path.
 
 **Type:** Work / Verification finding → bug filed
 **BC:** main
-**Trigger:** User attempted main-018 first-run verification; bootstrap dialog failed with `Python smoke test exited with code 1` (eight retries logged in mockingbird-20260503.log between 22:18:04 and 22:18:36).
+**Trigger:** User attempted main-018 first-run verification; bootstrap dialog failed with `Python smoke test exited with code 1` (eight retries logged in utterheim-20260503.log between 22:18:04 and 22:18:36).
 **Root cause (recorded in main-021):** Two defects in `PythonRuntimeBootstrapper`. (A) Step 3 `InstallPocketTts` checks only the persisted state flag, not `pocket_tts/__init__.py` on disk — so a stale `bootstrap-state.json` (e.g. after a manual wipe of `runtime/`) silently skips re-installing pocket-tts. (B) Subprocess stderr is logged at `LogDebug` so the actual Python traceback never reaches the file log; user sees only the generic exit-code-1 message.
 **Action:** Filed main-021 in backlog with both fix sketches and acceptance criteria. Added main-021 to main-018's `depends_on`. main-018 stays in todo with an `## Outcome (verification paused)` block; verification cannot proceed until main-021 lands.
 **Workaround for the user:** delete `bootstrap-state.json` alongside `runtime\` and `models\pocket-tts\` before relaunching.
@@ -1038,7 +1038,7 @@ voice" setting deferred from Q7.
 **Type:** Model / Capture
 **BC:** main
 **Filed to:** backlog
-**Summary:** Captured the seven natural next steps after the foundation phase as backlog items: page set (main-013 Speak, main-014 Voices, main-015 voice cloning, main-016 Settings, main-017 About) all gated by the now-OPEN styleguide (main-010); main-018 chore to close out main-011's pending user-verifiable acceptance criteria on a clean machine; main-019 Claude Code hook sample so the speak endpoint actually gets used. Suggested run order: main-018 first (verify foundation), main-019 next (deliver v1 payoff), then page set in styleguide-canonical order. Tasks are intentionally lean — refine via /agenthoff:model before promotion.
+**Summary:** Captured the seven natural next steps after the foundation phase as backlog items: page set (main-013 Speak, main-014 Voices, main-015 voice cloning, main-016 Settings, main-017 About) all gated by the now-OPEN styleguide (main-010); main-018 chore to close out main-011's pending user-verifiable acceptance criteria on a clean machine; main-019 Claude Code hook sample so the speak endpoint actually gets used. Suggested run order: main-018 first (verify foundation), main-019 next (deliver v1 payoff), then page set in styleguide-canonical order. Tasks are intentionally lean — refine via /agentheim:model before promotion.
 
 ---
 
@@ -1051,7 +1051,7 @@ voice" setting deferred from Q7.
 **Commits:** 3 (sign-off+promote 5ffa4c9, main-011 061c51b, main-012 d5b683f)
 **New backlog items:** none
 
-todo/, doing/, and backlog/ are all empty. Mockingbird's foundation phase is complete: real pocket-tts engine wired (user-verifiable on next restart with ~700 MB first-run download), speaking-person logo rasterised to all required sizes + .ico (visible in tray + taskbar after restart). Next phase is feature work — Speak page, Voices page, Settings, About — driven via /agenthoff:model captures from the user.
+todo/, doing/, and backlog/ are all empty. Utterheim's foundation phase is complete: real pocket-tts engine wired (user-verifiable on next restart with ~700 MB first-run download), speaking-person logo rasterised to all required sizes + .ico (visible in tray + taskbar after restart). Next phase is feature work — Speak page, Voices page, Settings, About — driven via /agentheim:model captures from the user.
 
 ---
 
@@ -1059,7 +1059,7 @@ todo/, doing/, and backlog/ are all empty. Mockingbird's foundation phase is com
 
 **Type:** Work / Task completion
 **Task:** main-012 - Rasterise the speaking-person logo to PNG sizes + .ico for tray
-**Summary:** Generated PNG sizes 16/24/32/48/64/128/256/512 + multi-resolution mockingbird.ico (16/24/32/48/64/128/256 layers, PNG-compressed) into assets/branding/ via a one-shot SkiaSharp + Svg.Skia helper at Tools/RasteriseLogo/ (kept standalone, not in mockingbird.sln). Wired the .ico as ApplicationIcon, packaged Resource, FluentWindow Icon, and tray:NotifyIcon Icon. Build clean (0/0). User-verifiable: speaking-person silhouette now appears in the tray + Explorer + taskbar after restart.
+**Summary:** Generated PNG sizes 16/24/32/48/64/128/256/512 + multi-resolution utterheim.ico (16/24/32/48/64/128/256 layers, PNG-compressed) into assets/branding/ via a one-shot SkiaSharp + Svg.Skia helper at Tools/RasteriseLogo/ (kept standalone, not in utterheim.sln). Wired the .ico as ApplicationIcon, packaged Resource, FluentWindow Icon, and tray:NotifyIcon Icon. Build clean (0/0). User-verifiable: speaking-person silhouette now appears in the tray + Explorer + taskbar after restart.
 **Commit:** d5b683f
 **Files changed:** 14
 **ADRs written:** none
@@ -1078,7 +1078,7 @@ todo/, doing/, and backlog/ are all empty. Mockingbird's foundation phase is com
 
 **Type:** Work / Task completion
 **Task:** main-011 - Real pocket-tts engine — Python sidecar bootstrap and PocketTtsEngine
-**Summary:** Probe-installed pocket-tts==2.0.0 cleanly into a fresh Python 3.12 venv on Windows 11 — ADR 0002 path validated. Wrote PocketTtsEngine (POST /tts, strips WAV header, streams 24 kHz mono 16-bit PCM via IAsyncEnumerable<byte[]>), SidecarHost (supervises python.exe with port-banner parsing, /health polling, capped-backoff restarts, clean shutdown), PythonRuntimeBootstrapper (downloads Python 3.12.7 embeddable, enables site, bootstraps pip, installs pocket-tts>=2.0,<3, persists state across restarts), real BootstrapDialog with progress + cancel + retry, EntryPoint DI swap (StubTtsEngine gated behind MOCKINGBIRD_USE_STUB_ENGINE=1), SpeakServer /status reports sidecar state. Build clean (0/0). User-verifiable acceptance criteria pending first run with real download (~700 MB).
+**Summary:** Probe-installed pocket-tts==2.0.0 cleanly into a fresh Python 3.12 venv on Windows 11 — ADR 0002 path validated. Wrote PocketTtsEngine (POST /tts, strips WAV header, streams 24 kHz mono 16-bit PCM via IAsyncEnumerable<byte[]>), SidecarHost (supervises python.exe with port-banner parsing, /health polling, capped-backoff restarts, clean shutdown), PythonRuntimeBootstrapper (downloads Python 3.12.7 embeddable, enables site, bootstraps pip, installs pocket-tts>=2.0,<3, persists state across restarts), real BootstrapDialog with progress + cancel + retry, EntryPoint DI swap (StubTtsEngine gated behind UTTERHEIM_USE_STUB_ENGINE=1), SpeakServer /status reports sidecar state. Build clean (0/0). User-verifiable acceptance criteria pending first run with real download (~700 MB).
 **Commit:** 061c51b
 **Files changed:** 9
 **ADRs written:** none
@@ -1109,7 +1109,7 @@ todo/, doing/, and backlog/ are all empty. Mockingbird's foundation phase is com
 **Commits:** 11 (1 bootstrap + 8 ADR commits + 1 walking-skeleton + 1 styleguide)
 **New backlog items:** main-011 (real pocket-tts engine bootstrap), main-012 (logo rasterisation)
 
-All 8 foundation ADRs committed; walking skeleton builds clean and smoke-tested live (HTTP + queue + audio + hotkey end-to-end with stubbed engine); styleguide artefact produced and awaiting user sign-off. Mockingbird is ready for the user to (a) sign off on docs/styleguide.md, (b) decide when main-011 (real engine) and main-012 (final logo raster) move from backlog to todo via /agenthoff:model.
+All 8 foundation ADRs committed; walking skeleton builds clean and smoke-tested live (HTTP + queue + audio + hotkey end-to-end with stubbed engine); styleguide artefact produced and awaiting user sign-off. Utterheim is ready for the user to (a) sign off on docs/styleguide.md, (b) decide when main-011 (real engine) and main-012 (final logo raster) move from backlog to todo via /agentheim:model.
 
 ---
 
@@ -1117,7 +1117,7 @@ All 8 foundation ADRs committed; walking skeleton builds clean and smoke-tested 
 
 **Type:** Work / Task completion
 **Task:** main-010 - Styleguide — adapt WhisperHeim's design language and the speaking-person logo
-**Summary:** Produced docs/styleguide.md (inherited-from-WhisperHeim section + explicit divergences + reusable component map + sign-off placeholder), placeholder speaking-person SVG at assets/branding/mockingbird-logo.svg (clearly marked PLACEHOLDER), MainWindow.xaml updated to render the silhouette inline + show "Local voices for Claude Code" tagline. Build remains clean. **GATE STATE: artefact ready, awaiting user sign-off before any frontend feature task can be promoted.**
+**Summary:** Produced docs/styleguide.md (inherited-from-WhisperHeim section + explicit divergences + reusable component map + sign-off placeholder), placeholder speaking-person SVG at assets/branding/utterheim-logo.svg (clearly marked PLACEHOLDER), MainWindow.xaml updated to render the silhouette inline + show "Local voices for Claude Code" tagline. Build remains clean. **GATE STATE: artefact ready, awaiting user sign-off before any frontend feature task can be promoted.**
 **Commit:** 44ce127
 **Files changed:** 5
 **ADRs written:** none
@@ -1137,7 +1137,7 @@ All 8 foundation ADRs committed; walking skeleton builds clean and smoke-tested 
 
 **Type:** Work / Task completion
 **Task:** main-009 - Walking skeleton — Claude hook → HTTP → sidecar → audio out
-**Summary:** Walking skeleton stands up end-to-end on .NET 9 / WPF / x64: WPF-UI Mica tray window with show/stop/exit menu, Kestrel minimal API on 127.0.0.1:7223 (POST /speak, /stop, GET /voices, /status), Channel<T>-based SpeakQueue with stop-and-drain semantics, NAudio playback, low-level keyboard hook for double-tap LCtrl, ADR-0005 path layout, Serilog rolling file sink, single-file mockingbird-speak CLI wrapper, and copy-and-modify provenance headers from WhisperHeim @ 911bff0. The TTS engine is stubbed (440 Hz test tone via StubTtsEngine behind ITtsEngine) — real pocket-tts sidecar bootstrap captured as main-011 in backlog. Build clean, smoke test passed.
+**Summary:** Walking skeleton stands up end-to-end on .NET 9 / WPF / x64: WPF-UI Mica tray window with show/stop/exit menu, Kestrel minimal API on 127.0.0.1:7223 (POST /speak, /stop, GET /voices, /status), Channel<T>-based SpeakQueue with stop-and-drain semantics, NAudio playback, low-level keyboard hook for double-tap LCtrl, ADR-0005 path layout, Serilog rolling file sink, single-file utterheim-speak CLI wrapper, and copy-and-modify provenance headers from WhisperHeim @ 911bff0. The TTS engine is stubbed (440 Hz test tone via StubTtsEngine behind ITtsEngine) — real pocket-tts sidecar bootstrap captured as main-011 in backlog. Build clean, smoke test passed.
 **Commit:** 4becb42
 **Files changed:** 26 (plus moved task file + leftover todo/ deletions cleanup)
 **ADRs written:** none (skeleton materialises ADRs 0001–0008 as code)
@@ -1237,7 +1237,7 @@ All 8 foundation ADRs committed; walking skeleton builds clean and smoke-tested 
 
 **Type:** Work / Task completion
 **Task:** main-003 - Expose the speak endpoint over loopback HTTP (JSON)
-**Summary:** Recorded ADR 0003 selecting loopback HTTP/JSON on 127.0.0.1:7223 as the speak endpoint transport, with a mockingbird-speak CLI wrapper for hook ergonomics. No code written; main-009 is now unblocked on this dimension.
+**Summary:** Recorded ADR 0003 selecting loopback HTTP/JSON on 127.0.0.1:7223 as the speak endpoint transport, with a utterheim-speak CLI wrapper for hook ergonomics. No code written; main-009 is now unblocked on this dimension.
 **Commit:** b8d1fcc
 **Files changed:** 1
 **ADRs written:** 0003-claude-transport-http.md
@@ -1274,13 +1274,13 @@ All 8 foundation ADRs committed; walking skeleton builds clean and smoke-tested 
 
 ---
 
-## 2026-05-01 -- Brainstorm: Mockingbird vision + foundation
+## 2026-05-01 -- Brainstorm: Utterheim vision + foundation
 
 **Type:** Brainstorm
 **Outcome:** vision created
-**BCs identified:** main (single bounded context — see `.agenthoff/context-map.md` for why five candidate BCs collapse into one)
-**Summary:** Mockingbird is a local-first Windows 11 tray app that gives Claude Code a voice across multiple parallel terminals. Single user, single primary consumer (Claude Code), CPU-only English TTS via Kyutai's `pocket-tts` (sample-based voice cloning, ~200ms first-chunk latency). Inherits WhisperHeim's UI tech (.NET 9 / WPF / WPF-UI / Mica) and audio-capture infrastructure via copy-and-modify. Replaces the TTS page that was previously planned for WhisperHeim — TTS gets pulled out into its own focused app. Voice diversity is the core feature (different voice per Claude session = audible session disambiguation). Concurrency = FIFO queue. Stop = double-tap LCtrl, drains queue by default.
-**Research conducted:** Kyutai pocket-tts capabilities and Windows-readiness — report at `.agenthoff/knowledge/research/kyutai-tts-2026-05-01.md`. Confirmed pocket-tts is real, MIT/CC-BY-4.0, CPU-only, English-only at v1, native streaming. User accepted English-only constraint.
+**BCs identified:** main (single bounded context — see `.agentheim/context-map.md` for why five candidate BCs collapse into one)
+**Summary:** Utterheim is a local-first Windows 11 tray app that gives Claude Code a voice across multiple parallel terminals. Single user, single primary consumer (Claude Code), CPU-only English TTS via Kyutai's `pocket-tts` (sample-based voice cloning, ~200ms first-chunk latency). Inherits WhisperHeim's UI tech (.NET 9 / WPF / WPF-UI / Mica) and audio-capture infrastructure via copy-and-modify. Replaces the TTS page that was previously planned for WhisperHeim — TTS gets pulled out into its own focused app. Voice diversity is the core feature (different voice per Claude session = audible session disambiguation). Concurrency = FIFO queue. Stop = double-tap LCtrl, drains queue by default.
+**Research conducted:** Kyutai pocket-tts capabilities and Windows-readiness — report at `.agentheim/knowledge/research/kyutai-tts-2026-05-01.md`. Confirmed pocket-tts is real, MIT/CC-BY-4.0, CPU-only, English-only at v1, native streaming. User accepted English-only constraint.
 **Strategic decision:** Single BC at `contexts/main/`. Five candidate BCs (synthesis, voice-library, voice-capture, claude-bridge, tray-ui) collapsed because language, lifecycle, actors, and invariants don't diverge enough to justify split for a one-developer personal tool. Reasoning preserved in `context-map.md`.
 **Architecture pass:** Architect surfaced 8 foundation decisions; ADR drafts produced and embedded in decision-task Notes.
 **ADRs written:** none yet — they flow through `type: decision` tasks and will be committed by the worker as it claims each. Drafts ready as ADR 0001–0008.

@@ -1,8 +1,8 @@
-# Mockingbird
+# Utterheim
 
 Local-first Windows TTS tray app that gives Claude Code a voice. Sister project
-to [WhisperHeim](../../tooling/WhisperHeim/). See `.agenthoff/vision.md` for the
-project's purpose and `.agenthoff/contexts/main/README.md` for the bounded
+to [WhisperHeim](../../tooling/WhisperHeim/). See `.agentheim/vision.md` for the
+project's purpose and `.agentheim/contexts/main/README.md` for the bounded
 context.
 
 ## Status
@@ -16,19 +16,19 @@ sidecar is tracked as **main-011**.
 ## Build
 
 ```powershell
-dotnet build mockingbird.sln -c Debug -v minimal
+dotnet build utterheim.sln -c Debug -v minimal
 ```
 
 To run the tray app:
 
 ```powershell
-dotnet run --project src\Mockingbird\Mockingbird.csproj
+dotnet run --project src\Utterheim\Utterheim.csproj
 ```
 
 To publish a single-file CLI:
 
 ```powershell
-dotnet publish src\Mockingbird.Cli\Mockingbird.Cli.csproj -c Release -r win-x64
+dotnet publish src\Utterheim.Cli\Utterheim.Cli.csproj -c Release -r win-x64
 ```
 
 ## Try it
@@ -39,7 +39,7 @@ With the tray app running:
 # Plays a 1-second 440 Hz test tone through the default output device.
 curl -X POST http://127.0.0.1:7223/speak `
      -H "Content-Type: application/json" `
-     -d '{"text":"Hello, this is mockingbird.","voice":"test-voice"}'
+     -d '{"text":"Hello, this is utterheim.","voice":"test-voice"}'
 
 # Stop everything.
 curl -X POST http://127.0.0.1:7223/stop
@@ -48,16 +48,30 @@ curl -X POST http://127.0.0.1:7223/stop
 curl http://127.0.0.1:7223/voices
 
 # Or via the CLI wrapper:
-mockingbird-speak --voice test-voice "task done"
+utterheim-speak --voice test-voice "task done"
 ```
 
 The global stop hotkey is **double-tap Right Ctrl** (within 400 ms).
+
+## Claude Code plugin
+
+To have Claude Code speak its end-of-turn summaries and attention prompts through
+Utterheim, install the bundled `utterheim-narrator` plugin. From inside Claude
+Code, in the project where you want the plugin:
+
+```
+/plugin marketplace add <path-to-utterheim-repo>/claude-code-plugin
+/plugin install utterheim-narrator@utterheim-narrator
+```
+
+See [`claude-code-plugin/README.md`](claude-code-plugin/README.md) for per-repo
+voice selection (`/narrator`), muting, and updates.
 
 ## Layout
 
 ```
 src\
-  Mockingbird\          WPF tray app (the host)
+  Utterheim\          WPF tray app (the host)
     Services\
       Tts\              ITtsEngine + StubTtsEngine (real engine: main-011)
       Speak\            SpeakRequest, SpeakQueue (Channel<T>), AudioPlayer (NAudio)
@@ -66,7 +80,7 @@ src\
       Settings\         DataPathService (path layout per ADR 0005)
     Views\              MainWindow + BootstrapDialog (Wpf.Ui Mica skeleton)
     EntryPoint.cs       Composition root
-  Mockingbird.Cli\      mockingbird-speak — single-file CLI wrapper
+  Utterheim.Cli\      utterheim-speak — single-file CLI wrapper
 ```
 
-Architecture decisions live in `.agenthoff/knowledge/decisions/0001..0008-*.md`.
+Architecture decisions live in `.agentheim/knowledge/decisions/0001..0008-*.md`.

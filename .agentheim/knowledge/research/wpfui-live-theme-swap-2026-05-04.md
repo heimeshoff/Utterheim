@@ -5,7 +5,7 @@ For: main-029 refinement (open question Q1 — appearance picker live-swap mecha
 
 ## Question
 
-Mockingbird's Settings page (post main-029) needs a Light / Dark / System
+Utterheim's Settings page (post main-029) needs a Light / Dark / System
 appearance picker that swaps the active theme **at runtime** without an
 app restart. What is the canonical wpfui (lepoco/wpfui) API for that, and
 does WhisperHeim demonstrate it from a `Wpf.Ui` shell?
@@ -25,7 +25,7 @@ ApplicationThemeManager.Apply(ApplicationTheme.Dark);
 ApplicationThemeManager.ApplySystemTheme();
 ```
 
-This is the current entry point in wpfui ≥ 3.0 (the version Mockingbird
+This is the current entry point in wpfui ≥ 3.0 (the version Utterheim
 already pulls in via the `ui:ThemesDictionary` / `ui:ControlsDictionary`
 merged dictionaries in `App.xaml`). Older `Wpf.Ui.Appearance.Theme.Apply`
 and `ThemeManager.Apply` paths are deprecated.
@@ -60,10 +60,10 @@ WhisperHeim persists the choice as the **string** `"Light" | "Dark" |
 `RefreshFromSettings → HighlightActiveTheme`. There is no startup
 re-application path inside the page itself — WhisperHeim's app-startup
 shell calls `ApplicationThemeManager.Apply(...)` once before the main
-window shows, using the persisted string. (Mockingbird's `EntryPoint`
+window shows, using the persisted string. (Utterheim's `EntryPoint`
 will need the equivalent — see main-029 Acceptance criteria.)
 
-## Decision for Mockingbird
+## Decision for Utterheim
 
 - **Picker mechanism**: identical to WhisperHeim — three tiles with
   click handlers calling `ApplicationThemeManager.Apply` /

@@ -17,3 +17,5 @@ Thumbs.db
 .DS_Store
 *.pdb
 dist
+
+.fake

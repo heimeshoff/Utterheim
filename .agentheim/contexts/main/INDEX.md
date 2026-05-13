@@ -1,0 +1,96 @@
+﻿# main -- Index
+
+Catalog of everything in this bounded context: tasks by status, ADRs scoped to this BC,
+research touching this BC, and concept synthesis pages.
+
+> Updated by: `model` (tasks), `work` (BC-scoped ADRs, concept page links), `research` (BC-scoped reports).
+
+---
+
+## Tasks by status
+
+<!-- task-counts:start -->
+- **Backlog:** 0
+- **Todo:** 0
+- **Doing:** 0
+- **Done:** 34
+<!-- task-counts:end -->
+
+### Todo
+<!-- todo-list:start -->
+<!-- no tasks in todo -->
+<!-- todo-list:end -->
+
+### Doing
+<!-- doing-list:start -->
+<!-- no tasks in doing -->
+<!-- doing-list:end -->
+
+### Done (most recent first; older entries kept for prior-art search)
+<!-- done-list:start -->
+- **main-030** -- Speak page hero + button row above text; Voices clone card above list -- 2026-05-05 -- `done/main-030-speak-voices-layout.md`
+- **main-029** -- Adopt WhisperHeim styling wholesale — Light theme, brand palette, card spec, Appearance picker -- 2026-05-05 -- `done/main-029-whisperheim-styling-adoption.md`
+- **main-028** -- Logo redesign — voice human-head mark -- 2026-05-05 -- `done/main-028-logo-waveform-tail.md`
+- **main-031** -- Editable data path with folder-picker dialog -- 2026-05-05 -- `done/main-031-data-path-folder-picker.md`
+- **main-034** -- Rainbow Passage prompt for microphone voice cloning -- 2026-05-05 -- `done/main-034-rainbow-passage-prompt.md`
+- **main-033** -- Design corrections — menu font/logo, voices order, settings layout, right-Ctrl hotkey, error strings -- 2026-05-05 -- `done/main-033-design-corrections-menu-voices-settings.md`
+- **main-032** -- Relocate engine diagnostics; redesign About to match WhisperHeim -- 2026-05-05 -- `done/main-032-about-relocate-engine-status.md`
+- **main-023** -- Diagnose first-chunk latency on long input (~9s for 200-word paragraph) -- 2026-05-04 -- `done/main-023-first-chunk-latency-on-long-input.md`
+- **main-017** -- About page — logo, tagline, version, engine status, retry -- 2026-05-04 -- `done/main-017-about-page.md`
+- **main-016** -- Settings page — output device, default voice, startup, read-only diagnostics -- 2026-05-04 -- `done/main-016-settings-page.md`
+- **main-024** -- Implement first-chunk latency fix to meet ≤2s budget -- 2026-05-04 -- `done/main-024-implement-first-chunk-latency-fix.md`
+- **main-027** -- Bootstrapper — self-heal stale or partially-installed utterheim_sidecar -- 2026-05-04 -- `done/main-027-bootstrapper-self-heal.md`
+- **main-026** -- Voices page — per-row delete affordance for cloned voices -- 2026-05-04 -- `done/main-026-voices-delete-affordance.md`
+- **main-025** -- Voice cloning UI — recording controls + source toggle on the Voices page -- 2026-05-04 -- `done/main-025-voice-cloning-ui.md`
+- **main-015** -- Voice cloning backend — VoiceLibraryService + sidecar /export-voice -- 2026-05-04 -- `done/main-015-voice-cloning.md`
+- **main-013** -- Speak page — primary daily-use UI -- 2026-05-04 -- `done/main-013-speak-page.md`
+- **main-014** -- Voices page — voice library list with preview -- 2026-05-04 -- `done/main-014-voices-page.md`
+- **main-021** -- Bootstrap skips pocket-tts install when state file outlives runtime; smoke-test stderr is invisible -- 2026-05-03 -- `done/main-021-bootstrap-skips-pocket-tts-install.md`
+- **main-022** -- Tray Exit leaves the python.exe sidecar alive as a zombie -- 2026-05-03 -- `done/main-022-tray-exit-leaves-zombie-python.md`
+- **main-019** -- Claude Code hook sample — make the speak endpoint actually used -- 2026-05-03 -- `done/main-019-claude-hook-sample.md`
+- **main-018** -- Clean-machine first-run verification of main-011 -- 2026-05-03 -- `done/main-018-first-run-verification.md`
+- **main-020** -- Navigation shell — wpfui NavigationView with four-page skeleton -- 2026-05-02 -- `done/main-020-navigation-shell.md`
+- **main-004** -- Stop signal drains the queue by default (configurable) -- 2026-05-01 -- `done/main-004-stop-signal-semantics.md`
+- **main-005** -- Voice profiles as folder-per-voice + library.json index -- 2026-05-01 -- `done/main-005-persistence-layout.md`
+- **main-006** -- Reuse WhisperHeim infrastructure via copy-and-modify in v1 -- 2026-05-01 -- `done/main-006-whisperheim-reuse-form.md`
+- **main-001** -- Confirm and document the .NET 9 / WPF / WPF-UI / Win x64 stack -- 2026-05-01 -- `done/main-001-stack-confirmation.md`
+- **main-002** -- Run pocket-tts as a managed Python sidecar over loopback HTTP -- 2026-05-01 -- `done/main-002-pocket-tts-integration.md`
+- **main-003** -- Expose the speak endpoint over loopback HTTP (JSON) -- 2026-05-01 -- `done/main-003-claude-transport.md`
+- **main-010** -- Styleguide — adapt WhisperHeim's design language and the speaking-person logo -- 2026-05-01 -- `done/main-010-styleguide.md`
+- **main-011** -- Real pocket-tts engine — Python sidecar bootstrap and PocketTtsEngine -- 2026-05-01 -- `done/main-011-pocket-tts-real-bootstrap.md`
+- **main-012** -- Rasterise the speaking-person logo to PNG sizes + .ico for tray -- 2026-05-01 -- `done/main-012-logo-rasterisation.md`
+- **main-007** -- Speak queue lives in the C# host as a Channel<T> -- 2026-05-01 -- `done/main-007-queue-mechanism.md`
+- **main-008** -- Cross-cutting — Serilog, fail-loud-to-tray, model bootstrap, zip distribution -- 2026-05-01 -- `done/main-008-cross-cutting-concerns.md`
+- **main-009** -- Walking skeleton — Claude hook → HTTP → sidecar → audio out -- 2026-05-01 -- `done/main-009-walking-skeleton.md`
+<!-- done-list:end -->
+
+### Backlog
+<!-- backlog-list:start -->
+<!-- no tasks in backlog -->
+<!-- backlog-list:end -->
+
+## ADRs scoped to this BC
+
+<!-- adr-local:start -->
+- **0009** -- Page navigation via wpfui NavigationView with INavigableView pages -- 2026-05-01 -- `../../knowledge/decisions/0009-navigation-shell-wpfui.md`
+- **0010** -- MVVM via CommunityToolkit.Mvvm source generators -- 2026-05-01 -- `../../knowledge/decisions/0010-mvvm-via-inotifypropertychanged.md`
+- **0011** -- Bootstrap state — on-disk presence is authoritative, JSON flags are advisory -- 2026-05-03 -- `../../knowledge/decisions/0011-bootstrap-state-reconciliation.md`
+- **0012** -- Bind the python sidecar to a Win32 Job Object with KILL_ON_JOB_CLOSE -- 2026-05-03 -- `../../knowledge/decisions/0012-sidecar-jobobject-kill-on-close.md`
+- **0022** -- Stop hotkey watches Right Ctrl (double-tap), not Left Ctrl -- 2026-05-05 -- `../../knowledge/decisions/0022-stop-hotkey-double-tap-right-ctrl.md`
+<!-- adr-local:end -->
+
+## Research touching this BC
+
+<!-- research-local:start -->
+<!-- no research touching this BC -->
+<!-- research-local:end -->
+
+## Concepts (opt-in synthesis pages)
+
+<!-- concepts:start -->
+<!-- no concept pages yet -->
+<!-- concepts:end -->
+
+## Pointers
+
+- BC README (ubiquitous language, invariants): `README.md`

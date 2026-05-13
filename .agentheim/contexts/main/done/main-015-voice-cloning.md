@@ -16,7 +16,7 @@ tags: [backend, core, voice-library, sidecar]
 
 Voice cloning is the **core differentiator** identified in the vision —
 "own-your-voices", routing different voices to different Claude sessions.
-Without it, mockingbird is a local TTS player with eight fixed built-ins;
+Without it, utterheim is a local TTS player with eight fixed built-ins;
 with it, the entire thesis of the app holds.
 
 This task delivers the **backend half** of cloning: the `VoiceLibraryService`
@@ -36,14 +36,14 @@ non-empty.
 
 Three concrete changes, in landing order:
 
-1. **Sidecar `POST /export-voice` endpoint** behind a mockingbird-owned
+1. **Sidecar `POST /export-voice` endpoint** behind a utterheim-owned
    Python entrypoint (ADR 0015 — see below). Accepts a multipart-uploaded
    WAV, calls `tts_model.get_state_for_audio_prompt(path, truncate=True)`
    on the resident model, then `export_model_state(state, path)` to a
    server-side temp file, and streams the resulting `.safetensors` bytes
    back as the response body.
 2. **`VoiceLibraryService`** — new singleton at
-   `src\Mockingbird\Services\Voices\VoiceLibraryService.cs`. Owns the
+   `src\Utterheim\Services\Voices\VoiceLibraryService.cs`. Owns the
    on-disk voice library per ADR 0005's layout
    (`<dataPath>\voices\<id>\{profile.safetensors,meta.json,sample.wav?}`
    plus `<dataPath>\voices\library.json`). Writes via temp+rename. Fires
@@ -59,12 +59,12 @@ Three concrete changes, in landing order:
    form field on `/tts` *or* (ii) a small `import_model_state` inside the
    sidecar — see "Engine resolution" below).
 
-### ADR 0015 — Mockingbird-owned Python sidecar wrapper
+### ADR 0015 — Utterheim-owned Python sidecar wrapper
 
 **Status: drafted in this refinement; status `proposed`. Worker accepts
 or amends as the implementation lands.**
 
-Path: `.agenthoff/knowledge/decisions/0015-mockingbird-sidecar-wrapper.md`.
+Path: `.agentheim/knowledge/decisions/0015-utterheim-sidecar-wrapper.md`.
 
 **Context.** ADR 0002 picked option (a) — pocket-tts as a managed Python
 sidecar — and treated pocket-tts as an opaque external dependency
@@ -72,11 +72,11 @@ sidecar — and treated pocket-tts as an opaque external dependency
 needs an `/export-voice` endpoint that reuses the *resident* TTSModel
 (loading a fresh model per clone takes ~10–30 s — unusable). The
 endpoint does not exist in `pocket_tts/main.py` (verified by reading
-`%LOCALAPPDATA%\Mockingbird\runtime\python\Lib\site-packages\pocket_tts\main.py`
+`%LOCALAPPDATA%\Utterheim\runtime\python\Lib\site-packages\pocket_tts\main.py`
 during refinement: only `/`, `/health`, `/tts` are mounted).
 
-**Decision.** Ship a small mockingbird-owned Python shim at
-`runtime\python\Lib\site-packages\mockingbird_sidecar\__init__.py` (or
+**Decision.** Ship a small utterheim-owned Python shim at
+`runtime\python\Lib\site-packages\utterheim_sidecar\__init__.py` (or
 equivalent) that:
 
 1. Imports pocket_tts's FastAPI app: `from pocket_tts.main import web_app, tts_model`.
@@ -93,10 +93,10 @@ equivalent) that:
      server-side without paying audio-prompt encoding on every speak
      request.
 3. Re-exports a `serve` typer command that mirrors pocket_tts's own,
-   loading the model and starting uvicorn on `mockingbird_sidecar.main:web_app`.
+   loading the model and starting uvicorn on `utterheim_sidecar.main:web_app`.
 
 The C# `SidecarHost` switches its spawn argument from
-`-m pocket_tts serve` to `-m mockingbird_sidecar serve`. Same port
+`-m pocket_tts serve` to `-m utterheim_sidecar serve`. Same port
 discovery (`Uvicorn running on …` regex) and `/health` polling apply
 unchanged because the wrapper mounts on the same FastAPI app.
 
@@ -108,7 +108,7 @@ unchanged because the wrapper mounts on the same FastAPI app.
   websockets are deferred per ADR 0007.
 - Patching pocket_tts in place — rejected: pocket_tts is a pip dep we
   upgrade with `pip install -U`; patches would be wiped on every
-  bootstrap. The wrapper module is mockingbird-owned, lives outside
+  bootstrap. The wrapper module is utterheim-owned, lives outside
   the pocket_tts package, and survives upgrades.
 - Adding a `voice_state` field to `/tts` directly (so cloned voices
   reuse the existing endpoint) — would also work, but `/tts-with-state`
@@ -121,16 +121,16 @@ unchanged because the wrapper mounts on the same FastAPI app.
   budget is dominated by Mimi encode (~1–2 s for a 5–20 s sample) plus
   HTTP round-trip, not by Python+torch import time.
 - Positive: the wrapper module is a natural place for any future
-  mockingbird-specific endpoints (status enrichment, log endpoints).
+  utterheim-specific endpoints (status enrichment, log endpoints).
 - Negative: a pinned import (`from pocket_tts.main import web_app,
-  tts_model`) couples mockingbird to pocket_tts's internal layout. If
+  tts_model`) couples utterheim to pocket_tts's internal layout. If
   Kyutai refactors `main.py` in pocket-tts 3.x, the wrapper breaks.
   Mitigation: pin pocket-tts version in the bootstrapper
   (`pocket-tts>=2.0,<3` already; tighten to `>=2.0,<2.x+1` if the
   wrapper actually breaks).
 - Negative: bootstrapper now has a second Python install step (copy
   the shim into site-packages, or ship as a sub-package of the
-  mockingbird wheel). Choose whichever the worker finds simpler;
+  utterheim wheel). Choose whichever the worker finds simpler;
   copy-to-site-packages from a bundled file in the install is the
   cheapest in v1.
 
@@ -159,7 +159,7 @@ between requests.
 
 ### `VoiceLibraryService` design
 
-Location: `src\Mockingbird\Services\Voices\VoiceLibraryService.cs`. New
+Location: `src\Utterheim\Services\Voices\VoiceLibraryService.cs`. New
 folder `Voices\` because it logically sits beside `Speak\` (the consumer)
 and `Settings\` (the path provider), not under either. Singleton in DI.
 
@@ -230,7 +230,7 @@ explicitly.**
 
 ### Schema ratification (resolves Q3)
 
-Per-voice `meta.json` (ADR 0005-aligned, with mockingbird additions):
+Per-voice `meta.json` (ADR 0005-aligned, with utterheim additions):
 
 ```json
 {
@@ -354,8 +354,8 @@ emits valid RIFF.
 
 ## Acceptance criteria
 
-- [ ] Sidecar wrapper module `mockingbird_sidecar` is bundled into the
-  bootstrapped Python runtime and exposes `python -m mockingbird_sidecar
+- [ ] Sidecar wrapper module `utterheim_sidecar` is bundled into the
+  bootstrapped Python runtime and exposes `python -m utterheim_sidecar
   serve --host 127.0.0.1 --port 0`. `SidecarHost.cs` switches its
   spawn argument to use it. Existing `/health` and `/tts` keep working
   identically (re-mounted from `pocket_tts.main:web_app`).
@@ -425,7 +425,7 @@ emits valid RIFF.
   `azelma`, case-insensitive). Throws `ValidationException` with a
   human-readable message.
 - [ ] No UI surface in this task. `VoicesPage.xaml` is unchanged from
-  main-014. Build clean: `dotnet build mockingbird.sln -c Debug` →
+  main-014. Build clean: `dotnet build utterheim.sln -c Debug` →
   0 errors, 0 warnings.
 
 ## Notes
@@ -442,7 +442,7 @@ emits valid RIFF.
   C# backend vs WPF cloning UI vs WPF delete UI); separating them
   unblocks parallel work and makes each PR reviewable.
 - **Q2 C# ↔ pocket-tts integration shape** — option (1) chosen, but
-  implemented as a **mockingbird-owned wrapper** (ADR 0015 above),
+  implemented as a **utterheim-owned wrapper** (ADR 0015 above),
   not as a patch to pocket_tts. The wrapper imports
   `pocket_tts.main:web_app` and adds two new routes
   (`/export-voice`, `/tts-with-state`). pocket_tts stays an opaque
@@ -496,7 +496,7 @@ emits valid RIFF.
 
 ### ADRs that govern this task
 
-- **ADR 0015** — `0015-mockingbird-sidecar-wrapper.md` — **drafted as
+- **ADR 0015** — `0015-utterheim-sidecar-wrapper.md` — **drafted as
   part of this refinement; status proposed**, awaiting acceptance
   alongside this task's promotion.
 - **ADR 0002** — pocket-tts as Python sidecar (the dependency this
@@ -515,19 +515,19 @@ emits valid RIFF.
 - `kyutai-tts-2026-05-01.md` — pocket-tts API surface confirmed:
   `export_model_state`, `import_model_state`, `get_state_for_audio_prompt`,
   Mimi codec at 24 kHz, 12.5 Hz frame rate.
-- `%LOCALAPPDATA%\Mockingbird\runtime\python\Lib\site-packages\pocket_tts\main.py`
+- `%LOCALAPPDATA%\Utterheim\runtime\python\Lib\site-packages\pocket_tts\main.py`
   — read during refinement; confirms only `/`, `/health`, `/tts` exist
   in v2.0.0 and that `tts_model` is loaded once at `serve` startup.
-- `src\Mockingbird\Services\Speak\VoiceCatalog.cs` — gains a
+- `src\Utterheim\Services\Speak\VoiceCatalog.cs` — gains a
   `VoiceLibraryService` dependency; `ListAsync` becomes a union.
-- `src\Mockingbird\Services\Tts\PocketTtsEngine.cs` — gains a
+- `src\Utterheim\Services\Tts\PocketTtsEngine.cs` — gains a
   `VoiceLibraryService` dependency; `StreamAsync` branches on
   `IsBuiltIn` to choose `/tts` vs `/tts-with-state`.
-- `src\Mockingbird\Services\Tts\SidecarHost.cs` — switches spawn
-  argument from `pocket_tts serve` to `mockingbird_sidecar serve`.
-- `src\Mockingbird\Services\Settings\DataPathService.cs` —
+- `src\Utterheim\Services\Tts\SidecarHost.cs` — switches spawn
+  argument from `pocket_tts serve` to `utterheim_sidecar serve`.
+- `src\Utterheim\Services\Settings\DataPathService.cs` —
   `VoicesPath` and `VoiceLibraryPath` already exist; no changes.
-- `.agenthoff/knowledge/decisions/0005-voice-persistence-layout.md`
+- `.agentheim/knowledge/decisions/0005-voice-persistence-layout.md`
   — schema sketch ratified above.
 
 ### Out of scope (do not creep)
@@ -550,7 +550,7 @@ emits valid RIFF.
   `--port`, `--language`, `--config`, `--quantize` flags identical
   so `SidecarHost.cs`'s argument string changes from
   `-m pocket_tts serve --host 127.0.0.1 --port 0` to
-  `-m mockingbird_sidecar serve --host 127.0.0.1 --port 0` and
+  `-m utterheim_sidecar serve --host 127.0.0.1 --port 0` and
   nothing else.
 - `export_model_state` writes to a path; the wrapper should write
   to `tempfile.NamedTemporaryFile(suffix=".safetensors")`, then
@@ -590,28 +590,28 @@ ships in this task.
 Voice cloning backend landed end-to-end. No UI in this task per the
 explicit out-of-scope rule; main-025 / main-026 pick up the WPF surface.
 
-Build: `dotnet build mockingbird.sln -c Debug` → 0 errors, 0 warnings.
+Build: `dotnet build utterheim.sln -c Debug` → 0 errors, 0 warnings.
 
 Key files (absolute paths):
 
 - Sidecar wrapper (Python, bundled & copied into runtime by bootstrapper):
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\PythonSidecar\mockingbird_sidecar\__init__.py`
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\PythonSidecar\mockingbird_sidecar\__main__.py`
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\PythonSidecar\mockingbird_sidecar\main.py`
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\PythonSidecar\utterheim_sidecar\__init__.py`
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\PythonSidecar\utterheim_sidecar\__main__.py`
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\PythonSidecar\utterheim_sidecar\main.py`
 - Voice library backend (new `Services\Voices\` folder):
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\Services\Voices\ClonedVoiceMeta.cs`
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\Services\Voices\VoiceLibraryService.cs`
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\Services\Voices\VoiceLibraryStartup.cs`
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\Services\Voices\VoiceCloningClient.cs`
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\Services\Voices\ClonedVoiceMeta.cs`
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\Services\Voices\VoiceLibraryService.cs`
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\Services\Voices\VoiceLibraryStartup.cs`
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\Services\Voices\VoiceCloningClient.cs`
 - Touched existing seams:
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\Services\Speak\VoiceCatalog.cs` (compose engine + library, re-fire VoicesChanged)
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\Services\Tts\PocketTtsEngine.cs` (route built-in vs cloned to /tts vs /tts-with-state)
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\Services\Tts\SidecarHost.cs` (spawn `mockingbird_sidecar serve`)
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\Services\Tts\PythonRuntimeBootstrapper.cs` (copy bundled wrapper into site-packages, sentinel-check on next launch)
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\Mockingbird.csproj` (bundle Python files as Content)
-  - `C:\src\heimeshoff\containers\mockingbird\src\Mockingbird\EntryPoint.cs` (DI registrations + hosted-service for LoadAsync)
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\Services\Speak\VoiceCatalog.cs` (compose engine + library, re-fire VoicesChanged)
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\Services\Tts\PocketTtsEngine.cs` (route built-in vs cloned to /tts vs /tts-with-state)
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\Services\Tts\SidecarHost.cs` (spawn `utterheim_sidecar serve`)
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\Services\Tts\PythonRuntimeBootstrapper.cs` (copy bundled wrapper into site-packages, sentinel-check on next launch)
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\Utterheim.csproj` (bundle Python files as Content)
+  - `C:\src\heimeshoff\containers\utterheim\src\Utterheim\EntryPoint.cs` (DI registrations + hosted-service for LoadAsync)
 - ADR amended with implementation notes:
-  - `C:\src\heimeshoff\containers\mockingbird\.agenthoff\knowledge\decisions\0015-mockingbird-sidecar-wrapper.md`
+  - `C:\src\heimeshoff\containers\utterheim\.agentheim\knowledge\decisions\0015-utterheim-sidecar-wrapper.md`
 
 ### Worker note — deviations from refinement
 
@@ -633,7 +633,7 @@ Two pragmatic adjustments worth recording (full text in ADR 0015's
 ### Verification
 
 - Build clean: 0 errors, 0 warnings.
-- Bundled Python files present in `bin\x64\Debug\net9.0-windows\win-x64\PythonSidecar\mockingbird_sidecar\` after build.
+- Bundled Python files present in `bin\x64\Debug\net9.0-windows\win-x64\PythonSidecar\utterheim_sidecar\` after build.
 - The runtime acceptance criteria that need a live sidecar + model
   (≤2 s first-chunk for cloned voices, end-to-end clone round-trip, curl
   shape of /export-voice / /tts-with-state) are **not interactively

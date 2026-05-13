@@ -1,6 +1,6 @@
 ---
 id: main-027
-title: Bootstrapper — self-heal stale or partially-installed mockingbird_sidecar
+title: Bootstrapper — self-heal stale or partially-installed utterheim_sidecar
 status: done
 type: bug
 context: main
@@ -14,29 +14,29 @@ tags: [bootstrapper, sidecar, python-runtime, robustness]
 
 ## Why
 
-While debugging a Typer regression in `mockingbird_sidecar` (fixed
+While debugging a Typer regression in `utterheim_sidecar` (fixed
 out-of-band 2026-05-04), the recovery plan "delete the broken file
 and let the bootstrapper re-install it on next launch" silently
 failed. Reason: the launch-time gate (`PythonRuntimeBootstrapper.IsBootstrapped`)
-and the install-time guard (`MockingbirdSidecarActuallyInstalled`)
+and the install-time guard (`UtterheimSidecarActuallyInstalled`)
 disagree on which files count as "installed":
 
 - `IsBootstrapped` (consulted by `EntryPoint.cs:195`) only checks
-  `mockingbird_sidecar/__init__.py`.
-- `MockingbirdSidecarActuallyInstalled` (consulted at the start of
+  `utterheim_sidecar/__init__.py`.
+- `UtterheimSidecarActuallyInstalled` (consulted at the start of
   the install step) checks both `__init__.py` and `main.py`.
 
 So a half-installed state (only `__init__.py` present) is
 indistinguishable from "fully installed" from the launch path's
 perspective: `IsBootstrapped` returns true → bootstrap dialog skipped
-→ `BootstrapAsync` never runs → `InstallMockingbirdSidecar` never
+→ `BootstrapAsync` never runs → `InstallUtterheimSidecar` never
 runs → sidecar dies on every spawn with
-`ModuleNotFoundError: No module named 'mockingbird_sidecar.main'` and
+`ModuleNotFoundError: No module named 'utterheim_sidecar.main'` and
 the user sees "Voice engine failed to start" with no path forward
 short of manually deleting the runtime.
 
-Same shape covers a second scenario: a future mockingbird upgrade
-ships a new bundled `mockingbird_sidecar` (e.g. with a new HTTP route
+Same shape covers a second scenario: a future utterheim upgrade
+ships a new bundled `utterheim_sidecar` (e.g. with a new HTTP route
 or a bug fix). The on-disk wrapper from the previous install is
 intact, so `IsBootstrapped` returns true and the install path is
 skipped — the user runs the **stale** wrapper indefinitely. There is
@@ -64,14 +64,14 @@ public bool IsBootstrapped
         return state.RuntimeReady
                && File.Exists(PythonExePath)
                && PocketTtsActuallyInstalled()
-               && MockingbirdSidecarActuallyInstalled()
+               && UtterheimSidecarActuallyInstalled()
                && BundledSidecarMatchesInstalled();   // see (2)
     }
 }
 ```
 
 This collapses three slightly-different file-presence checks (one in
-`IsBootstrapped`, one in `MockingbirdSidecarActuallyInstalled`, one
+`IsBootstrapped`, one in `UtterheimSidecarActuallyInstalled`, one
 in `PocketTtsActuallyInstalled`) into a single source of truth.
 Removing the duplication is itself a small win — the bug only
 existed because the two checks drifted.
@@ -79,12 +79,12 @@ existed because the two checks drifted.
 ### 2. Add version awareness for the bundled wrapper
 
 The wrapper carries `__version__ = "1.0.0"` in
-`mockingbird_sidecar/__init__.py`. Compare the bundled value
-(read from `AppContext.BaseDirectory/PythonSidecar/mockingbird_sidecar/__init__.py`)
+`utterheim_sidecar/__init__.py`. Compare the bundled value
+(read from `AppContext.BaseDirectory/PythonSidecar/utterheim_sidecar/__init__.py`)
 against the installed value (read from
-`<runtime>/Lib/site-packages/mockingbird_sidecar/__init__.py`). If
+`<runtime>/Lib/site-packages/utterheim_sidecar/__init__.py`). If
 they differ, the install is stale → `IsBootstrapped` returns false
-→ bootstrap runs → `InstallMockingbirdSidecar` overwrites with the
+→ bootstrap runs → `InstallUtterheimSidecar` overwrites with the
 bundled bytes (it already passes `overwrite: true` to `File.Copy`).
 
 Implementation sketch:
@@ -94,10 +94,10 @@ private bool BundledSidecarMatchesInstalled()
 {
     var installed = ReadVersion(Path.Combine(
         _paths.PythonRuntimePath, "Lib", "site-packages",
-        "mockingbird_sidecar", "__init__.py"));
+        "utterheim_sidecar", "__init__.py"));
     var bundled = ReadVersion(Path.Combine(
         AppContext.BaseDirectory, "PythonSidecar",
-        "mockingbird_sidecar", "__init__.py"));
+        "utterheim_sidecar", "__init__.py"));
     if (installed is null || bundled is null) return false;
     return string.Equals(installed, bundled, StringComparison.Ordinal);
 }
@@ -122,7 +122,7 @@ private static readonly Regex VersionRegex =
 
 ### 3. Bump the wrapper version with each behavioural change
 
-Bump `mockingbird_sidecar/__init__.py`'s `__version__` whenever
+Bump `utterheim_sidecar/__init__.py`'s `__version__` whenever
 `main.py` (or any other wrapper file) changes. v1 ships at `1.0.0`;
 the typer-callback fix is a behavioural change → bump to `1.0.1`.
 Document the convention near `__version__` so future contributors
@@ -145,27 +145,27 @@ forgotten.
 
 - [ ] `PythonRuntimeBootstrapper.IsBootstrapped` returns false when
   any of: `python.exe`, `pocket_tts/__init__.py`,
-  `mockingbird_sidecar/__init__.py`, or `mockingbird_sidecar/main.py`
+  `utterheim_sidecar/__init__.py`, or `utterheim_sidecar/main.py`
   is missing on disk. Verified by deleting each in turn and
   observing the bootstrap dialog opens on next launch.
 - [ ] `IsBootstrapped` returns false when the bundled wrapper's
   `__version__` differs from the installed wrapper's `__version__`.
   Verified by bumping the bundled `__init__.py` to `1.0.99`, leaving
   the installed copy at `1.0.0`, and observing the bootstrap dialog
-  opens on next launch with progress text "Installing mockingbird
+  opens on next launch with progress text "Installing utterheim
   sidecar wrapper…".
 - [ ] After re-install, `__version__` on disk matches the bundled
   value and the sidecar process spawns successfully (existing main-015
   smoke test passes).
-- [ ] `mockingbird_sidecar/__init__.py` carries an updated
+- [ ] `utterheim_sidecar/__init__.py` carries an updated
   `__version__` (`1.0.1` minimum since the typer-callback fix has
   already shipped) and a one-line comment naming the bump
   convention.
 - [ ] No duplicate file-presence logic remains: `IsBootstrapped`
   delegates to `PocketTtsActuallyInstalled` /
-  `MockingbirdSidecarActuallyInstalled` / `BundledSidecarMatchesInstalled`
+  `UtterheimSidecarActuallyInstalled` / `BundledSidecarMatchesInstalled`
   rather than inlining its own `File.Exists` calls.
-- [ ] Build clean: `dotnet build mockingbird.sln -c Debug` produces
+- [ ] Build clean: `dotnet build utterheim.sln -c Debug` produces
   0 errors, 0 warnings.
 - [ ] BC README's bootstrapper section notes that the wrapper
   version is checked at launch and bumping it forces re-install.
@@ -175,8 +175,8 @@ forgotten.
 ### How this surfaced
 
 2026-05-04, post-main-025: a Typer single-command-mode regression in
-`mockingbird_sidecar/main.py` (introduced by main-015) caused
-`python -m mockingbird_sidecar serve …` to fail with
+`utterheim_sidecar/main.py` (introduced by main-015) caused
+`python -m utterheim_sidecar serve …` to fail with
 `Got unexpected extra argument (serve)`. The fix (no-op `@app.callback()`)
 was applied to the source. The recovery plan — delete the installed
 `main.py` so the bootstrapper re-copies the rebuilt file — failed
@@ -212,14 +212,14 @@ which a non-developer user could not perform.
 ## Outcome
 
 - `PythonRuntimeBootstrapper.IsBootstrapped` now delegates to
-  `PocketTtsActuallyInstalled`, `MockingbirdSidecarActuallyInstalled`,
+  `PocketTtsActuallyInstalled`, `UtterheimSidecarActuallyInstalled`,
   and a new `BundledSidecarMatchesInstalled` — the launch-time gate
   and the install-time guard share the same helpers, eliminating the
   drift that hid the bug.
 - `BundledSidecarMatchesInstalled` reads `__version__` from both the
-  bundled `mockingbird_sidecar/__init__.py` (via the existing
+  bundled `utterheim_sidecar/__init__.py` (via the existing
   `LocateBundledSidecarRoot` helper) and the installed copy under
-  `<runtime>/Lib/site-packages/mockingbird_sidecar/__init__.py`, and
+  `<runtime>/Lib/site-packages/utterheim_sidecar/__init__.py`, and
   compares them ordinally. `ReadVersion` returns null on any
   read / parse failure so "unknown version" forces re-install (logged
   at Warning). `VersionRegex` tolerates single / double quotes and
@@ -232,18 +232,18 @@ which a non-developer user could not perform.
   launch gate (ADR 0016) and naming `main.py` alongside `__init__.py`
   in the on-disk sentinel set.
 - Decision recorded in
-  `.agenthoff/knowledge/decisions/0016-bootstrapper-strict-launch-gate.md`.
+  `.agentheim/knowledge/decisions/0016-bootstrapper-strict-launch-gate.md`.
 
 Key files:
 
-- `src/Mockingbird/Services/Tts/PythonRuntimeBootstrapper.cs` — `IsBootstrapped`,
+- `src/Utterheim/Services/Tts/PythonRuntimeBootstrapper.cs` — `IsBootstrapped`,
   `BundledSidecarMatchesInstalled`, `ReadVersion`, `VersionRegex`.
-- `src/Mockingbird/PythonSidecar/mockingbird_sidecar/__init__.py` —
+- `src/Utterheim/PythonSidecar/utterheim_sidecar/__init__.py` —
   `__version__ = "1.0.1"` plus convention comment.
-- `.agenthoff/contexts/main/README.md` — bootstrapper section.
-- `.agenthoff/knowledge/decisions/0016-bootstrapper-strict-launch-gate.md`.
+- `.agentheim/contexts/main/README.md` — bootstrapper section.
+- `.agentheim/knowledge/decisions/0016-bootstrapper-strict-launch-gate.md`.
 
-Verification: `dotnet build mockingbird.sln -c Debug` → 0 errors,
+Verification: `dotnet build utterheim.sln -c Debug` → 0 errors,
 0 warnings. The "delete-each-sentinel-file-and-relaunch" / "downgrade
 installed `__version__` and relaunch" interactive checks listed in
 the acceptance criteria were not re-run by hand in this pass; the

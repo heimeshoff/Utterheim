@@ -22,7 +22,7 @@ Place the queue in the C# host as `System.Threading.Channels.Channel<SpeakReques
 
 ## Acceptance criteria
 
-- [ ] ADR 0007 committed at `.agenthoff/knowledge/decisions/0007-queue-channel-in-host.md` with `scope: global`.
+- [ ] ADR 0007 committed at `.agentheim/knowledge/decisions/0007-queue-channel-in-host.md` with `scope: global`.
 - [ ] ADR matches the draft in Notes (or carries user amendments).
 - [ ] No code yet — implementation lands in main-009.
 
@@ -73,14 +73,14 @@ The speak queue is a `System.Threading.Channels.Channel<SpeakRequest>` owned by 
 - **Multiple lanes (notification cue lane vs read-aloud lane)** — vision marks this as a "decide after running sessions in anger." Defer to v1.5; the `Channel<T>` design doesn't preclude adding lanes (one channel per priority).
 
 ## References
-- Vision: `.agenthoff/vision.md`
+- Vision: `.agentheim/vision.md`
 - Stop semantics: ADR 0004
 - Sidecar shape: ADR 0002
 ```
 
 ## Outcome
 
-ADR 0007 written at `.agenthoff/knowledge/decisions/0007-queue-channel-in-host.md` per the draft above. Queue placement decision is now locked: C# host owns the FIFO `Channel<SpeakRequest>`, sidecar stays stateless. Implementation deferred to main-009 (which is unblocked by this decision).
+ADR 0007 written at `.agentheim/knowledge/decisions/0007-queue-channel-in-host.md` per the draft above. Queue placement decision is now locked: C# host owns the FIFO `Channel<SpeakRequest>`, sidecar stays stateless. Implementation deferred to main-009 (which is unblocked by this decision).
 
 Key file:
-- `.agenthoff/knowledge/decisions/0007-queue-channel-in-host.md`
+- `.agentheim/knowledge/decisions/0007-queue-channel-in-host.md`

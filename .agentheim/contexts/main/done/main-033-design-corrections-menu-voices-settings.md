@@ -23,8 +23,8 @@ This is one bundled task because the items are small, share the same review pass
 Six corrections, grouped:
 
 ### Branding / chrome
-1. **Sidebar / menu font** — currently doesn't match the WhisperHeim font used in its NavigationView. Adjust the `MainWindow.xaml` `ui:NavigationView` (and the "Mockingbird" wordmark next to the logo) to use the same font WhisperHeim's nav uses. Compare against WhisperHeim's `MainWindow.xaml` and copy the FontFamily / FontWeight / FontSize choices verbatim.
-2. **Sidebar logo** — the image rendered next to the "Mockingbird" wordmark in the navigation header is the old placeholder portrait ("the old black person"). Replace it with the same logo used at the top of the Speak page (the `BrandHeroControl` mark). WhisperHeim does this: same brand mark in the menu header *and* at the top of the dictation page. Mirror that pattern exactly.
+1. **Sidebar / menu font** — currently doesn't match the WhisperHeim font used in its NavigationView. Adjust the `MainWindow.xaml` `ui:NavigationView` (and the "Utterheim" wordmark next to the logo) to use the same font WhisperHeim's nav uses. Compare against WhisperHeim's `MainWindow.xaml` and copy the FontFamily / FontWeight / FontSize choices verbatim.
+2. **Sidebar logo** — the image rendered next to the "Utterheim" wordmark in the navigation header is the old placeholder portrait ("the old black person"). Replace it with the same logo used at the top of the Speak page (the `BrandHeroControl` mark). WhisperHeim does this: same brand mark in the menu header *and* at the top of the dictation page. Mirror that pattern exactly.
 
 ### Voices page
 3. **Section order** — switch the order of the two voice sections so **Cloned voices** appear *above* **Built-in voices**. (Currently built-ins are first.) Cloned voices are the user's own work and the differentiator; they should lead.
@@ -54,8 +54,8 @@ Six corrections, grouped:
 
 ## Acceptance criteria
 
-- [ ] Menu / sidebar uses the same font (family, weight, size) as WhisperHeim's NavigationView; the "Mockingbird" wordmark text matches WhisperHeim's wordmark style.
-- [ ] The image next to the "Mockingbird" wordmark in the sidebar is the same brand mark used at the top of the Speak page — no remnants of the old portrait.
+- [ ] Menu / sidebar uses the same font (family, weight, size) as WhisperHeim's NavigationView; the "Utterheim" wordmark text matches WhisperHeim's wordmark style.
+- [ ] The image next to the "Utterheim" wordmark in the sidebar is the same brand mark used at the top of the Speak page — no remnants of the old portrait.
 - [ ] On the Voices page, the **Cloned voices** section renders above the **Built-in voices** section.
 - [ ] On the Settings page, the **Default voice** and **Output device** cards each render their combobox stacked *below* the label/description, full-width, not beside it.
 - [ ] On the Settings page, the cards appear in this top-to-bottom order: Default voice → Output device → Data path → Appearance → HTTP port → Stop key → Engine status.
@@ -90,8 +90,8 @@ place, not re-tested" per the assume-pass memory note.
 
 ### Branding / chrome
 - `Views/MainWindow.xaml` — sidebar header now renders the Speak page brand
-  mark (`mockingbird-logo-256.png` via `Image`, the same source
-  `BrandHeroControl` uses) beside a 16pt Bold "Mockingbird" wordmark
+  mark (`utterheim-logo-256.png` via `Image`, the same source
+  `BrandHeroControl` uses) beside a 16pt Bold "Utterheim" wordmark
   matching WhisperHeim's `BrandingTitle`. The inline-drawn portrait
   (`Ellipse` + `Path` graphics) is gone. A new `NavItemStyle` resource
   applies WhisperHeim's nav typography (`FontSize=11`, `FontWeight=Medium`)
@@ -140,7 +140,7 @@ place, not re-tested" per the assume-pass memory note.
   About-page authorship lines and are intentionally left alone.
 
 ### Decisions recorded
-- `.agenthoff/knowledge/decisions/0022-stop-hotkey-double-tap-right-ctrl.md`
+- `.agentheim/knowledge/decisions/0022-stop-hotkey-double-tap-right-ctrl.md`
   — explains why the hotkey switched from Left Ctrl to Right Ctrl.
 
 ### Domain memory updates (BC README)

@@ -38,5 +38,5 @@ Implementation: on stop signal, the synthesis engine cancels in-flight generatio
 - **Configurable from day one with no default** — rejected; chose a clear default to avoid analysis paralysis at v1.
 
 ## References
-- Vision: `.agenthoff/vision.md` (open questions section)
-- BC README: `.agenthoff/contexts/main/README.md`
+- Vision: `.agentheim/vision.md` (open questions section)
+- BC README: `.agentheim/contexts/main/README.md`

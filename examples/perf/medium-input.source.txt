@@ -1,1 +1,1 @@
-Source: .agenthoff/vision.md sections "Purpose" (full) + first paragraph of "The problem" (lightly adapted to drop em-dashes and special punctuation that confuse pocket-tts sentencepiece tokenization). Approx. 187 words.
+Source: .agentheim/vision.md sections "Purpose" (full) + first paragraph of "The problem" (lightly adapted to drop em-dashes and special punctuation that confuse pocket-tts sentencepiece tokenization). Approx. 187 words.

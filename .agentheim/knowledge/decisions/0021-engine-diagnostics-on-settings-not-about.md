@@ -26,7 +26,7 @@ Two consequences of that placement surfaced over the next handful of tasks:
 2. Users intuit "settings" as where you tweak app behaviour (output device,
    data path, hotkeys) **and** where you investigate behaviour (HTTP port,
    engine state, last error). WhisperHeim's About stays purely identity; its
-   Settings-equivalent owns model-status diagnostics. Mockingbird drifted from
+   Settings-equivalent owns model-status diagnostics. Utterheim drifted from
    that pattern by accident, not by deliberate choice.
 
 main-032 corrects the placement by relocating diagnostics to the bottom of
@@ -93,7 +93,7 @@ section later re-homes.
 
 ### Backward compatibility
 
-None required — Mockingbird is single-user, single-install, no settings
+None required — Utterheim is single-user, single-install, no settings
 schema touched. The user's mental map of "where do I see if the engine is
 healthy?" updates the moment they open Settings → Diagnostics, and the
 persistent footer always shows the engine label so the signal never

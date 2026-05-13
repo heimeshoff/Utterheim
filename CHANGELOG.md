@@ -18,7 +18,7 @@ Per ADR 0006, every WhisperHeim-derived source file carries a
 - `Services/Audio/HighQualityLoopbackService.cs` — adapted from WhisperHeim
   `Services/Audio/HighQualityLoopbackService.cs` @ 911bff0 (main-025).
   `SaveAsVoice` deleted; `Initialize(DataPathService)` and `CustomVoicesDir` static
-  removed (mockingbird only uses the temp WAV path; persistent location belongs to
+  removed (utterheim only uses the temp WAV path; persistent location belongs to
   the voice library).
 - `Services/Audio/AudioDeviceInfo.cs` — adapted from WhisperHeim
   `Services/Audio/AudioDeviceInfo.cs` @ 911bff0 (main-025).

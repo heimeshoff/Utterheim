@@ -14,7 +14,7 @@ related_research: []
 
 ## Context
 
-Mockingbird is the TTS sibling of WhisperHeim and inherits its UI tech and
+Utterheim is the TTS sibling of WhisperHeim and inherits its UI tech and
 design language ("feels like a first-party Windows app — Mica, Fluent, Segoe
 UI Variable"). WhisperHeim already runs on .NET 9 + WPF + WPF-UI 3.x + NAudio,
 x64-only, with server GC and a `net9.0-windows` target. The two apps deploy
@@ -23,7 +23,7 @@ developer maintains both, so onboarding cost and mental-model overlap matter.
 
 ## Decision
 
-Mockingbird uses the same stack as WhisperHeim:
+Utterheim uses the same stack as WhisperHeim:
 
 - `<TargetFramework>net9.0-windows</TargetFramework>`, `<UseWPF>true</UseWPF>`
 - `<Platforms>x64</Platforms>`, `<RuntimeIdentifier>win-x64</RuntimeIdentifier>`
@@ -64,4 +64,4 @@ Mockingbird uses the same stack as WhisperHeim:
 ## References
 
 - WhisperHeim csproj: `C:\src\heimeshoff\tooling\WhisperHeim\src\WhisperHeim\WhisperHeim.csproj`
-- Vision: `.agenthoff/vision.md`
+- Vision: `.agentheim/vision.md`
