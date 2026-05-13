@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 using Utterheim.Services.Audio;
 using Utterheim.Services.Voices;
 
@@ -712,6 +713,21 @@ public sealed partial class VoiceCloningViewModel : ObservableObject
                 ?? throw new InvalidOperationException("No loopback temp WAV path — capture failed?");
             if (!File.Exists(p))
                 throw new FileNotFoundException("Loopback temp WAV is missing.", p);
+
+            // HighQualityLoopbackService writes at the WASAPI native mixer format,
+            // which on Windows is typically 32-bit IEEE float (format code 3) in a
+            // WAVE_FORMAT_EXTENSIBLE wrapper. pocket-tts's audio reader rejects
+            // that with "unknown format 3" — it only accepts PCM int16. Convert
+            // in place so the upload and the persisted library sample are both PCM16.
+            var converted = Path.ChangeExtension(p, ".pcm16.wav");
+            using (var reader = new AudioFileReader(p))
+            {
+                var pcm16 = new SampleToWaveProvider16(reader);
+                WaveFileWriter.CreateWaveFile(converted, pcm16);
+            }
+            try { File.Delete(p); } catch { /* best-effort; we still move the converted file in below */ }
+            File.Move(converted, p);
+
             var bytes = File.ReadAllBytes(p);
             return (p, bytes);
         }

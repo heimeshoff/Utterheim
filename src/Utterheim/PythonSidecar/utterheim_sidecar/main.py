@@ -222,8 +222,16 @@ async def tts_with_state(
         tts_model = _get_resident_tts_model()
         _, import_model_state = _import_state_helpers()
 
+        # pocket-tts 2.x's private `_import_model_state(source, device)` requires
+        # the resident model's torch device as a positional arg (see
+        # pocket_tts/models/tts_model.py: `_import_model_state(source, self.device)`).
+        # If a future pocket-tts release promotes a public `import_model_state`
+        # with a different signature, fall back to the single-arg form.
         try:
-            state = import_model_state(state_path)
+            try:
+                state = import_model_state(state_path, tts_model.device)
+            except TypeError:
+                state = import_model_state(state_path)
         except Exception as exc:
             logger.exception("import_model_state failed")
             raise HTTPException(

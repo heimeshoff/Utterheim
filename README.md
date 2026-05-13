@@ -53,6 +53,34 @@ utterheim-speak --voice test-voice "task done"
 
 The global stop hotkey is **double-tap Right Ctrl** (within 400 ms).
 
+## Voice cloning setup
+
+The eight built-in voices work out of the box, but **voice cloning** needs the
+gated `kyutai/pocket-tts` weights from Hugging Face. Without auth, pocket-tts
+silently falls back to the `kyutai/pocket-tts-without-voice-cloning` weights and
+any clone attempt fails with a misleading "couldn't read the recording" toast.
+
+1. **Accept the gated terms.** Sign in at https://huggingface.co and visit
+   https://huggingface.co/kyutai/pocket-tts — click *Agree and access
+   repository*. This is one-time, per HF account.
+2. **Create a token.** Go to https://huggingface.co/settings/tokens → *New
+   token*. A **Read** token (or fine-grained *Read access to public gated repos
+   you've been granted access to*) is enough. Copy the `hf_…` string — Hugging
+   Face shows it only once.
+3. **Set `HF_TOKEN` as a Windows user environment variable.**
+   - Press <kbd>Win</kbd> and type **Edit environment variables for your
+     account** → open it.
+   - Under *User variables for &lt;you&gt;*, click **New…**.
+   - Variable name: `HF_TOKEN`. Variable value: paste the `hf_…` token.
+   - Click **OK** on every dialog to save.
+4. **Restart Utterheim** (fully exit from the tray, then relaunch). The
+   embedded Python picks up `HF_TOKEN` at process start and downloads the
+   voice-cloning weights on the next model load.
+
+If you already have `huggingface-cli login` configured on this machine, that
+works too — the embedded Python reads the same
+`%USERPROFILE%\.cache\huggingface\token` file.
+
 ## Claude Code plugin
 
 To have Claude Code speak its end-of-turn summaries and attention prompts through
