@@ -67,13 +67,16 @@ if ([string]::IsNullOrWhiteSpace($Endpoint)) {
 
 $url = ($Endpoint.TrimEnd('/')) + '/speak'
 $body = @{ text = $Text; voice = $Voice } | ConvertTo-Json -Compress
+# Send as UTF-8 bytes: Windows PowerShell 5.1's Invoke-WebRequest mangles
+# non-ASCII string bodies (em-dashes, smart quotes), causing HTTP 400.
+$bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($body)
 
 try {
     $response = Invoke-WebRequest `
         -Uri $url `
         -Method Post `
-        -ContentType 'application/json' `
-        -Body $body `
+        -ContentType 'application/json; charset=utf-8' `
+        -Body $bodyBytes `
         -TimeoutSec $TimeoutSec `
         -UseBasicParsing `
         -ErrorAction Stop

@@ -19,3 +19,4 @@ Thumbs.db
 dist
 
 .fake
+.claude/utterheim-voice

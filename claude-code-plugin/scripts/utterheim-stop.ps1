@@ -27,7 +27,7 @@ try {
         exit 0
     }
 
-    $lines = Get-Content -LiteralPath $transcriptPath -ErrorAction SilentlyContinue
+    $lines = Get-Content -LiteralPath $transcriptPath -Encoding UTF8 -ErrorAction SilentlyContinue
     if (-not $lines -or $lines.Count -eq 0) { exit 0 }
 
     $summary = $null
