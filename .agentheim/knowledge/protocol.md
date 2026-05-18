@@ -5,13 +5,43 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 14:00 -- Task bounced: main-040 - Voice library — add language field; populate built-ins including `juergen`
+
+**Type:** Work / Task bounced
+**Task:** main-040 - Voice library — add language field; populate built-ins including `juergen`
+**Reason:** No test project exists in the repo (utterheim.sln has only Utterheim and Utterheim.Cli; no `*Tests*.csproj`, no xUnit/NUnit/MSTest packages). Acceptance criterion 5 mandates unit tests. Recommended fix per worker note: dispatch a preceding tactical task to create `src/Utterheim.Tests/` (xUnit, net9.0-windows, x64). Implementation itself is well-specified — Language enum on ClonedVoiceMeta/ClonedVoiceIndexEntry, AddAsync overload, juergen in BuiltInVoices.
+**Moved to:** backlog
+
+---
+
+## 2026-05-18 14:00 -- Task completed (verification skipped): main-036 - Sidecar preloads English + German concurrently (decision)
+
+**Type:** Work / Task completion
+**Task:** main-036 - Sidecar preloads English + German concurrently (decision)
+**Summary:** ADR 0024 accepted — sidecar preloads a fixed list of languages at startup (v1: English + German), one resident TTSModel per language; rejects reload-on-change and single-default with rationale. Partner decision to ADR 0023.
+**Verification:** SKIPPED — decision-only task; ADR is the only artifact
+**Commit:** <pending>
+**Files changed:** 1
+**Tests added:** 0
+**ADRs written:** 0024-sidecar-multi-language-preload.md
+
+---
+
+## 2026-05-18 13:55 -- Batch started: [main-036, main-040]
+
+**Type:** Work / Batch start
+**Tasks:** main-036 - Sidecar preloads English + German concurrently (decision), main-040 - Voice library — add language field; populate built-ins including `juergen`
+**Parallel:** yes (2 workers)
+
+---
+
 ## 2026-05-18 13:52 -- Task verified and completed: main-043 - Drop dead `TypeError` fallback around `language=` in sidecar
 
 **Type:** Work / Task completion
 **Task:** main-043 - Drop dead `TypeError` fallback around `language=` in sidecar
 **Summary:** Removed the dead `try / except TypeError` fallback around `TTSModel.load_model(language=...)` in the sidecar `serve` command, and tightened the bootstrapper's pocket-tts pin from `>=2.0,<3` to explicit `>=2.0.0,<3` so the `language=` kwarg is contractual.
 **Verification:** PASS (iteration 1)
-**Commit:** <pending>
+**Commit:** 63d0559
 **Files changed:** 2 (worker) + task move
 **Tests added:** 0
 **ADRs written:** none

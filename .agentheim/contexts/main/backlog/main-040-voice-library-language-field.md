@@ -1,7 +1,7 @@
 ---
 id: main-040
 title: Voice library — add language field; populate built-ins including `juergen`
-status: todo
+status: backlog
 type: feature
 context: main
 created: 2026-05-18
@@ -88,3 +88,47 @@ separate.
 
 `prior_art: main-005` is the persistence-layout ADR task; `main-015` is the
 voice-cloning backend task — both touched the same code surface.
+
+## Worker note (2026-05-18, bounced)
+
+This repository has **no test project**. Confirmed by:
+- `utterheim.sln` lists only `src/Utterheim/Utterheim.csproj` and
+  `src/Utterheim.Cli/Utterheim.Cli.csproj`. No `*.Tests.csproj`.
+- Glob across the tree for `**/*Tests*.csproj`, `**/*.Tests.csproj`,
+  `**/*test*.csproj`, `**/xunit*`, plus a content grep for `[Fact]`,
+  `[Test]`, `xunit`, `nunit`, `mstest` over `src/` all return empty.
+- The Utterheim.csproj has no test-framework PackageReferences.
+
+Acceptance criterion 5 ("Unit tests cover: legacy file loads as english;
+new voice persists its language; built-in `juergen` enumerates with
+`german`") is therefore not satisfiable in-place. Per worker rule 8 —
+"no test project" is an explicit bounce condition — this task is being
+moved back to backlog.
+
+**Recommended next step before re-dispatching main-040:** create a
+preceding tactical task (e.g. `main-044 — Add Utterheim.Tests xUnit
+project`) that:
+- Adds `src/Utterheim.Tests/Utterheim.Tests.csproj` (xUnit, targeting
+  `net9.0-windows`, ProjectReference to Utterheim, x64 platform).
+- Wires it into `utterheim.sln`.
+- Includes one trivial smoke test (`Assert.True(true)`) so `dotnet test`
+  runs green from CI on day 1.
+
+Once that project exists, main-040 becomes straightforward and the worker
+can follow the three named test cases under TDD as the task requires.
+
+Alternative (lower-fidelity) path: the user could relax acceptance
+criterion 5 to "manual verification with a hand-edited legacy library.json"
+and waive the unit-test requirement on this task. That would unblock
+main-039/main-041 immediately but leaves the regression risk to a future
+refactor.
+
+Note: the implementation itself is well-specified and small — a Language
+enum (English, German) on `ClonedVoiceMeta` + `ClonedVoiceIndexEntry`,
+defaulting to English in init for legacy-file compat; a Language overload
+on `VoiceLibraryService.AddAsync`; a `juergen` entry in `BuiltInVoices`
+with language=German; and a `Language` field on `VoiceDescriptor`. The
+schema-shape question (ADR 0026 placeholder mentioned by the orchestrator)
+resolves trivially: keep language on the existing per-voice attribute in
+both `library.json` and `meta.json`, mirroring what `Engine` and `Source`
+already do — no new file, no ADR needed.
