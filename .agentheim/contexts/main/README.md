@@ -314,6 +314,12 @@ src\
         __main__.py                   `python -m utterheim_sidecar` entry point
         main.py                       FastAPI route definitions + typer `serve` command
   Utterheim.Cli\                    utterheim-speak — single-file CLI wrapper
+  Utterheim.Tests\                  xUnit test project (main-044) — net9.0-windows
+                                      x64, ProjectReference → Utterheim. Smoke
+                                      `[Fact]` only at infrastructure tier; real
+                                      per-domain tests land starting with main-040.
+                                      Run `dotnet test --configuration Release`
+                                      from the repo root.
 assets\branding\                      brand mark + raster outputs
   utterheim-logo.svg                source artwork — final, signed off 2026-05-05
                                       (main-028 draft 3): filled orange head profile

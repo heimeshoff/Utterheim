@@ -10,14 +10,15 @@ research touching this BC, and concept synthesis pages.
 ## Tasks by status
 
 <!-- task-counts:start -->
-- **Backlog:** 1
-- **Todo:** 4
+- **Backlog:** 0
+- **Todo:** 5
 - **Doing:** 0
-- **Done:** 38
+- **Done:** 39
 <!-- task-counts:end -->
 
 ### Todo
 <!-- todo-list:start -->
+- **main-040** -- Voice library — add language field; populate built-ins including `juergen` -- 2026-05-18 -- `todo/main-040-voice-library-language-field.md`
 - **main-042** -- German reading prompt for the clone-a-new-voice flow -- 2026-05-18 -- `todo/main-042-german-reading-prompt.md`
 - **main-038** -- Listen-test german vs german_24l (spike) -- 2026-05-18 -- `todo/main-038-listen-test-german-vs-24l.md`
 - **main-039** -- Sidecar — load English + German models concurrently and route by voice's language -- 2026-05-18 -- `todo/main-039-sidecar-multi-model-serve.md`
@@ -31,6 +32,7 @@ research touching this BC, and concept synthesis pages.
 
 ### Done (most recent first; older entries kept for prior-art search)
 <!-- done-list:start -->
+- **main-044** -- Add Utterheim.Tests xUnit project — establishes test infrastructure -- 2026-05-18 -- `done/main-044-add-utterheim-tests-project.md`
 - **main-037** -- Production German is distilled `german`, not `german_24l` (decision) -- 2026-05-18 -- `done/main-037-distilled-german-not-24l.md`
 - **main-036** -- Sidecar preloads English + German concurrently (decision) -- 2026-05-18 -- `done/main-036-preload-english-and-german.md`
 - **main-043** -- Drop dead `TypeError` fallback around `language=` in sidecar -- 2026-05-18 -- `done/main-043-drop-dead-typeerror-fallback.md`
@@ -73,7 +75,7 @@ research touching this BC, and concept synthesis pages.
 
 ### Backlog
 <!-- backlog-list:start -->
-- **main-040** -- Voice library — add language field; populate built-ins including `juergen` -- 2026-05-18 (bounced: needs test project) -- `backlog/main-040-voice-library-language-field.md`
+<!-- no tasks in backlog -->
 <!-- backlog-list:end -->
 
 ## ADRs scoped to this BC

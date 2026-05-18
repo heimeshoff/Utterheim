@@ -35,6 +35,7 @@ reports are listed in each BC's `INDEX.md`.
 
 <!-- research-global:start -->
 - **kyutai-tts** -- Kyutai Pocket TTS for a local Windows tray TTS service with sample-based voice cloning -- 2026-05-01 -- `knowledge/research/kyutai-tts-2026-05-01.md`
+- **pocket-tts-german-support** -- Kyutai pocket-tts German language support — model variants, runtime selection, voice cloning, and plugin integration -- 2026-05-18 -- `knowledge/research/pocket-tts-german-support-2026-05-18.md`
 <!-- research-global:end -->
 
 ## Pointers

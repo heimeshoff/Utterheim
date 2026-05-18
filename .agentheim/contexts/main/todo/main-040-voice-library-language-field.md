@@ -1,13 +1,13 @@
 ---
 id: main-040
 title: Voice library — add language field; populate built-ins including `juergen`
-status: backlog
+status: todo
 type: feature
 context: main
 created: 2026-05-18
 completed:
 commit:
-depends_on: [main-035]
+depends_on: [main-035, main-044]
 blocks: [main-039, main-041]
 tags: [multilingual, voice-library, schema, persistence]
 related_adrs: [0005, 0023]
@@ -132,3 +132,14 @@ schema-shape question (ADR 0026 placeholder mentioned by the orchestrator)
 resolves trivially: keep language on the existing per-voice attribute in
 both `library.json` and `meta.json`, mirroring what `Engine` and `Source`
 already do — no new file, no ADR needed.
+
+## Refinement (2026-05-18)
+
+User chose path (a) from the bounce note: precede with a test-project
+task rather than relax AC 5. Captured `main-044 — Add Utterheim.Tests
+xUnit project` (`todo/main-044-add-utterheim-tests-project.md`).
+
+- `depends_on` updated to `[main-035, main-044]`.
+- Re-promote main-040 from backlog to todo once main-044 ships.
+- AC 5 stays as-is — the three named unit tests remain mandatory.
+- Worker note above is kept as historical context.

@@ -5,6 +5,56 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 15:30 -- Task verified and completed: main-044 - Add Utterheim.Tests xUnit project — establishes test infrastructure
+
+**Type:** Work / Task completion
+**Task:** main-044 - Add Utterheim.Tests xUnit project — establishes test infrastructure
+**Summary:** Established `src/Utterheim.Tests/` (xUnit 2.9.2, Microsoft.NET.Test.Sdk 17.12.0, net9.0-windows, x64) wired into utterheim.sln with both Debug|x64 and Release|x64 configurations; one smoke `[Fact]` (`SmokeTest.TestInfrastructureIsWired`) passes under `dotnet test --configuration Release`. Unblocks main-040 and every future task that mandates unit tests.
+**Verification:** PASS (iteration 1) — verifier ran `dotnet test --configuration Release` (1/1 passed) and `dotnet build --configuration Release` (0 warnings, 0 errors); confirmed ADR 0001 compliance (net9.0-windows, Platforms=x64, RuntimeIdentifier=win-x64, Nullable+ImplicitUsings on).
+**Commit:** <pending>
+**Files changed:** 4 (src/Utterheim.Tests/Utterheim.Tests.csproj, src/Utterheim.Tests/SmokeTest.cs, utterheim.sln, .agentheim/contexts/main/README.md)
+**Tests added:** 1
+**ADRs written:** none
+
+---
+
+## 2026-05-18 15:15 -- Batch started: [main-044]
+
+**Type:** Work / Batch start
+**Tasks:** main-044 - Add Utterheim.Tests xUnit project — establishes test infrastructure
+**Parallel:** no (1 worker — only ready task; main-038 needs user listening, main-040/041/039/042 chain-blocked behind main-044)
+
+---
+
+## 2026-05-18 15:00 -- Model / Promoted: main-040 - Voice library — add language field; populate built-ins including `juergen`
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+**Note:** User-overridden early promotion — `depends_on: [main-035 ✅, main-044 ⛔]`. main-044 (test project) is in todo but not yet done, so the work skill will still gate execution. Promotion queues main-040 behind main-044 rather than waiting until 044 ships to re-promote.
+
+---
+
+## 2026-05-18 14:30 -- Model / Captured: main-044 - Add Utterheim.Tests xUnit project — establishes test infrastructure
+
+**Type:** Model / Capture
+**BC:** main
+**Filed to:** todo
+**Summary:** Captured the test-project task surfaced by main-040's bounce. Creates `src/Utterheim.Tests/` (xUnit, net9.0-windows, x64) wired into the solution, plus one smoke `[Fact]`. Deliberately scoped to infrastructure only — main-040 will be the first task to write real tests against the new project. Blocks main-040; unblocks the worker rule 8 trap for every future task that mandates unit tests.
+
+---
+
+## 2026-05-18 14:30 -- Model / Refined: main-040 - Voice library — add language field; populate built-ins including `juergen`
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** backlog
+**Summary:** Decided test-infra path: precede with main-044 (Utterheim.Tests xUnit project) rather than relax AC 5 or fold test-project creation into main-040. main-040's `depends_on` updated from `[main-035]` to `[main-035, main-044]`. Acceptance criteria untouched. Stays in backlog until main-044 ships, then re-promote.
+**Split into:** —
+**ADRs written:** —
+
+---
+
 ## 2026-05-18 14:10 -- Work session ended
 
 **Type:** Work / Session end
