@@ -5,13 +5,26 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 13:52 -- Task verified and completed: main-043 - Drop dead `TypeError` fallback around `language=` in sidecar
+
+**Type:** Work / Task completion
+**Task:** main-043 - Drop dead `TypeError` fallback around `language=` in sidecar
+**Summary:** Removed the dead `try / except TypeError` fallback around `TTSModel.load_model(language=...)` in the sidecar `serve` command, and tightened the bootstrapper's pocket-tts pin from `>=2.0,<3` to explicit `>=2.0.0,<3` so the `language=` kwarg is contractual.
+**Verification:** PASS (iteration 1)
+**Commit:** <pending>
+**Files changed:** 2 (worker) + task move
+**Tests added:** 0
+**ADRs written:** none
+
+---
+
 ## 2026-05-18 13:50 -- Task completed (verification skipped): main-035 - Voice profile carries its language (decision)
 
 **Type:** Work / Task completion
 **Task:** main-035 - Voice profile carries its language (decision)
 **Summary:** ADR 0023 fixes voice-carries-language: each voice profile declares one language, speak HTTP API (`{"text": ..., "voice": ...}`) stays unchanged from ADR 0003, sidecar routes per the named voice's declared language. ADR enumerates all four candidate interfaces with rejection rationale.
 **Verification:** SKIPPED — decision-only task; ADR + moved task file are the only artifacts
-**Commit:** <pending>
+**Commit:** 8809cf1
 **Files changed:** 1 ADR + task file move
 **Tests added:** 0
 **ADRs written:** 0023-voice-carries-language.md

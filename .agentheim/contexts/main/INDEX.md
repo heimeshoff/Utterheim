@@ -12,8 +12,8 @@ research touching this BC, and concept synthesis pages.
 <!-- task-counts:start -->
 - **Backlog:** 0
 - **Todo:** 7
-- **Doing:** 1
-- **Done:** 35
+- **Doing:** 0
+- **Done:** 36
 <!-- task-counts:end -->
 
 ### Todo
@@ -29,11 +29,12 @@ research touching this BC, and concept synthesis pages.
 
 ### Doing
 <!-- doing-list:start -->
-- **main-043** -- Drop dead `TypeError` fallback around `language=` in sidecar -- 2026-05-18 -- `doing/main-043-drop-dead-typeerror-fallback.md`
+<!-- no tasks in doing -->
 <!-- doing-list:end -->
 
 ### Done (most recent first; older entries kept for prior-art search)
 <!-- done-list:start -->
+- **main-043** -- Drop dead `TypeError` fallback around `language=` in sidecar -- 2026-05-18 -- `done/main-043-drop-dead-typeerror-fallback.md`
 - **main-035** -- Voice profile carries its language (decision) -- 2026-05-18 -- `done/main-035-voice-carries-language.md`
 - **main-030** -- Speak page hero + button row above text; Voices clone card above list -- 2026-05-05 -- `done/main-030-speak-voices-layout.md`
 - **main-029** -- Adopt WhisperHeim styling wholesale — Light theme, brand palette, card spec, Appearance picker -- 2026-05-05 -- `done/main-029-whisperheim-styling-adoption.md`

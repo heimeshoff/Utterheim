@@ -308,18 +308,11 @@ def serve(
         load_kwargs["quantize"] = True
 
     logger.info("utterheim_sidecar: loading pocket-tts model %s", load_kwargs or "(defaults)")
-    try:
-        model = TTSModel.load_model(**load_kwargs)
-    except TypeError:
-        # If pocket-tts's load_model doesn't accept one of these kwargs in this
-        # release, fall back to the no-arg form so the sidecar still starts.
-        # The CLI flags become best-effort rather than hard requirements.
-        logger.warning(
-            "TTSModel.load_model(**%s) rejected one or more kwargs; "
-            "falling back to defaults.",
-            load_kwargs,
-        )
-        model = TTSModel.load_model()
+    # `language=` is contractual since pocket-tts 2.0.0 (see PythonRuntimeBootstrapper
+    # pin `pocket-tts>=2.0.0,<3`). Previously this call was wrapped in a
+    # try/except TypeError fallback for pre-2.0 releases; removed in main-043
+    # now that the pin makes the kwarg unconditionally available.
+    model = TTSModel.load_model(**load_kwargs)
 
     # Publish the resident model into pocket_tts.main's namespace so its /tts
     # handler (which reads `tts_model` as a module global) keeps working.

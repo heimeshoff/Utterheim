@@ -32,9 +32,12 @@ public sealed class PythonRuntimeBootstrapper
     private const string GetPipUrl = "https://bootstrap.pypa.io/get-pip.py";
 
     // Pin the pocket-tts version that matches the API surface this engine wraps.
-    // The probe install used 2.0.0; lock to >=2.0,<3 so patch updates are picked up
-    // but a major bump (which could change /tts shape) isn't.
-    private const string PocketTtsSpec = "pocket-tts>=2.0,<3";
+    // The probe install used 2.0.0; lock to >=2.0.0,<3 so patch updates are picked up
+    // but a major bump (which could change /tts shape) isn't. The lower bound is
+    // contractual for the `language=` kwarg (German support landed in 2.0.0,
+    // 2026-04-21) — see main-043 and the dead-fallback removal in
+    // utterheim_sidecar/main.py.
+    private const string PocketTtsSpec = "pocket-tts>=2.0.0,<3";
 
     private readonly DataPathService _paths;
     private readonly ILogger<PythonRuntimeBootstrapper> _logger;
