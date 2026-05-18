@@ -24,8 +24,9 @@ From the vision's seed glossary, plus terms that surfaced during boundary analys
 |---|---|
 | **Voice profile** | A named, persistent representation of a voice that pocket-tts can reuse instantly. `.safetensors` file plus metadata. The unit of voice identity. |
 | **Sample clip** | The 5–20-second audio snippet used to create a voice profile. Source: microphone, WASAPI loopback, or imported file. |
-| **Built-in voice** | A voice profile shipped with pocket-tts (alba, marius, javert, jean, fantine, cosette, eponine, azelma). |
+| **Built-in voice** | A voice profile shipped with pocket-tts (alba, marius, javert, jean, fantine, cosette, eponine, azelma — all English; plus juergen for German, added by main-040). |
 | **Cloned voice** | A user-created voice profile. |
+| **Voice language** | Pocket-tts language attribute every voice profile carries (ADR 0023). v1: `english` or `german`. Drives sidecar `TTSModel` routing — the speak request body stays `{text, voice}`, language is inferred by the sidecar from the voice. Lives on `meta.json` + the `library.json` index row; legacy entries default to `english` per the ADR migration rule. |
 | **Speak request** | An incoming call carrying `{text, voice ID}`. The unit of work the BC queues, synthesizes, and plays. |
 | **Speak queue** | FIFO of pending speak requests. Head plays; tail is appended. Advances on completion or stop. |
 | **Stop signal** | A user action (double-tap RCtrl) that halts current playback. Drain-vs-keep semantics is an open question (see vision). |
@@ -351,11 +352,12 @@ Path layout at runtime (per ADR 0005):
   bootstrap-state.json                  first-run completion marker
   settings.json                         UserSettings — DefaultVoiceId in v1 (main-013)
 <dataPath>\voices\library.json          { schemaVersion: 1, voices: [...] }
-                                        — id/name/engine/source/createdAt per row
-                                        (main-015)
+                                        — id/name/engine/source/language/createdAt
+                                        per row (main-015 + main-040)
 <dataPath>\voices\<id>\                 per cloned voice (main-015)
   profile.safetensors                   exported voice state from /export-voice
   meta.json                             schemaVersion 1 + sampleSeconds + tags
+                                        + language (main-040)
   sample.wav                            optional retained sample
 ```
 
@@ -448,9 +450,11 @@ As of main-011 the **real pocket-tts engine is wired in**:
 - `BootstrapDialog` drives the bootstrapper with per-step progress, cancel, and retry.
 - `StubTtsEngine` is preserved behind `UTTERHEIM_USE_STUB_ENGINE=1` for offline /
   CI testing; the env flag also disables the sidecar and bootstrap-dialog wiring.
-- `GET /voices` returns the union of the eight pocket-tts built-ins (`alba`, `marius`,
-  `javert`, `jean`, `fantine`, `cosette`, `eponine`, `azelma`) with `isBuiltIn: true`
-  plus every cloned voice from `library.json` with `isBuiltIn: false`. The union is
+- `GET /voices` returns the union of the pocket-tts built-ins (`alba`, `marius`,
+  `javert`, `jean`, `fantine`, `cosette`, `eponine`, `azelma` — all English — plus
+  `juergen` for German, added by main-040) with `isBuiltIn: true` and a `language`
+  attribute per ADR 0023, plus every cloned voice from `library.json` with
+  `isBuiltIn: false`. The union is
   composed by `VoiceCatalog` (main-013) which now consumes `VoiceLibraryService`
   (main-015) alongside the engine. Voice cloning UI lands in main-025; the per-row
   delete affordance ships with main-026.
@@ -679,7 +683,8 @@ running (no collapse / expand in v1). Its view-model is
     after that (visible "you have enough sample" cue).
   - Voice name input — `MaxLength=40`, validated on every keystroke
     against the same rules as `VoiceLibraryService.AddAsync` (empty,
-    >40 chars, sanitised collision with one of the eight built-in ids).
+    >40 chars, sanitised collision with one of the built-in ids — the eight
+    English + `juergen` as of main-040).
     Inline error under the input.
   - Start / Stop / Cancel / Save Voice buttons. Cancel is only visible
     while capturing; Save is enabled only when **all four** of (capture
@@ -1037,6 +1042,7 @@ Per-voice `meta.json`:
   "engine": "pocket-tts",
   "pocketTtsVersion": null,
   "source": "Mic",
+  "language": "english",
   "createdAt": "2026-05-04T12:34:56+00:00",
   "sampleSeconds": 12,
   "samplePath": "sample.wav",
@@ -1051,7 +1057,8 @@ Master `library.json`:
   "schemaVersion": 1,
   "voices": [
     { "id": "marco", "name": "Marco", "engine": "pocket-tts",
-      "source": "Mic", "createdAt": "2026-05-04T12:34:56+00:00" }
+      "source": "Mic", "language": "english",
+      "createdAt": "2026-05-04T12:34:56+00:00" }
   ]
 }
 ```
@@ -1061,15 +1068,26 @@ the picker without reading N per-voice files. Full per-voice metadata (sample
 length, source path, tags, pocket-tts version) lives in `meta.json` only;
 catalog consumers that need them can lazy-read on demand.
 
+`language` (added by main-040 per ADR 0023) is a lower-case string from a
+constrained set — `"english"` and `"german"` for v1 (room to add `"french"`,
+`"italian"`, `"spanish"`, `"portuguese"` later once a built-in or clone for
+the language is needed). Backed by the `VoiceLanguage` enum in
+`Services\Voices\ClonedVoiceMeta.cs`. Legacy `meta.json` / `library.json` files
+written before main-040 lack the field; `System.Text.Json` applies the init
+default (`VoiceLanguage.English`) on read, which is also what ADR 0023 says
+the migration default should be — first save after upgrade persists the field.
+No `schemaVersion` bump because the field is additive with a documented default.
+
 ### Naming rules
 
 - **`id`** — lowercase-kebab, `[a-z0-9-]`, 1–40 chars. Generated from the display
   name by lowercasing, mapping whitespace / `_` / `.` to `-`, dropping anything
   else, and trimming leading/trailing dashes. Stable per voice — never renamed.
-- **Built-in collision** — if the generated id matches one of the eight
+- **Built-in collision** — if the generated id matches one of the reserved
   built-ins (`alba`, `marius`, `javert`, `jean`, `fantine`, `cosette`, `eponine`,
-  `azelma`), `AddAsync` throws `VoiceValidationException` with a "pick a
-  different name" message rather than disambiguating. The user explicitly typed
+  `azelma`, plus `juergen` since main-040), `AddAsync` throws
+  `VoiceValidationException` with a "pick a different name" message rather
+  than disambiguating. The user explicitly typed
   "Alba" and we won't silently shadow the built-in.
 - **Cloned-id collision** — if the id collides with another *cloned* voice or an
   on-disk folder (orphan, ID-typo recovery), a 4-hex `Guid.NewGuid()` suffix
@@ -1080,7 +1098,8 @@ catalog consumers that need them can lazy-read on demand.
 ### Engine resolution flow
 
 `PocketTtsEngine.StreamAsync(text, voiceId, ct)` branches on whether `voiceId`
-matches one of the eight reserved built-in ids (case-insensitive set). If yes,
+matches one of the reserved built-in ids (case-insensitive set; the eight
+English voices plus `juergen` as of main-040). If yes,
 the existing `/tts` + `voice_url` path runs unchanged. If no, the engine asks
 `VoiceLibraryService.TryResolveProfilePath(voiceId)`; null → throws
 `InvalidOperationException("Unknown voice id …")` which surfaces through

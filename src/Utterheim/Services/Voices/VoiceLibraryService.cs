@@ -34,13 +34,14 @@ namespace Utterheim.Services.Voices;
 public sealed class VoiceLibraryService
 {
     // Reserved at the id level — case-insensitive match against pocket-tts'
-    // eight built-in voices. A clone with a generated id colliding with one
-    // of these gets a 4-hex suffix; an explicit user attempt to name a voice
-    // "alba" (which sanitises to id "alba") is rejected with
-    // VoiceValidationException.
+    // built-in voices (eight English + `juergen` as of main-040). A clone
+    // with a generated id colliding with one of these gets a 4-hex suffix;
+    // an explicit user attempt to name a voice "alba" (which sanitises to
+    // id "alba") is rejected with VoiceValidationException.
     private static readonly HashSet<string> ReservedBuiltInIds = new(StringComparer.OrdinalIgnoreCase)
     {
         "alba", "marius", "javert", "jean", "fantine", "cosette", "eponine", "azelma",
+        "juergen",
     };
 
     private const int CurrentSchemaVersion = 1;
@@ -216,6 +217,7 @@ public sealed class VoiceLibraryService
                     Name = string.IsNullOrWhiteSpace(meta.Name) ? meta.Id : meta.Name,
                     Engine = string.IsNullOrWhiteSpace(meta.Engine) ? "pocket-tts" : meta.Engine,
                     Source = meta.Source,
+                    Language = meta.Language,
                     CreatedAt = meta.CreatedAt,
                 };
                 _logger.LogInformation(
@@ -254,6 +256,10 @@ public sealed class VoiceLibraryService
     /// Persist a freshly-cloned voice. Per main-015 transaction order:
     /// folder → profile.safetensors → optional sample.wav → meta.json → library.json.
     /// On any step's failure, best-effort delete the per-voice folder and rethrow.
+    /// <paramref name="language"/> records which pocket-tts <c>TTSModel</c> the
+    /// sidecar should route this profile to (ADR 0023). Optional with an
+    /// <see cref="VoiceLanguage.English"/> default so pre-main-040 callers
+    /// keep working until main-041 surfaces the picker.
     /// </summary>
     public async Task<ClonedVoiceMeta> AddAsync(
         string displayName,
@@ -261,7 +267,8 @@ public sealed class VoiceLibraryService
         int sampleSeconds,
         ReadOnlyMemory<byte> profileBytes,
         ReadOnlyMemory<byte>? sampleBytes,
-        CancellationToken ct)
+        CancellationToken ct,
+        VoiceLanguage language = VoiceLanguage.English)
     {
         // 1. Validate display name. Empty/whitespace and oversize are caller bugs;
         //    surface as a 400-shaped exception the UI maps to an inline error.
@@ -347,6 +354,7 @@ public sealed class VoiceLibraryService
                 Name = trimmed,
                 Engine = "pocket-tts",
                 Source = source,
+                Language = language,
                 CreatedAt = DateTimeOffset.UtcNow,
                 SampleSeconds = Math.Max(0, sampleSeconds),
                 SamplePath = samplePathInMeta,
@@ -364,6 +372,7 @@ public sealed class VoiceLibraryService
                 Name = meta.Name,
                 Engine = meta.Engine,
                 Source = meta.Source,
+                Language = meta.Language,
                 CreatedAt = meta.CreatedAt,
             };
             List<ClonedVoiceIndexEntry> snapshot;

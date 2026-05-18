@@ -5,13 +5,35 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 16:10 -- Task verified and completed: main-040 - Voice library — add language field; populate built-ins including `juergen`
+
+**Type:** Work / Task completion
+**Task:** main-040 - Voice library — add language field; populate built-ins including `juergen`
+**Summary:** Voice profiles now carry a `VoiceLanguage` (english | german) on both `meta.json` and the `library.json` index row per ADR 0023; legacy on-disk files default to english on load via `System.Text.Json` init-default; `VoiceLibraryService.AddAsync` gains an optional language parameter and persists it; `PocketTtsEngine`'s built-in list grew `juergen` (German) alongside the eight English Les-Misérables-derived voices. Speak HTTP body unchanged (ADR 0023 constraint honored).
+**Verification:** PASS (iteration 1) — `dotnet test --configuration Release --no-build` → 7/7 pass (6 new facts + 1 smoke); ADR 0005 (folder-per-voice / library.json layout) and ADR 0023 (voice-carries-language / migration rule) both honored; speak path body unchanged.
+**Commit:** <pending>
+**Files changed:** 9 (6 src/Utterheim/Services/* edits, 2 new test files under src/Utterheim.Tests/Voices/, BC README)
+**Tests added:** 6 (4 in VoiceLibraryLanguageTests + 2 in BuiltInVoicesTests)
+**ADRs written:** none
+**Concept candidate (worker-flagged):** voice-language — converging on 5 artifacts (ADR-0023, ADR-0024, ADR-0025, main-035, main-040). Will be surfaced at end-of-session.
+
+---
+
+## 2026-05-18 15:35 -- Batch started: [main-040]
+
+**Type:** Work / Batch start
+**Tasks:** main-040 - Voice library — add language field; populate built-ins including `juergen`
+**Parallel:** no (1 worker — unblocked by main-044; only ready non-spike task. main-038 needs user listening; main-039/041 still chain-blocked behind main-040)
+
+---
+
 ## 2026-05-18 15:30 -- Task verified and completed: main-044 - Add Utterheim.Tests xUnit project — establishes test infrastructure
 
 **Type:** Work / Task completion
 **Task:** main-044 - Add Utterheim.Tests xUnit project — establishes test infrastructure
 **Summary:** Established `src/Utterheim.Tests/` (xUnit 2.9.2, Microsoft.NET.Test.Sdk 17.12.0, net9.0-windows, x64) wired into utterheim.sln with both Debug|x64 and Release|x64 configurations; one smoke `[Fact]` (`SmokeTest.TestInfrastructureIsWired`) passes under `dotnet test --configuration Release`. Unblocks main-040 and every future task that mandates unit tests.
 **Verification:** PASS (iteration 1) — verifier ran `dotnet test --configuration Release` (1/1 passed) and `dotnet build --configuration Release` (0 warnings, 0 errors); confirmed ADR 0001 compliance (net9.0-windows, Platforms=x64, RuntimeIdentifier=win-x64, Nullable+ImplicitUsings on).
-**Commit:** <pending>
+**Commit:** 110777d
 **Files changed:** 4 (src/Utterheim.Tests/Utterheim.Tests.csproj, src/Utterheim.Tests/SmokeTest.cs, utterheim.sln, .agentheim/contexts/main/README.md)
 **Tests added:** 1
 **ADRs written:** none

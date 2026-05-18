@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
+using Utterheim.Services.Voices;
 
 namespace Utterheim.Services.Tts;
 
@@ -28,7 +29,7 @@ public sealed class StubTtsEngine : ITtsEngine
         // Hardcoded per orchestrator scope amendment for main-009.
         IReadOnlyList<VoiceDescriptor> voices =
         [
-            new VoiceDescriptor(Id: "test-voice", Name: "Test Tone", Engine: "stub", IsBuiltIn: true),
+            new VoiceDescriptor(Id: "test-voice", Name: "Test Tone", Engine: "stub", IsBuiltIn: true, Language: VoiceLanguage.English),
         ];
         return Task.FromResult(voices);
     }

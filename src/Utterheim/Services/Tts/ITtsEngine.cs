@@ -1,3 +1,5 @@
+using Utterheim.Services.Voices;
+
 namespace Utterheim.Services.Tts;
 
 /// <summary>
@@ -31,6 +33,16 @@ public sealed record AudioFormat(int SampleRate, int Channels, int BitsPerSample
 
 /// <summary>
 /// One row of the engine's voice list. The shape matches the JSON the
-/// <c>GET /voices</c> endpoint returns.
+/// <c>GET /voices</c> endpoint returns. <see cref="Language"/> (added by
+/// main-040 per ADR 0023) is the per-voice attribute the sidecar uses to
+/// pick the resident <c>TTSModel</c> at speak time; built-ins declare it
+/// statically (english for the eight Les-Misérables-derived voices, german
+/// for <c>juergen</c>), cloned voices inherit it from
+/// <see cref="Voices.ClonedVoiceIndexEntry.Language"/>.
 /// </summary>
-public sealed record VoiceDescriptor(string Id, string Name, string Engine, bool IsBuiltIn);
+public sealed record VoiceDescriptor(
+    string Id,
+    string Name,
+    string Engine,
+    bool IsBuiltIn,
+    VoiceLanguage Language);

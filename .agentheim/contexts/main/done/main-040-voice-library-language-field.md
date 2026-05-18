@@ -1,11 +1,11 @@
 ---
 id: main-040
 title: Voice library — add language field; populate built-ins including `juergen`
-status: todo
+status: done
 type: feature
 context: main
 created: 2026-05-18
-completed:
+completed: 2026-05-18
 commit:
 depends_on: [main-035, main-044]
 blocks: [main-039, main-041]
@@ -143,3 +143,63 @@ xUnit project` (`todo/main-044-add-utterheim-tests-project.md`).
 - Re-promote main-040 from backlog to todo once main-044 ships.
 - AC 5 stays as-is — the three named unit tests remain mandatory.
 - Worker note above is kept as historical context.
+
+## Outcome
+
+Schema-shape decision matched the worker note's recommendation: `language` is
+a per-voice attribute on the existing `meta.json` + `library.json` records,
+mirroring how `engine` and `source` are already structured (no new file, no
+`schemaVersion` bump — the field is additive with a documented default).
+
+Code:
+- `src\Utterheim\Services\Voices\ClonedVoiceMeta.cs` — new `VoiceLanguage`
+  enum (`English`, `German`) decorated with `[JsonStringEnumMemberName]` so
+  it serialises lower-case (`"english"`, `"german"`) per ADR 0023. Added a
+  `Language` init-only property on both `ClonedVoiceMeta` and
+  `ClonedVoiceIndexEntry`, defaulting to `English` so legacy on-disk files
+  load as English without ceremony.
+- `src\Utterheim\Services\Voices\VoiceLibraryService.cs` — `AddAsync` gains
+  an optional `language` parameter (default `English`), persisted into both
+  the per-voice `meta.json` and the `library.json` index row. The orphan-
+  reinsertion path in `LoadAsync` mirrors `meta.json`'s language onto the
+  rebuilt index entry. `juergen` added to `ReservedBuiltInIds` so a user
+  clone named "Juergen" is rejected rather than silently shadowing.
+- `src\Utterheim\Services\Tts\ITtsEngine.cs` — `VoiceDescriptor` record
+  extended with `Language`. The `Engine`/`Source` pattern dictated the
+  positional placement.
+- `src\Utterheim\Services\Tts\PocketTtsEngine.cs` — `BuiltInVoices` extended
+  with `("juergen", "Juergen", "pocket-tts", true, VoiceLanguage.German)`;
+  the eight English voices keep their tag.
+- `src\Utterheim\Services\Speak\VoiceCatalog.cs` — cloned-voice descriptor
+  construction now propagates `Language` from the index entry to the
+  catalog row main-039's sidecar map will consume.
+- `src\Utterheim\Services\Tts\StubTtsEngine.cs` — test-tone voice keeps the
+  shape consistent (`VoiceLanguage.English`).
+
+Tests in `src\Utterheim.Tests\Voices\`:
+- `VoiceLibraryLanguageTests.cs` — four facts: legacy `library.json` loads
+  as english, legacy `meta.json` loads as english, `AddAsync` with German
+  persists the field in both files + the in-memory listing, and
+  `AddAsync` without an arg defaults to English. The Add tests round-trip
+  through real disk under a per-test `%TEMP%\Utterheim.Tests\<guid>\`
+  folder, driven by a small `TempDataPath` helper that injects the
+  `DataPathService._bootstrap` field via reflection so the test never
+  writes to the user's real `%APPDATA%\Utterheim\bootstrap.json`.
+- `BuiltInVoicesTests.cs` — two facts: `juergen` enumerates with
+  `VoiceLanguage.German`, and the eight English built-ins keep their
+  English tag.
+
+What was deliberately NOT changed:
+- The speak request body — still `{text, voice}` per ADR 0023. The sidecar
+  voice→language map and the routing decision are main-039.
+- `VoiceCloningViewModel` — keeps its current `AddAsync` call; the
+  language picker UI is main-041. The optional-arg default on `AddAsync`
+  keeps that call site silent until then.
+- Other languages (french / italian / spanish / portuguese) — pocket-tts
+  2.1.0 has built-ins for all of them, but per ADR 0024 we only preload
+  english + german at this stage, so the enum is intentionally narrow.
+
+Verification:
+- `dotnet build utterheim.sln --configuration Release` → 0 warnings, 0 errors.
+- `dotnet test src/Utterheim.Tests --configuration Release` → 7/7 pass
+  (1 smoke + 6 new).

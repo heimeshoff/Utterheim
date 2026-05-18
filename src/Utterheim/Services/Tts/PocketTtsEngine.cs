@@ -25,19 +25,23 @@ namespace Utterheim.Services.Tts;
 /// </summary>
 public sealed class PocketTtsEngine : ITtsEngine
 {
-    // Pocket-tts ships eight built-in voices with the predefined-voice mapping in
-    // pocket_tts/utils/utils.py. Cloned voices come from VoiceLibraryService and
-    // are surfaced via VoiceCatalog (main-015).
+    // Pocket-tts ships built-in voices with the predefined-voice mapping in
+    // pocket_tts/utils/utils.py. The eight English voices are derived from
+    // Les Misérables; main-040 adds `juergen` (German), the first non-English
+    // built-in, per ADR 0023 + the pocket-tts 2.1.0 German support research.
+    // Cloned voices come from VoiceLibraryService and are surfaced via
+    // VoiceCatalog (main-015).
     private static readonly IReadOnlyList<VoiceDescriptor> BuiltInVoices =
     [
-        new("alba",    "Alba",    "pocket-tts", true),
-        new("marius",  "Marius",  "pocket-tts", true),
-        new("javert",  "Javert",  "pocket-tts", true),
-        new("jean",    "Jean",    "pocket-tts", true),
-        new("fantine", "Fantine", "pocket-tts", true),
-        new("cosette", "Cosette", "pocket-tts", true),
-        new("eponine", "Eponine", "pocket-tts", true),
-        new("azelma",  "Azelma",  "pocket-tts", true),
+        new("alba",    "Alba",    "pocket-tts", true, VoiceLanguage.English),
+        new("marius",  "Marius",  "pocket-tts", true, VoiceLanguage.English),
+        new("javert",  "Javert",  "pocket-tts", true, VoiceLanguage.English),
+        new("jean",    "Jean",    "pocket-tts", true, VoiceLanguage.English),
+        new("fantine", "Fantine", "pocket-tts", true, VoiceLanguage.English),
+        new("cosette", "Cosette", "pocket-tts", true, VoiceLanguage.English),
+        new("eponine", "Eponine", "pocket-tts", true, VoiceLanguage.English),
+        new("azelma",  "Azelma",  "pocket-tts", true, VoiceLanguage.English),
+        new("juergen", "Juergen", "pocket-tts", true, VoiceLanguage.German),
     ];
 
     private static readonly HashSet<string> BuiltInIds = new(

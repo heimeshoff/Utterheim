@@ -56,7 +56,8 @@ public sealed class VoiceCatalog
                 Id: c.Id,
                 Name: c.Name,
                 Engine: c.Engine,
-                IsBuiltIn: false));
+                IsBuiltIn: false,
+                Language: c.Language));
         }
 
         // Fire VoicesChanged once on the first successful population so any
