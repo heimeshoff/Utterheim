@@ -6,7 +6,7 @@ type: spike
 context: main
 created: 2026-05-18
 completed: 2026-05-18
-commit:
+commit: 84c1c9c
 depends_on: []
 blocks: []
 tags: [multilingual, spike, audit, model-selection]
