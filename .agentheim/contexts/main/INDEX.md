@@ -11,15 +11,14 @@ research touching this BC, and concept synthesis pages.
 
 <!-- task-counts:start -->
 - **Backlog:** 1
-- **Todo:** 5
+- **Todo:** 4
 - **Doing:** 0
-- **Done:** 37
+- **Done:** 38
 <!-- task-counts:end -->
 
 ### Todo
 <!-- todo-list:start -->
 - **main-042** -- German reading prompt for the clone-a-new-voice flow -- 2026-05-18 -- `todo/main-042-german-reading-prompt.md`
-- **main-037** -- Production German is distilled `german`, not `german_24l` (decision) -- 2026-05-18 -- `todo/main-037-distilled-german-not-24l.md`
 - **main-038** -- Listen-test german vs german_24l (spike) -- 2026-05-18 -- `todo/main-038-listen-test-german-vs-24l.md`
 - **main-039** -- Sidecar — load English + German models concurrently and route by voice's language -- 2026-05-18 -- `todo/main-039-sidecar-multi-model-serve.md`
 - **main-041** -- Voices page — language picker in clone flow + per-voice language column -- 2026-05-18 -- `todo/main-041-voices-page-language-picker.md`
@@ -32,6 +31,7 @@ research touching this BC, and concept synthesis pages.
 
 ### Done (most recent first; older entries kept for prior-art search)
 <!-- done-list:start -->
+- **main-037** -- Production German is distilled `german`, not `german_24l` (decision) -- 2026-05-18 -- `done/main-037-distilled-german-not-24l.md`
 - **main-036** -- Sidecar preloads English + German concurrently (decision) -- 2026-05-18 -- `done/main-036-preload-english-and-german.md`
 - **main-043** -- Drop dead `TypeError` fallback around `language=` in sidecar -- 2026-05-18 -- `done/main-043-drop-dead-typeerror-fallback.md`
 - **main-035** -- Voice profile carries its language (decision) -- 2026-05-18 -- `done/main-035-voice-carries-language.md`
@@ -86,6 +86,7 @@ research touching this BC, and concept synthesis pages.
 - **0022** -- Stop hotkey watches Right Ctrl (double-tap), not Left Ctrl -- 2026-05-05 -- `../../knowledge/decisions/0022-stop-hotkey-double-tap-right-ctrl.md`
 - **0023** -- Voice profile carries its language; speak request body unchanged -- 2026-05-18 -- `../../knowledge/decisions/0023-voice-carries-language.md`
 - **0024** -- Sidecar preloads English + German concurrently (multi-language preload) -- 2026-05-18 -- `../../knowledge/decisions/0024-sidecar-multi-language-preload.md`
+- **0025** -- Production German is distilled `german`, not `german_24l` (match English's variant) -- 2026-05-18 -- `../../knowledge/decisions/0025-german-distilled-default.md`
 <!-- adr-local:end -->
 
 ## Research touching this BC

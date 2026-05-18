@@ -10,7 +10,7 @@ commit:
 depends_on: [main-036, main-037, main-040]
 blocks: []
 tags: [multilingual, sidecar, python, runtime]
-related_adrs: [0002, 0007, 0023, 0024]
+related_adrs: [0002, 0007, 0023, 0024, 0025]
 related_research: [pocket-tts-german-support-2026-05-18]
 prior_art: [main-002, main-011, main-015]
 ---

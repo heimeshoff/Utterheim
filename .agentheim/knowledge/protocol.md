@@ -5,6 +5,27 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 14:05 -- Task completed (verification skipped): main-037 - Production German is distilled `german`, not `german_24l` (decision)
+
+**Type:** Work / Task completion
+**Task:** main-037 - Production German is distilled `german`, not `german_24l` (decision)
+**Summary:** ADR 0025 codifies the project rule that the German model variant tracks English's production lineage — distilled `german` for v1; switches in lockstep if English ever adopts a 24l variant. Listen-test main-038 is the empirical check that can supersede.
+**Verification:** SKIPPED — decision-only task; ADR is the only artifact
+**Commit:** <pending>
+**Files changed:** 1
+**Tests added:** 0
+**ADRs written:** 0025-german-distilled-default.md
+
+---
+
+## 2026-05-18 14:02 -- Batch started: [main-037]
+
+**Type:** Work / Batch start
+**Tasks:** main-037 - Production German is distilled `german`, not `german_24l` (decision)
+**Parallel:** no (1 worker — last independent ready task; main-038 needs user, main-039/041/042 blocked by main-040 bounce)
+
+---
+
 ## 2026-05-18 14:00 -- Task bounced: main-040 - Voice library — add language field; populate built-ins including `juergen`
 
 **Type:** Work / Task bounced
@@ -20,7 +41,7 @@ Newest entries on top.
 **Task:** main-036 - Sidecar preloads English + German concurrently (decision)
 **Summary:** ADR 0024 accepted — sidecar preloads a fixed list of languages at startup (v1: English + German), one resident TTSModel per language; rejects reload-on-change and single-default with rationale. Partner decision to ADR 0023.
 **Verification:** SKIPPED — decision-only task; ADR is the only artifact
-**Commit:** <pending>
+**Commit:** 3fddb55
 **Files changed:** 1
 **Tests added:** 0
 **ADRs written:** 0024-sidecar-multi-language-preload.md
