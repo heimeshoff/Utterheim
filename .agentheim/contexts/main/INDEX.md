@@ -11,23 +11,30 @@ research touching this BC, and concept synthesis pages.
 
 <!-- task-counts:start -->
 - **Backlog:** 0
-- **Todo:** 0
-- **Doing:** 0
-- **Done:** 34
+- **Todo:** 7
+- **Doing:** 1
+- **Done:** 35
 <!-- task-counts:end -->
 
 ### Todo
 <!-- todo-list:start -->
-<!-- no tasks in todo -->
+- **main-042** -- German reading prompt for the clone-a-new-voice flow -- 2026-05-18 -- `todo/main-042-german-reading-prompt.md`
+- **main-036** -- Sidecar preloads English + German concurrently (decision) -- 2026-05-18 -- `todo/main-036-preload-english-and-german.md`
+- **main-037** -- Production German is distilled `german`, not `german_24l` (decision) -- 2026-05-18 -- `todo/main-037-distilled-german-not-24l.md`
+- **main-038** -- Listen-test german vs german_24l (spike) -- 2026-05-18 -- `todo/main-038-listen-test-german-vs-24l.md`
+- **main-039** -- Sidecar — load English + German models concurrently and route by voice's language -- 2026-05-18 -- `todo/main-039-sidecar-multi-model-serve.md`
+- **main-040** -- Voice library — add language field; populate built-ins including `juergen` -- 2026-05-18 -- `todo/main-040-voice-library-language-field.md`
+- **main-041** -- Voices page — language picker in clone flow + per-voice language column -- 2026-05-18 -- `todo/main-041-voices-page-language-picker.md`
 <!-- todo-list:end -->
 
 ### Doing
 <!-- doing-list:start -->
-<!-- no tasks in doing -->
+- **main-043** -- Drop dead `TypeError` fallback around `language=` in sidecar -- 2026-05-18 -- `doing/main-043-drop-dead-typeerror-fallback.md`
 <!-- doing-list:end -->
 
 ### Done (most recent first; older entries kept for prior-art search)
 <!-- done-list:start -->
+- **main-035** -- Voice profile carries its language (decision) -- 2026-05-18 -- `done/main-035-voice-carries-language.md`
 - **main-030** -- Speak page hero + button row above text; Voices clone card above list -- 2026-05-05 -- `done/main-030-speak-voices-layout.md`
 - **main-029** -- Adopt WhisperHeim styling wholesale — Light theme, brand palette, card spec, Appearance picker -- 2026-05-05 -- `done/main-029-whisperheim-styling-adoption.md`
 - **main-028** -- Logo redesign — voice human-head mark -- 2026-05-05 -- `done/main-028-logo-waveform-tail.md`
@@ -77,12 +84,14 @@ research touching this BC, and concept synthesis pages.
 - **0011** -- Bootstrap state — on-disk presence is authoritative, JSON flags are advisory -- 2026-05-03 -- `../../knowledge/decisions/0011-bootstrap-state-reconciliation.md`
 - **0012** -- Bind the python sidecar to a Win32 Job Object with KILL_ON_JOB_CLOSE -- 2026-05-03 -- `../../knowledge/decisions/0012-sidecar-jobobject-kill-on-close.md`
 - **0022** -- Stop hotkey watches Right Ctrl (double-tap), not Left Ctrl -- 2026-05-05 -- `../../knowledge/decisions/0022-stop-hotkey-double-tap-right-ctrl.md`
+- **0023** -- Voice profile carries its language; speak request body unchanged -- 2026-05-18 -- `../../knowledge/decisions/0023-voice-carries-language.md`
 <!-- adr-local:end -->
 
 ## Research touching this BC
 
 <!-- research-local:start -->
-<!-- no research touching this BC -->
+- **pocket-tts-german-support** -- Kyutai pocket-tts German language support — model variants, runtime selection, voice cloning, plugin integration -- 2026-05-18 -- `../../knowledge/research/pocket-tts-german-support-2026-05-18.md`
+- **kyutai-tts** -- Kyutai Pocket TTS for a local Windows tray TTS service with sample-based voice cloning -- 2026-05-01 -- `../../knowledge/research/kyutai-tts-2026-05-01.md`
 <!-- research-local:end -->
 
 ## Concepts (opt-in synthesis pages)

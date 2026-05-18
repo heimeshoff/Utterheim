@@ -5,6 +5,57 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 13:50 -- Task completed (verification skipped): main-035 - Voice profile carries its language (decision)
+
+**Type:** Work / Task completion
+**Task:** main-035 - Voice profile carries its language (decision)
+**Summary:** ADR 0023 fixes voice-carries-language: each voice profile declares one language, speak HTTP API (`{"text": ..., "voice": ...}`) stays unchanged from ADR 0003, sidecar routes per the named voice's declared language. ADR enumerates all four candidate interfaces with rejection rationale.
+**Verification:** SKIPPED — decision-only task; ADR + moved task file are the only artifacts
+**Commit:** <pending>
+**Files changed:** 1 ADR + task file move
+**Tests added:** 0
+**ADRs written:** 0023-voice-carries-language.md
+
+---
+
+## 2026-05-18 13:43 -- Batch started: [main-035, main-043]
+
+**Type:** Work / Batch start
+**Tasks:** main-035 - Voice profile carries its language (decision), main-043 - Drop dead `TypeError` fallback around `language=` in sidecar
+**Parallel:** yes (2 workers)
+
+---
+
+## 2026-05-18 -- Model / Promoted: main-042 — German reading prompt
+
+**Type:** Model / Promote
+**BC:** main
+**From → To:** backlog → todo
+**Summary:** Pinned the two open choices to defaults so the task is worker-ready: passage = first two sentences of *Nordwind und Sonne* (with canonical text inlined), caption = *"Lies bitte vor:"* (informal du — also sets the tone convention for all future German UI copy). Acceptance criteria tightened to exact strings; refinement notes removed.
+
+---
+
+## 2026-05-18 -- Model / Captured: main-035..main-043 — multilingual (German) work tranche
+
+**Type:** Model / Capture
+**BC:** main
+**Filed to:** todo (8 tasks) + backlog (1 task)
+**Summary:** Sliced the 2026-05-18 pocket-tts German-support research into nine tasks. Decisions pre-resolved with the user: voice profile carries language (main-035), sidecar preloads English + German concurrently (main-036), production German is distilled `german` not the slower `german_24l` (main-037 — rule = match English's variant; revisit if English ever adopts a 24l). Spike main-038 listen-tests german vs german_24l as audit on 037. Features: sidecar multi-model serve (main-039), voice library language field with `juergen` built-in (main-040), Voices page language picker + per-voice language display (main-041), German reading prompt for the clone flow (main-042 → backlog pending passage choice). Chore main-043 removes the now-dead `TypeError` fallback around `language=`. Dropped from capture per user's answers: RAM spike (has headroom), cross-language `.safetensors` portability spike (languages decided to be model-coupled), HTTP language field (voice carries it), Settings default-language picker (English is the only default).
+**Split into:** main-035, main-036, main-037, main-038, main-039, main-040, main-041, main-042, main-043
+**ADRs written:** none yet — three decision tasks (main-035..main-037) produce ADRs when worked
+
+---
+
+## 2026-05-18 -- Research / Report written: pocket-tts German language support
+
+**Type:** Research / Report
+**Topic:** Kyutai pocket-tts German language support — model variants, runtime selection, voice cloning, and plugin integration
+**Requested by:** user
+**Report:** `knowledge/research/pocket-tts-german-support-2026-05-18.md`
+**Summary:** Confirms German shipped in **pocket-tts 2.0.0 (2026-04-21)** and was headlined in **2.1.0 (2026-05-04)** alongside fr/it/es/pt — six languages total. No new HF repo id; `kyutai/pocket-tts` gained a `languages/` subdirectory. Language is selected per **model instance** via `TTSModel.load_model(language=...)` — **not per generate call** — so per-prompt language routing in the tray app means loading multiple resident models (~135 MB each, en+de comfortable). German has a distilled `german` (default) and a slower 24-layer undistilled `german_24l` preview; new built-in `juergen` voice avoids English-accented German defaults. Voice cloning works for German source audio; `.safetensors` profile cross-language portability is **undocumented** (open question for the worker). Sidecar's import surface (`web_app`, `tts_model`, `generate_data_with_state`, `export_model_state`) all still present in 2.1.0 — no breakage. The sidecar's `TypeError` fallback around `language=` is now dead code but harmless.
+
+---
+
 ## 2026-05-05 -- Work session ended
 
 **Type:** Work / Session end
