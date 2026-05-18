@@ -6,7 +6,7 @@ type: chore
 context: main
 created: 2026-05-18
 completed: 2026-05-18
-commit:
+commit: 63d0559
 depends_on: []
 blocks: []
 tags: [sidecar, cleanup, python]

@@ -5,13 +5,39 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 14:10 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 4 (first-try PASS: 1 [main-043], SKIPPED verification: 3 [main-035, main-036, main-037 — pure-decision ADRs])
+**Bounced:** 1 (main-040 — no test project exists in repo)
+**Failed:** 0
+**Escalated after verification:** 0
+**Commits:** 4 (task-bearing) + SHA backfill follow-up
+
+**Done in this session (decision tranche from German-support research):**
+- main-035 — ADR 0023 voice-carries-language (commit 8809cf1)
+- main-043 — sidecar dead TypeError fallback removed; pocket-tts pin tightened (commit 63d0559)
+- main-036 — ADR 0024 sidecar multi-language preload (commit 3fddb55)
+- main-037 — ADR 0025 production German is distilled (commit 08a7890)
+
+**Surfaced to user — needs decision before further work can run:**
+- main-038 — listen-test german vs german_24l. Spike that requires the user to actually listen and judge; cannot be autonomously dispatched. Either run by hand (generate WAVs with `pocket-tts generate --language german[_24l]` and listen) or accept the distilled default and close the spike with a note. Currently in todo/.
+- main-040 — voice library language field. Bounced this batch because the repo has no test project (acceptance criterion 5 mandates unit tests). Two paths: (a) create src/Utterheim.Tests/ as a preceding task, then re-promote 040; (b) relax criterion 5 to "manual verification with hand-edited legacy library.json" and re-dispatch 040 as-is. Worker note in `backlog/main-040-voice-library-language-field.md` has implementation details.
+
+**Downstream blocked by main-040:**
+- main-039 (sidecar multi-model serve) — depends on main-036 ✅, main-037 ✅, main-040 ⛔
+- main-041 (Voices page language picker) — depends on main-035 ✅, main-040 ⛔
+- main-042 (German reading prompt) — depends on main-041 ⛔
+
+---
+
 ## 2026-05-18 14:05 -- Task completed (verification skipped): main-037 - Production German is distilled `german`, not `german_24l` (decision)
 
 **Type:** Work / Task completion
 **Task:** main-037 - Production German is distilled `german`, not `german_24l` (decision)
 **Summary:** ADR 0025 codifies the project rule that the German model variant tracks English's production lineage — distilled `german` for v1; switches in lockstep if English ever adopts a 24l variant. Listen-test main-038 is the empirical check that can supersede.
 **Verification:** SKIPPED — decision-only task; ADR is the only artifact
-**Commit:** <pending>
+**Commit:** 08a7890
 **Files changed:** 1
 **Tests added:** 0
 **ADRs written:** 0025-german-distilled-default.md

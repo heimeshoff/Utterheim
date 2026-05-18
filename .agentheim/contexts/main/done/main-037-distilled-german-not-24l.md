@@ -6,7 +6,7 @@ type: decision
 context: main
 created: 2026-05-18
 completed: 2026-05-18
-commit:
+commit: 08a7890
 depends_on: []
 blocks: [main-039]
 tags: [multilingual, model-selection, adr]
