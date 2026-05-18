@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-18
 completed: 2026-05-18
-commit:
+commit: e96764e
 depends_on: [main-041]
 blocks: []
 tags: [multilingual, ui, voices-page, copy]

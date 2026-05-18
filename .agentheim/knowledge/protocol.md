@@ -12,14 +12,14 @@ Newest entries on top.
 **Bounced:** 0
 **Failed:** 0
 **Escalated after verification:** 0
-**Commits:** 5 (110777d, 448fce6, 4934d1a, 49928ff, [main-042 SHA pending])
+**Commits:** 5 (110777d, 448fce6, 4934d1a, 49928ff, e96764e)
 
 **Done in this session — multilingual roll-up after the morning's German-support decisions:**
 - main-044 — Utterheim.Tests xUnit project (commit 110777d) — unblocks every future task with unit-test ACs.
 - main-040 — Voice library `VoiceLanguage` field + `juergen` built-in (commit 448fce6) — schema side of ADR 0023.
 - main-039 — Sidecar preloads en+de; routes by voice language via `X-Voice-Language` header; `PocketTtsEngine.BuildSpeakRequest` (commit 4934d1a) — runtime side of ADR 0024.
 - main-041 — Voices page language picker + per-row EN/DE chip; Rainbow Passage re-gated to English+Mic; `/export-voice` routed through the multi-model middleware (commit 49928ff) — UI side of ADR 0023.
-- main-042 — Nordwind und Sonne reading prompt for German clone flow ([SHA pending]) — copy side; sets the du-form convention for all later German UI.
+- main-042 — Nordwind und Sonne reading prompt for German clone flow (commit e96764e) — copy side; sets the du-form convention for all later German UI.
 
 **Three sidecar version bumps:** 1.0.3 → 1.1.0 (main-039) → 1.2.0 (main-041) bundled inside the multi-language work, since each was tied to a behavioural change the bootstrapper's version-check must see.
 
@@ -44,7 +44,7 @@ Newest entries on top.
 **Task:** main-042 - German reading prompt for the clone-a-new-voice flow
 **Summary:** Added the German Nordwind und Sonne reading prompt block to the Voices page clone-flow card; visible only when language picker = German AND source = Microphone, mutually exclusive with the English Rainbow Passage block via the new `IsGermanReadingPromptVisible` flag on `VoiceCloningViewModel`. New `NordwindUndSonne` constants class mirrors the `RainbowPassage` pattern (canonical opening two sentences, caption "Lies bitte vor:", attribution "Nordwind und Sonne (Aesop, gemeinfrei)"). Sets the du-form convention for all later German UI copy.
 **Verification:** PASS (iteration 1) — `dotnet test --configuration Release` 26/26 pass (5 new); BC README updated with dual reading-prompt rule; AC 1–6 covered by the truth-table tests and the static-string assertions.
-**Commit:** <pending>
+**Commit:** e96764e
 **Files changed:** 5 (1 new constants class, 1 VM, 1 XAML, 1 test file modified, README)
 **Tests added:** 5 (truth-table coverage of IsGermanReadingPromptVisible × IsRainbowPassageVisible mutual exclusion + [NotifyPropertyChangedFor] wiring)
 **ADRs written:** none
