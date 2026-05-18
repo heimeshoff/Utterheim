@@ -5,13 +5,36 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 18:30 -- Task verified and completed: main-041 - Voices page — language picker in clone flow + per-voice language column
+
+**Type:** Work / Task completion
+**Task:** main-041 - Voices page — language picker in clone flow + per-voice language column
+**Summary:** Voices page now declares target language at clone time (English default, German option, ComboBox above source toggle) and shows a compact EN/DE chip on every voice row (built-in + cloned templates). Chosen language flows to `VoiceLibraryService.AddAsync` for persistence AND rides the `X-Voice-Language` header on `/export-voice` so the sidecar encodes the .safetensors against the matching resident TTSModel. Rainbow Passage block now gated behind `IsRainbowPassageVisible = IsMicMode && IsEnglish` (German + Mic hides it pending main-042). Sidecar middleware extended to route `/export-voice` (previously only `/tts` and `/tts-with-state`).
+**Verification:** PASS (iteration 1) — `dotnet test --configuration Release` 21/21 pass (8 new); ADR 0023 (public speak body unchanged — header is on the C#→sidecar internal /export-voice hop only), ADR 0010 (MVVM via [ObservableProperty]/[NotifyPropertyChangedFor]), ADR 0009 (NavigationView shell untouched). AC 5 (Settings default-voice picker no regression) confirmed by code-reading SettingsPageViewModel — unchanged. AC 6 (manual smoke speaking a German clone) deferred to runtime per task-spec note (requires both EN+DE pocket-tts models downloaded).
+**Commit:** <pending>
+**Files changed:** 9 (4 src/Utterheim/, 1 XAML, 2 sidecar, 2 new test files, README)
+**Tests added:** 8 (5 in VoiceCloningViewModelLanguageTests + 3 in VoiceRowLanguageTests)
+**ADRs written:** none
+**Sidecar version bump:** utterheim_sidecar 1.1.0 → 1.2.0 (forces re-install via main-027 bootstrapper).
+**Unblocks:** main-042 (German reading prompt) — now ready.
+
+---
+
+## 2026-05-18 17:35 -- Batch started: [main-041]
+
+**Type:** Work / Batch start
+**Tasks:** main-041 - Voices page — language picker in clone flow + per-voice language column
+**Parallel:** no (1 worker — only ready non-spike task; main-042 still blocked on main-041; main-038 needs user listening)
+
+---
+
 ## 2026-05-18 17:30 -- Task verified and completed: main-039 - Sidecar — load English + German models concurrently and route by voice's language
 
 **Type:** Work / Task completion
 **Task:** main-039 - Sidecar — load English + German models concurrently and route by voice's language
 **Summary:** Sidecar now preloads English + German concurrently and routes via a new `LanguageRoutingMiddleware` that reads the `X-Voice-Language` header and swaps `pocket_tts.main.tts_model` before pocket-tts's `/tts` handler runs. C# `PocketTtsEngine` resolves each voice's language (built-ins from the in-engine list, clones via new `VoiceLibraryService.TryResolveLanguage`) and stamps the header on every C#→sidecar call. Claude-Code-facing `POST /speak` contract (`{text, voice}`, ADR 0003) unchanged.
 **Verification:** PASS (iteration 1) — `dotnet build --configuration Release` 0 warnings/errors; `dotnet test --configuration Release --no-build` 13/13 pass; ADR 0023 (public body unchanged), ADR 0024 (unknown language returns 503, not reload-on-demand), ADR 0007 (queue serialisation makes module-global swap safe), ADR 0025 (literals are `english`/`german`) all honored. Manual smoke (AC 6) deferred to runtime — requires English + German pocket-tts models downloaded on developer box.
-**Commit:** <pending>
+**Commit:** 4934d1a
 **Wire-shape decision (per AC 2):** routing rides on `X-Voice-Language` request header (lower-case enum value: `english` | `german`). Chosen over a form field so the ASGI middleware reads it without consuming the multipart body. Documented in main-039's `## Outcome` section.
 **CLI shape:** `python -m utterheim_sidecar serve --language english --language german` (repeatable; first value is the header-less default). Bare `serve` preloads `english` only (back-compat). `--config` incompatible with multi-language.
 **Files changed:** 8 (6 src/, 1 new test file, README)

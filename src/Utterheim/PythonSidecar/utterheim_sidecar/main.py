@@ -94,10 +94,20 @@ _DEFAULT_LANGUAGE: Optional[str] = None
 
 
 def _route_paths_needing_model() -> frozenset:
-    """Routes whose handler reads pocket_tts.main.tts_model. Other paths
-    (`/health`, `/`, `/export-voice`) don't need a model swap and are
-    skipped by the middleware to keep the hot path narrow."""
-    return frozenset({"/tts", "/tts-with-state"})
+    """Routes whose handler reads pocket_tts.main.tts_model.
+
+    Two read paths exist:
+    - `/tts` and `/tts-with-state` call the generation code that reads the
+      module-level model (main-039).
+    - `/export-voice` calls `tts_model.get_state_for_audio_prompt(...)` to
+      encode the cloning sample. main-041 routes this through the matching
+      resident model so a German clone is encoded by the German `TTSModel`,
+      keeping the per-language fidelity ADR 0023 promised.
+
+    Other paths (`/health`, `/`) don't need a model swap and are skipped by
+    the middleware to keep the hot path narrow.
+    """
+    return frozenset({"/tts", "/tts-with-state", "/export-voice"})
 
 
 class LanguageRoutingMiddleware(BaseHTTPMiddleware):

@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-18
 completed: 2026-05-18
-commit:
+commit: 4934d1a
 depends_on: [main-036, main-037, main-040]
 blocks: []
 tags: [multilingual, sidecar, python, runtime]

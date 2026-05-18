@@ -36,10 +36,20 @@ public sealed class VoiceCloningClient
     /// </summary>
     /// <param name="wavBytes">Raw bytes of a RIFF WAV the sidecar can decode.</param>
     /// <param name="voiceId">Optional id for sidecar-side logging only — not persisted server-side.</param>
+    /// <param name="language">
+    /// Target pocket-tts language for the clone (main-041 / ADR 0023). The
+    /// sidecar's <c>LanguageRoutingMiddleware</c> reads the
+    /// <c>X-Voice-Language</c> header and swaps <c>pocket_tts.main.tts_model</c>
+    /// to the matching resident model before <c>/export-voice</c>'s handler
+    /// runs <c>get_state_for_audio_prompt</c>. Without the swap, a German
+    /// clone would be encoded by whatever model the previous request happened
+    /// to swap in (typically the English default).
+    /// </param>
     /// <param name="ct">Cancellation.</param>
     public async Task<byte[]> ExportVoiceAsync(
         ReadOnlyMemory<byte> wavBytes,
         string? voiceId,
+        VoiceLanguage language,
         CancellationToken ct)
     {
         if (wavBytes.IsEmpty)
@@ -60,11 +70,18 @@ public sealed class VoiceCloningClient
         if (!string.IsNullOrWhiteSpace(voiceId))
             content.Add(new StringContent(voiceId), "voice_id");
 
-        _logger.LogInformation(
-            "VoiceCloningClient: posting {Bytes}-byte WAV to /export-voice (voice='{Voice}')",
-            copy.Length, voiceId ?? "<unnamed>");
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+        // X-Voice-Language: english | german — same wire literal the speak
+        // path uses (see PocketTtsEngine.LanguageWireValue). Stamped on every
+        // request so the sidecar's middleware doesn't have to fall back to
+        // its default-language slot.
+        request.Headers.Add("X-Voice-Language", PocketTtsEngine.LanguageWireValue(language));
 
-        using var response = await _http.PostAsync(url, content, ct).ConfigureAwait(false);
+        _logger.LogInformation(
+            "VoiceCloningClient: posting {Bytes}-byte WAV to /export-voice (voice='{Voice}', language={Language})",
+            copy.Length, voiceId ?? "<unnamed>", language);
+
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);

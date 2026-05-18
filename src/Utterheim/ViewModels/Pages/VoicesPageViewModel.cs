@@ -243,7 +243,23 @@ public sealed partial class VoiceRowViewModel : ObservableObject
         // lands and feeds the catalog with cloned-voice metadata. For now the
         // catalog only returns built-ins so a single-field meta line is correct.
         Meta = descriptor.Engine;
+        Language = descriptor.Language;
+        LanguageLabel = ToLanguageLabel(descriptor.Language);
     }
+
+    /// <summary>
+    /// Short two-letter label for the language chip rendered on each row
+    /// (main-041, ADR 0023). Matches the ISO-639-1 codes Marco picked in the
+    /// task brief: <c>EN</c> for English, <c>DE</c> for German. Centralised
+    /// here so the XAML template binds a single <c>TextBlock</c> rather than
+    /// chaining a converter.
+    /// </summary>
+    private static string ToLanguageLabel(VoiceLanguage language) => language switch
+    {
+        VoiceLanguage.English => "EN",
+        VoiceLanguage.German => "DE",
+        _ => language.ToString().ToUpperInvariant(),
+    };
 
     /// <summary>Opaque voice identifier the engine resolves (e.g. "alba").</summary>
     public string VoiceId { get; }
@@ -253,6 +269,23 @@ public sealed partial class VoiceRowViewModel : ObservableObject
 
     /// <summary>Engine + (cloned only) source + createdAt; built-ins show only the engine name.</summary>
     public string Meta { get; }
+
+    /// <summary>
+    /// Language this voice speaks (main-041 / ADR 0023). Built-ins source it
+    /// from <c>PocketTtsEngine.BuiltInVoices</c>; cloned voices source it from
+    /// <see cref="ClonedVoiceIndexEntry.Language"/> via
+    /// <see cref="VoiceCatalog"/>. Exposed as a strongly-typed property so a
+    /// future filter / per-language section can bind without a string parse.
+    /// </summary>
+    public VoiceLanguage Language { get; }
+
+    /// <summary>
+    /// Short label for the language chip rendered on each row
+    /// (main-041 / ADR 0023). Two letters — <c>"EN"</c> or <c>"DE"</c>
+    /// in v1 — matching ISO 639-1. The XAML row template binds a chip
+    /// <c>TextBlock</c> directly to this string.
+    /// </summary>
+    public string LanguageLabel { get; }
 
     /// <summary>True for engine built-ins (alba, marius, …); false for cloned voices.</summary>
     public bool IsBuiltIn { get; }

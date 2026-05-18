@@ -72,6 +72,24 @@
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                Margin="0,0,0,12" />
 
+                    <!-- Language picker (main-041 / ADR 0023). Sits above the
+                         source toggle because the language gate decides which
+                         reading prompt block is visible (the Rainbow Passage,
+                         English-only); rendering top-to-bottom matches that
+                         logical flow. Two options for v1: English (default)
+                         and German. -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="Language:"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ComboBox ItemsSource="{Binding ViewModel.Cloning.Languages}"
+                                  SelectedItem="{Binding ViewModel.Cloning.Language, Mode=TwoWay}"
+                                  MinWidth="140"
+                                  VerticalAlignment="Center" />
+                    </StackPanel>
+
                     <!-- Source toggle: Microphone | System Audio -->
                     <StackPanel Orientation="Horizontal"
                                 Margin="0,0,0,12">
@@ -119,9 +137,12 @@
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                TextWrapping="Wrap" />
 
-                    <!-- Rainbow Passage reading prompt (main-034). Mic mode only —
-                         in System Audio mode the user isn't speaking, so the prompt
-                         is irrelevant and the block stays collapsed via IsMicMode.
+                    <!-- Rainbow Passage reading prompt (main-034). Mic mode +
+                         English only — System Audio collapses it (user isn't
+                         speaking), and the language gate added in main-041
+                         collapses it when German is selected (the German
+                         equivalent ships in main-042). Both gates live behind
+                         IsRainbowPassageVisible so the XAML stays declarative.
                          Display-only: no interactive elements, no focus trap. -->
                     <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}"
                             BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
@@ -129,7 +150,7 @@
                             CornerRadius="4"
                             Padding="12"
                             Margin="0,0,0,12"
-                            Visibility="{Binding ViewModel.Cloning.IsMicMode, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}">
+                            Visibility="{Binding ViewModel.Cloning.IsRainbowPassageVisible, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}">
                         <StackPanel>
                             <TextBlock Text="Read this aloud:"
                                        FontSize="12"
@@ -267,9 +288,10 @@
                                     BorderThickness="0,0,0,1">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <!-- main-026: 4-column layout for cloned rows.
-                                             name+meta | Preview | Delete | active indicator -->
+                                        <!-- main-041: 5-column layout for cloned rows.
+                                             name+meta | language chip | Preview | Delete | active indicator -->
                                         <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
@@ -285,15 +307,33 @@
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 
-                                    <ui:Button Grid.Column="1"
+                                    <!-- Language chip (main-041): compact pill
+                                         carrying the two-letter language code
+                                         (EN / DE). Minimal chrome per the
+                                         styleguide note in main-029. -->
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="6,2"
+                                            Margin="8,0,8,0"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding LanguageLabel}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </Border>
+
+                                    <ui:Button Grid.Column="2"
                                                Content="Preview"
                                                Appearance="Secondary"
                                                Icon="{ui:SymbolIcon Play24}"
                                                Command="{Binding PreviewCommand}"
-                                               Margin="8,0,8,0"
+                                               Margin="0,0,8,0"
                                                VerticalAlignment="Center" />
 
-                                    <ui:Button Grid.Column="2"
+                                    <ui:Button Grid.Column="3"
                                                Appearance="Secondary"
                                                Icon="{ui:SymbolIcon Delete24}"
                                                Command="{Binding DeleteCommand}"
@@ -301,7 +341,7 @@
                                                Margin="0,0,8,0"
                                                VerticalAlignment="Center" />
 
-                                    <ui:SymbolIcon Grid.Column="3"
+                                    <ui:SymbolIcon Grid.Column="4"
                                                    Symbol="Speaker224"
                                                    FontSize="16"
                                                    VerticalAlignment="Center"
@@ -326,7 +366,10 @@
                                     BorderThickness="0,0,0,1">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
+                                        <!-- main-041: 4-column built-in row layout.
+                                             name+meta | language chip | Preview | active indicator -->
                                         <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
@@ -341,15 +384,34 @@
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
 
-                                    <ui:Button Grid.Column="1"
+                                    <!-- Language chip (main-041): identical
+                                         treatment to the cloned-row template
+                                         so EN / DE reads consistently across
+                                         sections. juergen is the load-bearing
+                                         DE row in this section. -->
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="6,2"
+                                            Margin="8,0,8,0"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding LanguageLabel}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </Border>
+
+                                    <ui:Button Grid.Column="2"
                                                Content="Preview"
                                                Appearance="Secondary"
                                                Icon="{ui:SymbolIcon Play24}"
                                                Command="{Binding PreviewCommand}"
-                                               Margin="8,0,8,0"
+                                               Margin="0,0,8,0"
                                                VerticalAlignment="Center" />
 
-                                    <ui:SymbolIcon Grid.Column="2"
+                                    <ui:SymbolIcon Grid.Column="3"
                                                    Symbol="Speaker224"
                                                    FontSize="16"
                                                    VerticalAlignment="Center"

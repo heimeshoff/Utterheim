@@ -91,6 +91,7 @@ public sealed partial class VoiceCloningViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMicMode))]
     [NotifyPropertyChangedFor(nameof(IsSystemAudioMode))]
+    [NotifyPropertyChangedFor(nameof(IsRainbowPassageVisible))]
     [NotifyPropertyChangedFor(nameof(TipText))]
     [NotifyCanExecuteChangedFor(nameof(StartCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
@@ -103,6 +104,41 @@ public sealed partial class VoiceCloningViewModel : ObservableObject
     public string TipText => IsMicMode
         ? "Use a quiet environment. The recording captures everything the mic hears."
         : "Close other audio apps and play the voice you want to clone. Capture stops when you press Stop.";
+
+    /// <summary>
+    /// Picker options for the language selector (main-041 / ADR 0023). v1
+    /// ships English + German; adding a third language is a one-entry extension
+    /// here plus a <see cref="VoiceLanguage"/> enum extension. The XAML binds
+    /// the picker's <c>ItemsSource</c> here.
+    /// </summary>
+    public IReadOnlyList<VoiceLanguage> Languages { get; } = new[]
+    {
+        VoiceLanguage.English,
+        VoiceLanguage.German,
+    };
+
+    /// <summary>
+    /// Target language for the next-saved clone (main-041 / ADR 0023). Default
+    /// is <see cref="VoiceLanguage.English"/> per the product decision Marco
+    /// recorded ("default will always be English"). The XAML picker is
+    /// two-way bound; the value flows into
+    /// <see cref="VoiceLibraryService.AddAsync"/>'s <c>language</c> parameter
+    /// and the <c>X-Voice-Language</c> header on the <c>/export-voice</c>
+    /// call so the sidecar's encoder uses the matching resident model.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsRainbowPassageVisible))]
+    private VoiceLanguage _language = VoiceLanguage.English;
+
+    /// <summary>
+    /// Drives the Rainbow Passage block's <c>Visibility</c> in XAML
+    /// (main-041 task spec, point 2). The reading prompt is an English-only
+    /// artefact (main-034); German + Mic hides it pending the German reading
+    /// prompt landing in main-042. Visible only when (Mic mode) AND (English),
+    /// matching the original main-034 gating expanded with the language
+    /// dimension.
+    /// </summary>
+    public bool IsRainbowPassageVisible => IsMicMode && Language == VoiceLanguage.English;
 
     [ObservableProperty]
     private AudioDeviceInfo? _selectedMicDevice;
@@ -436,11 +472,16 @@ public sealed partial class VoiceCloningViewModel : ObservableObject
         StatusDetail = null;
 
         // 4. POST to /export-voice. Catch sidecar errors distinctly.
+        // main-041: pass the chosen language so the sidecar swaps to the
+        // matching resident TTSModel before encoding the audio prompt. Without
+        // this hop a German clone would be encoded by whatever model is
+        // currently swapped in (typically the default English one), which
+        // pocket-tts permits but isn't what ADR 0023 promises.
         byte[] profileBytes;
         try
         {
             profileBytes = await _cloningClient
-                .ExportVoiceAsync(wavBytes, voiceId: SanitiseId(trimmed), ct)
+                .ExportVoiceAsync(wavBytes, voiceId: SanitiseId(trimmed), Language, ct)
                 .ConfigureAwait(true);
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains(": ") && ex.Message.StartsWith("/export-voice returned 4"))
@@ -471,7 +512,8 @@ public sealed partial class VoiceCloningViewModel : ObservableObject
                 sampleSeconds: sampleSeconds,
                 profileBytes: profileBytes,
                 sampleBytes: wavBytes,
-                ct: ct).ConfigureAwait(true);
+                ct: ct,
+                language: Language).ConfigureAwait(true);
         }
         catch (VoiceValidationException ex)
         {

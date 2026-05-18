@@ -580,10 +580,14 @@ voices into without touching this page's code:
   underneath. Inside the `ScrollViewer`, two grouped sections — **Cloned**
   first, **Built-in** second (main-033 swap; cloned voices are the user's
   own work and the differentiator, so they lead) — both with `SemiBold`
-  section headers. Each row is a three-column Grid (four for cloned rows
-  per main-026): name + meta (engine), Preview button (`Play24` icon,
-  `Appearance="Secondary"`), and a per-row active-request indicator
-  (`Speaker224` symbol, hidden when idle).
+  section headers. Each row layout (main-041): **name + meta** (engine /
+  source) | **language chip** (small `Border`, `CornerRadius=8`, subtle-fill,
+  carrying the two-letter ISO 639-1 code — `EN` or `DE` — from
+  `VoiceRowViewModel.LanguageLabel`) | **Preview** button (`Play24` icon,
+  `Appearance="Secondary"`) | (cloned only, main-026) **Delete** button |
+  **active-request indicator** (`Speaker224` symbol, hidden when idle).
+  The chip surfaces a voice's language at a glance per ADR 0023 — it's how
+  the user tells `juergen` (DE) apart from `alba` (EN).
 - View-model `VoicesPageViewModel` (`CommunityToolkit.Mvvm`,
   `[ObservableProperty]` per ADR 0010) exposes two
   `ObservableCollection<VoiceRowViewModel>`s (`BuiltInVoices`, `ClonedVoices`),
@@ -663,6 +667,17 @@ running (no collapse / expand in v1). Its view-model is
 `VoiceCloningViewModel` — composed into `VoicesPageViewModel.Cloning`,
 **not** a separate page.
 
+- **Language picker** (main-041 / ADR 0023) — a `ComboBox` above the source
+  toggle binds to `Cloning.Languages` (`[English, German]`) and two-way
+  binds the selection into `Cloning.Language`. English is the default
+  selection per Marco's product call ("default will always be English").
+  The chosen language flows into both ends of the Save flow: the
+  `/export-voice` request carries `X-Voice-Language: english|german` so the
+  sidecar swaps to the matching resident `TTSModel` before encoding the
+  audio prompt (main-041 extended `_route_paths_needing_model` to include
+  `/export-voice`), and `VoiceLibraryService.AddAsync(..., language: ...)`
+  persists the chosen language on the voice's `meta.json` and the
+  `library.json` index row.
 - **Source toggle** — two `RadioButton`s side by side: Microphone (`Mic24`)
   and System Audio (`Speaker224`). Two-way bound through
   `CloningSourceToBoolConverter` so the radios stay in sync with
@@ -675,17 +690,20 @@ running (no collapse / expand in v1). Its view-model is
   at the native render-endpoint format, typically 48 kHz IEEE-float stereo).
   Capture writes a temp WAV under `%TEMP%\Utterheim\` for the duration of
   the session; the path is consumed by Save and deleted on success.
-- **Rainbow Passage prompt** (main-034) — Mic mode only: a subtle-fill
-  `Border` (`SubtleFillColorSecondaryBrush`, 1-pt `ControlStrokeColorDefault`,
+- **Rainbow Passage prompt** (main-034, gated further in main-041) — Mic
+  mode AND English only: a subtle-fill `Border`
+  (`SubtleFillColorSecondaryBrush`, 1-pt `ControlStrokeColorDefault`,
   4-pt corner) sitting between the mic tip and the audio level meter shows a
   "Read this aloud:" heading and the canonical first two sentences of the
   Rainbow Passage (Fairbanks 1960, *Voice and Articulation Drillbook* —
   public domain), captioned "The Rainbow Passage — University of York".
   The text is a `const string` on `RainbowPassage` (`ViewModels/Pages/
   RainbowPassage.cs`) bound via `{x:Static}` — no view-model property,
-  no localisation in v1. Visibility is keyed off `Cloning.IsMicMode`, the
-  same flag the mic device selector uses, so System Audio mode keeps the
-  block collapsed (the user isn't speaking in that mode). Display-only:
+  no localisation in v1. Visibility is keyed off
+  `Cloning.IsRainbowPassageVisible`, a single flag that ANDs `IsMicMode`
+  with `Language == English`: System Audio mode keeps the block collapsed
+  (the user isn't speaking) and German mode keeps it collapsed (the prompt
+  is English-only; the German equivalent is `main-042`'s job). Display-only:
   no auto-scroll, no current-sentence highlight, no interactive elements.
 - **Recording controls** (shared, identical in both modes per styleguide
   Reusable component map):
@@ -1035,7 +1053,13 @@ main-025 builds the cloning sub-flow and main-026 the per-row delete):
   contract. Uploads a sample WAV via multipart, returns the `.safetensors` bytes
   the C# host then hands to `VoiceLibraryService.AddAsync` for persistence. The
   sidecar is stateless between requests — no on-disk profile lives on the Python
-  side.
+  side. main-041 added the `language` parameter and stamps the same
+  `X-Voice-Language` header the speak path uses (`PocketTtsEngine.LanguageWireValue`),
+  so the sidecar's middleware swaps to the matching resident `TTSModel`
+  before encoding the audio prompt — a German clone is encoded by the German
+  model, an English clone by the English one. The middleware's
+  `_route_paths_needing_model` set was extended to include `/export-voice`
+  in main-041 so the header is honoured on the cloning hop.
 - **Sidecar wrapper module** `utterheim_sidecar` is bundled next to the binary
   under `src\Utterheim\PythonSidecar\utterheim_sidecar\` and copied into the
   Python runtime's site-packages by the bootstrapper (per ADR 0015). It mounts
