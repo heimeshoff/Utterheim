@@ -153,3 +153,13 @@ the rule still holds, but the qualifying observation forces a re-pick.
 - main-039 — sidecar multi-language preload implementation. Consumes
   this ADR by passing the literal model name `german` (not
   `german_24l`) to `TTSModel.load_model`.
+
+## Addendum (2026-05-18, post-main-038)
+
+**Confirmed.** main-038's in-app listen test (temporary swap to
+`german_24l` in `SidecarHost.cs` + `PocketTtsEngine.LanguageWireValue`,
+spoken via `juergen` from the Speak page, then reverted): no audible
+quality difference; 24l inference latency feels equivalent to distilled
+on the user's hardware. With no perceptible quality advantage to 24l,
+the rationale above stands by default — distilled matches English's
+variant and is lighter. No follow-up task opened.

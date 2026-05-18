@@ -1,11 +1,11 @@
 ---
 id: main-038
 title: Listen-test german vs german_24l (spike)
-status: todo
+status: done
 type: spike
 context: main
 created: 2026-05-18
-completed:
+completed: 2026-05-18
 commit:
 depends_on: []
 blocks: []
@@ -71,3 +71,35 @@ own daily use?" — that's the entire bar.
 Output WAV files can live anywhere ephemeral; they don't need to be checked
 in. Only the markdown note (and a one-line ADR addendum if no follow-up
 task is needed) is the durable artifact.
+
+## Outcome (2026-05-18)
+
+**Verdict: distilled `german` confirmed as production default. ADR 0025 stands.**
+
+Tested in-app rather than via the pocket-tts CLI: temporarily swapped the
+sidecar spawn args (`SidecarHost.cs`) and the `LanguageWireValue` mapping
+(`PocketTtsEngine.cs`) from `german` to `german_24l`, rebuilt, ran utterheim,
+spoke German text via `juergen` from the Speak page. Then reverted both
+files and repeated with the distilled `german` default. The swap diff lived
+on the working tree only — never committed.
+
+User's findings:
+- **No audible quality difference** between distilled and 24l on the
+  juergen voice with conversational German prompts.
+- **Inference latency feels equivalent** — 24l is "as fast as the one
+  before" on the user's hardware. The expected slower-load / heavier-RAM
+  cost of the 24l variant either isn't observable on this machine or
+  doesn't bear on perceived UX.
+
+Because there's no perceptible quality advantage to 24l, the ADR 0025
+rationale stands by default: distilled matches English's variant
+(consistent download lineage), is lighter on disk and RAM, and was the
+documented production choice. No reason to invert the burden of proof.
+
+ADR 0025 gets a one-line "confirmed by main-038" addendum; no new
+backlog task is opened. main-038 closes.
+
+(The "research note" AC was originally intended for the CLI-WAV path,
+which we didn't take. This Outcome section is the durable record;
+duplicating it to `knowledge/research/german-listen-test-2026-05-18.md`
+would be ceremony for ceremony's sake on a one-developer project.)

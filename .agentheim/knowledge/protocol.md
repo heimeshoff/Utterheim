@@ -5,6 +5,20 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 19:30 -- Task closed (listen-test verdict): main-038 - Listen-test german vs german_24l (spike)
+
+**Type:** Work / Task closure (spike verdict)
+**Task:** main-038 - Listen-test german vs german_24l
+**Method:** In-app listen test rather than CLI WAV-pair. Temporarily flipped the routing wire value and sidecar spawn args from `german` to `german_24l` (uncommitted edits to `SidecarHost.cs` + `PocketTtsEngine.LanguageWireValue`), rebuilt, spoke German via `juergen` from the Speak page, then reverted.
+**Verdict:** No audible quality difference; 24l inference feels equivalent to distilled on the user's hardware. With no perceptible advantage, ADR 0025's rationale stands by default (distilled matches English's variant, is lighter).
+**Outcome:**
+- Reverted the temporary swap. Production stays on distilled `german`.
+- ADR 0025 gets a one-line "Addendum (2026-05-18, post-main-038): confirmed" at the bottom.
+- No new backlog task opened — no follow-up needed.
+- Research-note AC waived: this protocol entry + the task's `## Outcome` section + the ADR addendum together are the durable record. A separate `knowledge/research/german-listen-test-2026-05-18.md` would duplicate without adding signal on a one-developer project.
+
+---
+
 ## 2026-05-18 19:00 -- Work session ended
 
 **Type:** Work / Session end
