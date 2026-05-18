@@ -45,6 +45,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Expose internal test seams (e.g. PocketTtsEngine.BuildSpeakRequest,
+         main-039) to the xUnit project without leaking them to public API.
+         Mirrors the dotnet idiom: production assembly stays narrow,
+         Utterheim.Tests gets the keyhole. -->
+    <InternalsVisibleTo Include="Utterheim.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="WPF-UI" Version="3.*" />
     <PackageReference Include="WPF-UI.Tray" Version="3.*" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />

@@ -285,7 +285,10 @@ public sealed class SidecarHost : IHostedService, IDisposable
                     // utterheim_sidecar wraps pocket_tts.main:web_app and adds /export-voice and
                     // /tts-with-state for voice cloning (ADR 0015 / main-015). Same uvicorn banner so
                     // the PortRegex below picks up the assigned port unchanged.
-                    Arguments = "-u -m utterheim_sidecar serve --host 127.0.0.1 --port 0",
+                    // main-039 / ADR 0024: preload English + German concurrently. The first
+                    // --language is also the default for requests without an X-Voice-Language
+                    // header (back-compat with the pre-main-039 single-language wire shape).
+                    Arguments = "-u -m utterheim_sidecar serve --host 127.0.0.1 --port 0 --language english --language german",
                     WorkingDirectory = _paths.PythonRuntimePath,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,

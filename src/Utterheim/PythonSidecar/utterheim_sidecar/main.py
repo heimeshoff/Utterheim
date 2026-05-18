@@ -36,12 +36,15 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
-from typing import Optional
+import time
+from typing import Dict, List, Optional
 
 import typer
 from fastapi import File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from starlette.background import BackgroundTask
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 # Per ADR 0015 we deliberately import pocket-tts internals. If Kyutai
 # refactors `main.py` in pocket-tts 3.x these imports will fail and we
@@ -75,8 +78,96 @@ def _root() -> None:
     return None
 
 
+# Multi-language model registry (main-039 / ADR 0024). Populated by `serve`
+# at startup from the `--language` CLI flags; keys are the lower-case
+# pocket-tts language literals (`english`, `german`). The C# host tags each
+# speak request with `X-Voice-Language: <key>` and the middleware below
+# swaps `pocket_tts.main.tts_model` to the matching entry before the
+# request reaches pocket-tts's `/tts` handler (which reads the model as a
+# module-level global). Per ADR 0007 the C# speak queue serialises
+# requests, so the swap is safe without a per-request lock.
+_RESIDENT_MODELS: Dict[str, object] = {}
+# First language passed to `serve` — also the back-compat default when a
+# request omits the `X-Voice-Language` header (e.g. an older C# host
+# before this PR landed, or a curl probe from the dev console).
+_DEFAULT_LANGUAGE: Optional[str] = None
+
+
+def _route_paths_needing_model() -> frozenset:
+    """Routes whose handler reads pocket_tts.main.tts_model. Other paths
+    (`/health`, `/`, `/export-voice`) don't need a model swap and are
+    skipped by the middleware to keep the hot path narrow."""
+    return frozenset({"/tts", "/tts-with-state"})
+
+
+class LanguageRoutingMiddleware(BaseHTTPMiddleware):
+    """Read the C# host's `X-Voice-Language` header and swap
+    `pocket_tts.main.tts_model` to the matching resident model before the
+    pocket-tts `/tts` handler (or our `/tts-with-state` handler) runs.
+
+    If the header is absent we fall back to `_DEFAULT_LANGUAGE` (the first
+    `--language` passed to `serve`) so the pre-main-039 wire shape (no
+    header) still works. If the header names a language no resident model
+    was preloaded for we return a structured 503 JSON envelope that names
+    the missing language — never a process crash (AC 5 of main-039).
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path not in _route_paths_needing_model() or not _RESIDENT_MODELS:
+            return await call_next(request)
+
+        wanted = request.headers.get("x-voice-language") or _DEFAULT_LANGUAGE
+        if wanted is None:
+            # _RESIDENT_MODELS is non-empty (checked above) but _DEFAULT_LANGUAGE
+            # never set — happens only if `serve` was called without going
+            # through our entry point. Treat as a misconfigured sidecar.
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error": "language_unset",
+                    "detail": (
+                        "No X-Voice-Language header and no default language "
+                        "configured on this sidecar."
+                    ),
+                },
+            )
+
+        key = wanted.strip().lower()
+        model = _RESIDENT_MODELS.get(key)
+        if model is None:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error": "language_not_preloaded",
+                    "language": key,
+                    "available": sorted(_RESIDENT_MODELS.keys()),
+                    "detail": (
+                        f"No resident TTSModel for language '{key}'. "
+                        f"Sidecar preloaded: {sorted(_RESIDENT_MODELS.keys())}. "
+                        "Restart the sidecar with that language in --language."
+                    ),
+                },
+            )
+
+        # Swap the module global pocket-tts's /tts handler reads (and that
+        # _get_resident_tts_model below relays for /tts-with-state). Safe
+        # because C# host serialises speak requests per ADR 0007.
+        from pocket_tts import main as pocket_main
+
+        pocket_main.tts_model = model
+        return await call_next(request)
+
+
+# Register the middleware once at module import time so it's wired before
+# uvicorn.run binds the app. starlette refuses add_middleware on a running
+# app, hence the import-time hook rather than inside `serve`.
+web_app.add_middleware(LanguageRoutingMiddleware)
+
+
 def _get_resident_tts_model():
-    """Return the pocket-tts resident TTSModel that `serve` loaded once at startup."""
+    """Return the pocket-tts resident TTSModel that the language-routing
+    middleware just swapped in (or the single model loaded by `serve` in
+    the pre-main-039 single-language path)."""
     from pocket_tts import main as pocket_main
 
     model = getattr(pocket_main, "tts_model", None)
@@ -281,47 +372,102 @@ async def tts_with_state(
 def serve(
     host: str = typer.Option("127.0.0.1", help="Bind address."),
     port: int = typer.Option(0, help="Port (0 = OS-assigned)."),
-    language: Optional[str] = typer.Option(None, help="Override the model language."),
+    language: List[str] = typer.Option(
+        None,
+        "--language",
+        help=(
+            "Language(s) to preload as resident TTSModel instances. Repeatable "
+            "(e.g. `--language english --language german`); the first value is "
+            "the default for requests that don't carry an X-Voice-Language "
+            "header. Omit the flag to preload only the pocket-tts default "
+            "language (english), matching the pre-main-039 single-model "
+            "behaviour. Per ADR 0024 the v1 production set is english + german."
+        ),
+    ),
     config: Optional[str] = typer.Option(None, help="Override the model config name."),
     quantize: bool = typer.Option(False, help="Use the int8-quantised model."),
 ):
     """Start the utterheim-wrapped pocket-tts FastAPI app.
 
-    Loads pocket-tts's TTSModel into `pocket_tts.main.tts_model` exactly the
-    way pocket-tts's own serve command does, then hands control to uvicorn
-    against the same `web_app` (now also carrying our /export-voice and
-    /tts-with-state routes).
+    Loads one `TTSModel` per language in `--language` (main-039) and stashes
+    them in `_RESIDENT_MODELS` keyed by language name. The middleware
+    swaps `pocket_tts.main.tts_model` per request based on the C# host's
+    `X-Voice-Language` header. The first language passed is the default
+    for requests that omit the header (back-compat with the pre-main-039
+    single-language wire shape).
     """
-    # Load the model and stash it in the module-level slot pocket-tts's
-    # /tts handler reads from. We do this via TTSModel.load_model rather
-    # than calling pocket_tts.main.serve() directly because serve() ends
-    # in uvicorn.run() and would block before we got a chance to use it.
     from pocket_tts import TTSModel
     from pocket_tts import main as pocket_main
 
-    load_kwargs = {}
-    if language is not None:
-        load_kwargs["language"] = language
-    if config is not None:
-        load_kwargs["config"] = config
-    if quantize:
-        load_kwargs["quantize"] = True
+    # Normalise the language list. `typer.Option(None, ...)` with a List[str]
+    # type passes `None` (not `[]`) when the flag is omitted entirely.
+    # Default to ["english"] in that case so the bare `serve` invocation
+    # keeps loading the english model the way it always did.
+    languages: List[str] = []
+    if language:
+        for raw in language:
+            if raw is None:
+                continue
+            key = raw.strip().lower()
+            if key and key not in languages:
+                languages.append(key)
+    if not languages:
+        languages = ["english"]
 
-    logger.info("utterheim_sidecar: loading pocket-tts model %s", load_kwargs or "(defaults)")
-    # `language=` is contractual since pocket-tts 2.0.0 (see PythonRuntimeBootstrapper
-    # pin `pocket-tts>=2.0.0,<3`). Previously this call was wrapped in a
-    # try/except TypeError fallback for pre-2.0 releases; removed in main-043
-    # now that the pin makes the kwarg unconditionally available.
-    model = TTSModel.load_model(**load_kwargs)
+    # `config` is incompatible with multi-language preload (it points at a
+    # single .yaml). Reject the combination loudly rather than silently load
+    # the same config N times.
+    if config is not None and len(languages) > 1:
+        raise typer.BadParameter(
+            "--config is incompatible with multiple --language values; "
+            "the config arg names a single model lineage."
+        )
 
-    # Publish the resident model into pocket_tts.main's namespace so its /tts
-    # handler (which reads `tts_model` as a module global) keeps working.
-    setattr(pocket_main, "tts_model", model)
+    global _DEFAULT_LANGUAGE
+    _DEFAULT_LANGUAGE = languages[0]
+    _RESIDENT_MODELS.clear()
+
+    total_start = time.monotonic()
+    for lang in languages:
+        load_kwargs = {"language": lang}
+        if config is not None:
+            load_kwargs["config"] = config
+        if quantize:
+            load_kwargs["quantize"] = True
+
+        logger.info("utterheim_sidecar: loading pocket-tts model %s", load_kwargs)
+        per_start = time.monotonic()
+        # `language=` is contractual since pocket-tts 2.0.0 (see PythonRuntimeBootstrapper
+        # pin `pocket-tts>=2.0.0,<3`). The redundant TypeError fallback that
+        # used to wrap this call was removed in main-043 once the pin made
+        # the kwarg unconditionally available.
+        model = TTSModel.load_model(**load_kwargs)
+        per_elapsed = time.monotonic() - per_start
+        _RESIDENT_MODELS[lang] = model
+        logger.info(
+            "utterheim_sidecar: loaded language '%s' in %.2fs", lang, per_elapsed
+        )
+
+    total_elapsed = time.monotonic() - total_start
+    logger.info(
+        "utterheim_sidecar: %d resident model(s) ready in %.2fs (languages=%s, default='%s')",
+        len(_RESIDENT_MODELS),
+        total_elapsed,
+        sorted(_RESIDENT_MODELS.keys()),
+        _DEFAULT_LANGUAGE,
+    )
+
+    # Seed pocket_tts.main.tts_model with the default model so the very first
+    # request — before the middleware has run — still finds a model. Every
+    # subsequent request will be swapped by the middleware to match its
+    # X-Voice-Language header.
+    pocket_main.tts_model = _RESIDENT_MODELS[_DEFAULT_LANGUAGE]
 
     import uvicorn
 
     # Bind to the same FastAPI app the wrapper has now decorated with the
-    # /export-voice and /tts-with-state routes. Uvicorn's startup banner
+    # /export-voice and /tts-with-state routes and the language-routing
+    # middleware. Uvicorn's startup banner
     # ("Uvicorn running on http://127.0.0.1:NNNN") matches the SidecarHost
     # PortRegex unchanged.
     uvicorn.run(web_app, host=host, port=port, log_level="info")

@@ -11,16 +11,15 @@ research touching this BC, and concept synthesis pages.
 
 <!-- task-counts:start -->
 - **Backlog:** 0
-- **Todo:** 4
+- **Todo:** 3
 - **Doing:** 0
-- **Done:** 40
+- **Done:** 41
 <!-- task-counts:end -->
 
 ### Todo
 <!-- todo-list:start -->
 - **main-042** -- German reading prompt for the clone-a-new-voice flow -- 2026-05-18 -- `todo/main-042-german-reading-prompt.md`
 - **main-038** -- Listen-test german vs german_24l (spike) -- 2026-05-18 -- `todo/main-038-listen-test-german-vs-24l.md`
-- **main-039** -- Sidecar — load English + German models concurrently and route by voice's language -- 2026-05-18 -- `todo/main-039-sidecar-multi-model-serve.md`
 - **main-041** -- Voices page — language picker in clone flow + per-voice language column -- 2026-05-18 -- `todo/main-041-voices-page-language-picker.md`
 <!-- todo-list:end -->
 
@@ -31,6 +30,7 @@ research touching this BC, and concept synthesis pages.
 
 ### Done (most recent first; older entries kept for prior-art search)
 <!-- done-list:start -->
+- **main-039** -- Sidecar — load English + German models concurrently and route by voice's language -- 2026-05-18 -- `done/main-039-sidecar-multi-model-serve.md`
 - **main-040** -- Voice library — add language field; populate built-ins including `juergen` -- 2026-05-18 -- `done/main-040-voice-library-language-field.md`
 - **main-044** -- Add Utterheim.Tests xUnit project — establishes test infrastructure -- 2026-05-18 -- `done/main-044-add-utterheim-tests-project.md`
 - **main-037** -- Production German is distilled `german`, not `german_24l` (decision) -- 2026-05-18 -- `done/main-037-distilled-german-not-24l.md`

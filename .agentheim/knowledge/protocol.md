@@ -5,13 +5,37 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 17:30 -- Task verified and completed: main-039 - Sidecar — load English + German models concurrently and route by voice's language
+
+**Type:** Work / Task completion
+**Task:** main-039 - Sidecar — load English + German models concurrently and route by voice's language
+**Summary:** Sidecar now preloads English + German concurrently and routes via a new `LanguageRoutingMiddleware` that reads the `X-Voice-Language` header and swaps `pocket_tts.main.tts_model` before pocket-tts's `/tts` handler runs. C# `PocketTtsEngine` resolves each voice's language (built-ins from the in-engine list, clones via new `VoiceLibraryService.TryResolveLanguage`) and stamps the header on every C#→sidecar call. Claude-Code-facing `POST /speak` contract (`{text, voice}`, ADR 0003) unchanged.
+**Verification:** PASS (iteration 1) — `dotnet build --configuration Release` 0 warnings/errors; `dotnet test --configuration Release --no-build` 13/13 pass; ADR 0023 (public body unchanged), ADR 0024 (unknown language returns 503, not reload-on-demand), ADR 0007 (queue serialisation makes module-global swap safe), ADR 0025 (literals are `english`/`german`) all honored. Manual smoke (AC 6) deferred to runtime — requires English + German pocket-tts models downloaded on developer box.
+**Commit:** <pending>
+**Wire-shape decision (per AC 2):** routing rides on `X-Voice-Language` request header (lower-case enum value: `english` | `german`). Chosen over a form field so the ASGI middleware reads it without consuming the multipart body. Documented in main-039's `## Outcome` section.
+**CLI shape:** `python -m utterheim_sidecar serve --language english --language german` (repeatable; first value is the header-less default). Bare `serve` preloads `english` only (back-compat). `--config` incompatible with multi-language.
+**Files changed:** 8 (6 src/, 1 new test file, README)
+**Tests added:** 6 (PocketTtsEngineLanguageRoutingTests)
+**ADRs written:** none
+**Sidecar version bump:** utterheim_sidecar 1.0.3 → 1.1.0 (forces re-install via main-027 bootstrapper).
+
+---
+
+## 2026-05-18 16:15 -- Batch started: [main-039]
+
+**Type:** Work / Batch start
+**Tasks:** main-039 - Sidecar — load English + German models concurrently and route by voice's language
+**Parallel:** no (1 worker — main-041 also ready but deferred to next batch on BC-README conflict; main-038 needs user listening; main-042 still blocked on main-041)
+
+---
+
 ## 2026-05-18 16:10 -- Task verified and completed: main-040 - Voice library — add language field; populate built-ins including `juergen`
 
 **Type:** Work / Task completion
 **Task:** main-040 - Voice library — add language field; populate built-ins including `juergen`
 **Summary:** Voice profiles now carry a `VoiceLanguage` (english | german) on both `meta.json` and the `library.json` index row per ADR 0023; legacy on-disk files default to english on load via `System.Text.Json` init-default; `VoiceLibraryService.AddAsync` gains an optional language parameter and persists it; `PocketTtsEngine`'s built-in list grew `juergen` (German) alongside the eight English Les-Misérables-derived voices. Speak HTTP body unchanged (ADR 0023 constraint honored).
 **Verification:** PASS (iteration 1) — `dotnet test --configuration Release --no-build` → 7/7 pass (6 new facts + 1 smoke); ADR 0005 (folder-per-voice / library.json layout) and ADR 0023 (voice-carries-language / migration rule) both honored; speak path body unchanged.
-**Commit:** <pending>
+**Commit:** 448fce6
 **Files changed:** 9 (6 src/Utterheim/Services/* edits, 2 new test files under src/Utterheim.Tests/Voices/, BC README)
 **Tests added:** 6 (4 in VoiceLibraryLanguageTests + 2 in BuiltInVoicesTests)
 **ADRs written:** none

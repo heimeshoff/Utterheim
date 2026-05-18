@@ -114,6 +114,27 @@ public sealed class VoiceLibraryService
     }
 
     /// <summary>
+    /// Resolve a cloned voice id to its <see cref="VoiceLanguage"/> for sidecar
+    /// routing (main-039 / ADR 0023). The C# host pre-resolves the language so
+    /// it can tag the speak request with the routing hint the multi-model
+    /// sidecar reads. Returns null if the id is not in the library — the
+    /// caller treats that the same as <see cref="TryResolveProfilePath"/>
+    /// returning null, i.e. unknown-voice surfaces as a clear error.
+    /// Case-insensitive lookup matches the rest of the library's id semantics.
+    /// </summary>
+    public VoiceLanguage? TryResolveLanguage(string voiceId)
+    {
+        if (string.IsNullOrWhiteSpace(voiceId)) return null;
+        ClonedVoiceIndexEntry? entry;
+        lock (_stateLock)
+        {
+            entry = _index.FirstOrDefault(v =>
+                string.Equals(v.Id, voiceId, StringComparison.OrdinalIgnoreCase));
+        }
+        return entry?.Language;
+    }
+
+    /// <summary>
     /// Reconcile the in-memory index with on-disk state. Runs once at startup
     /// before page VMs resolve. Per ADR 0005 / main-015 acceptance criteria:
     ///   - Library entries without folders are pruned + warning logged.

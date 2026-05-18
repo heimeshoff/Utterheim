@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-18
 completed: 2026-05-18
-commit:
+commit: 448fce6
 depends_on: [main-035, main-044]
 blocks: [main-039, main-041]
 tags: [multilingual, voice-library, schema, persistence]

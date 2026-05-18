@@ -83,47 +83,10 @@ public sealed class PocketTtsEngine : ITtsEngine
 
         await _sidecar.EnsureReadyAsync(ct).ConfigureAwait(false);
 
-        var isBuiltIn = BuiltInIds.Contains(voice);
-        HttpRequestMessage request;
-        IDisposable contentDisposable;
-
-        if (isBuiltIn)
-        {
-            var url = _sidecar.BaseUrl + "/tts";
-            var content = new MultipartFormDataContent
-            {
-                { new StringContent(text), "text" },
-                { new StringContent(voice), "voice_url" },
-            };
-            request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
-            contentDisposable = content;
-            _logger.LogInformation(
-                "PocketTtsEngine synthesising {Chars} chars for built-in voice '{Voice}'",
-                text.Length, voice);
-        }
-        else
-        {
-            var profilePath = _library.TryResolveProfilePath(voice);
-            if (profilePath is null || !File.Exists(profilePath))
-                throw new InvalidOperationException($"Unknown voice id '{voice}'.");
-
-            var url = _sidecar.BaseUrl + "/tts-with-state";
-            // FileStream lifetime is managed via the disposed content below;
-            // ASP.NET copies the bytes into the request before SendAsync returns.
-            var profileStream = new FileStream(
-                profilePath, FileMode.Open, FileAccess.Read, FileShare.Read,
-                bufferSize: 4096, useAsync: true);
-            var content = new MultipartFormDataContent
-            {
-                { new StringContent(text), "text" },
-                { new StreamContent(profileStream), "voice_state", "profile.safetensors" },
-            };
-            request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
-            contentDisposable = content;
-            _logger.LogInformation(
-                "PocketTtsEngine synthesising {Chars} chars for cloned voice '{Voice}' from {Profile}",
-                text.Length, voice, profilePath);
-        }
+        var built = BuildSpeakRequest(_sidecar.BaseUrl, text, voice);
+        var request = built.Request;
+        var contentDisposable = built.ContentDisposable;
+        var isBuiltIn = built.IsBuiltIn;
 
         // ResponseHeadersRead is load-bearing: the default ResponseContentRead buffers the
         // entire WAV before the awaited Task returns, throwing away the StreamingResponse on
@@ -178,6 +141,104 @@ public sealed class PocketTtsEngine : ITtsEngine
         }
     }
 
+    /// <summary>
+    /// Build the outgoing sidecar speak request for <paramref name="voiceId"/>,
+    /// stamping the voice's <see cref="VoiceLanguage"/> on the wire so the
+    /// multi-model sidecar (main-039) routes to the matching resident
+    /// <c>TTSModel</c>. The routing hint rides on the <c>X-Voice-Language</c>
+    /// request header — chosen over a form field so the sidecar's ASGI
+    /// middleware can read it without consuming the multipart body (see
+    /// main-039 Notes). The Claude-Code-facing <c>POST /speak</c> contract
+    /// (ADR 0003 — <c>{text, voice}</c>) is untouched: this header lives only
+    /// on the C# host-to-sidecar-internal hop.
+    ///
+    /// Surfaces as <c>internal</c> so the test project can assert the wire
+    /// shape without spinning up an HTTP listener — production callers go
+    /// through <see cref="StreamAsync"/>.
+    /// </summary>
+    internal BuiltSpeakRequest BuildSpeakRequest(string baseUrl, string text, string voiceId)
+    {
+        var voice = string.IsNullOrWhiteSpace(voiceId) ? "alba" : voiceId.Trim();
+        var isBuiltIn = BuiltInIds.Contains(voice);
+
+        HttpRequestMessage request;
+        IDisposable contentDisposable;
+        VoiceLanguage language;
+
+        if (isBuiltIn)
+        {
+            var builtIn = BuiltInVoices.First(v =>
+                string.Equals(v.Id, voice, StringComparison.OrdinalIgnoreCase));
+            language = builtIn.Language;
+
+            var url = baseUrl + "/tts";
+            var content = new MultipartFormDataContent
+            {
+                { new StringContent(text), "text" },
+                { new StringContent(voice), "voice_url" },
+            };
+            request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+            contentDisposable = content;
+            _logger.LogInformation(
+                "PocketTtsEngine synthesising {Chars} chars for built-in voice '{Voice}' ({Language})",
+                text.Length, voice, language);
+        }
+        else
+        {
+            var profilePath = _library.TryResolveProfilePath(voice);
+            if (profilePath is null || !File.Exists(profilePath))
+                throw new InvalidOperationException($"Unknown voice id '{voice}'.");
+
+            // VoiceLibraryService.TryResolveLanguage MUST return non-null when
+            // TryResolveProfilePath did — both lookups hit the same in-memory
+            // index. Default to English defensively only if the race-prone case
+            // of a delete-between-calls hits (the request is going to fail at
+            // the sidecar anyway; English is the safer fallback since the
+            // English model is always preloaded per ADR 0024).
+            language = _library.TryResolveLanguage(voice) ?? VoiceLanguage.English;
+
+            var url = baseUrl + "/tts-with-state";
+            // FileStream lifetime is managed via the disposed content below;
+            // ASP.NET copies the bytes into the request before SendAsync returns.
+            var profileStream = new FileStream(
+                profilePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                bufferSize: 4096, useAsync: true);
+            var content = new MultipartFormDataContent
+            {
+                { new StringContent(text), "text" },
+                { new StreamContent(profileStream), "voice_state", "profile.safetensors" },
+            };
+            request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+            contentDisposable = content;
+            _logger.LogInformation(
+                "PocketTtsEngine synthesising {Chars} chars for cloned voice '{Voice}' ({Language}) from {Profile}",
+                text.Length, voice, language, profilePath);
+        }
+
+        // Tag the request with the resolved language. The sidecar's middleware
+        // reads this header and swaps the active resident TTSModel before the
+        // pocket-tts /tts handler (which keys off the module-level tts_model
+        // global) runs. The literal values match the lower-case JSON the
+        // VoiceLanguage enum serialises as, so the same lookup table works
+        // wire-end-to-wire-end without a separate dictionary.
+        request.Headers.Add("X-Voice-Language", LanguageWireValue(language));
+
+        return new BuiltSpeakRequest(request, contentDisposable, isBuiltIn);
+    }
+
+    /// <summary>
+    /// Lower-case wire value for <paramref name="language"/> matching the JSON
+    /// the <see cref="Voices.VoiceLanguage"/> enum serialises as
+    /// (<c>english</c> / <c>german</c>). The sidecar's middleware expects
+    /// these literals; ADR 0024 / 0025 pin them.
+    /// </summary>
+    internal static string LanguageWireValue(VoiceLanguage language) => language switch
+    {
+        VoiceLanguage.English => "english",
+        VoiceLanguage.German => "german",
+        _ => throw new ArgumentOutOfRangeException(nameof(language), language, null),
+    };
+
     private static async Task SkipWavHeaderAsync(Stream stream, CancellationToken ct)
     {
         // Read enough to cover RIFF + fmt + the start of `data` chunk header. 44 bytes is the
@@ -201,3 +262,15 @@ public sealed class PocketTtsEngine : ITtsEngine
         }
     }
 }
+
+/// <summary>
+/// Internal carrier for <see cref="PocketTtsEngine.BuildSpeakRequest"/> so the
+/// test project can assert wire shape without spinning up HTTP. The
+/// <see cref="ContentDisposable"/> owns the multipart parts (text +
+/// voice_url / voice_state stream); production callers dispose it after the
+/// response is read.
+/// </summary>
+internal sealed record BuiltSpeakRequest(
+    HttpRequestMessage Request,
+    IDisposable ContentDisposable,
+    bool IsBuiltIn);

@@ -26,7 +26,8 @@ From the vision's seed glossary, plus terms that surfaced during boundary analys
 | **Sample clip** | The 5–20-second audio snippet used to create a voice profile. Source: microphone, WASAPI loopback, or imported file. |
 | **Built-in voice** | A voice profile shipped with pocket-tts (alba, marius, javert, jean, fantine, cosette, eponine, azelma — all English; plus juergen for German, added by main-040). |
 | **Cloned voice** | A user-created voice profile. |
-| **Voice language** | Pocket-tts language attribute every voice profile carries (ADR 0023). v1: `english` or `german`. Drives sidecar `TTSModel` routing — the speak request body stays `{text, voice}`, language is inferred by the sidecar from the voice. Lives on `meta.json` + the `library.json` index row; legacy entries default to `english` per the ADR migration rule. |
+| **Voice language** | Pocket-tts language attribute every voice profile carries (ADR 0023). v1: `english` or `german`. Drives sidecar `TTSModel` routing — the C#-host-facing speak request body stays `{text, voice}`, but on the C#→sidecar-internal hop `PocketTtsEngine` resolves the voice's language and tags the request with the `X-Voice-Language` header (`english` / `german`), which the sidecar's `LanguageRoutingMiddleware` reads to pick the matching resident model (main-039). Lives on `meta.json` + the `library.json` index row; legacy entries default to `english` per the ADR migration rule. |
+| **Multi-model sidecar** | The python sidecar holds one `TTSModel` per preloaded language in a `_RESIDENT_MODELS` dict (main-039 / ADR 0024). `serve --language english --language german` preloads both concurrently at startup; per-request routing swaps `pocket_tts.main.tts_model` to the matching entry before pocket-tts's `/tts` handler runs. Adding a third language is a config change (extend `--language` flags, restart sidecar), not a code change. |
 | **Speak request** | An incoming call carrying `{text, voice ID}`. The unit of work the BC queues, synthesizes, and plays. |
 | **Speak queue** | FIFO of pending speak requests. Head plays; tail is appended. Advances on completion or stop. |
 | **Stop signal** | A user action (double-tap RCtrl) that halts current playback. Drain-vs-keep semantics is an open question (see vision). |
@@ -313,7 +314,11 @@ src\
                                       resident across requests.
         __init__.py                   package marker
         __main__.py                   `python -m utterheim_sidecar` entry point
-        main.py                       FastAPI route definitions + typer `serve` command
+        main.py                       FastAPI route definitions + typer `serve`
+                                      command (multi-language preload + the
+                                      LanguageRoutingMiddleware that swaps
+                                      pocket_tts.main.tts_model per request
+                                      based on X-Voice-Language — main-039)
   Utterheim.Cli\                    utterheim-speak — single-file CLI wrapper
   Utterheim.Tests\                  xUnit test project (main-044) — net9.0-windows
                                       x64, ProjectReference → Utterheim. Smoke
@@ -412,11 +417,20 @@ As of main-011 the **real pocket-tts engine is wired in**:
   use `HttpCompletionOption.ResponseHeadersRead` per ADR 0013 — the default
   `ResponseContentRead` would buffer the entire WAV, scaling first-chunk latency
   linearly with input size and breaking the ≤2 s budget on anything beyond a short
-  sentence.
+  sentence. Every outgoing request also carries the `X-Voice-Language` header
+  (`english` / `german`) so the multi-model sidecar can pick the matching
+  resident `TTSModel` (main-039 / ADR 0023). Built-in voices source the language
+  from `BuiltInVoices`; cloned voices source it via `VoiceLibraryService.TryResolveLanguage`.
+  The Claude-Code-facing `POST /speak` contract (ADR 0003) is unchanged — the
+  language header lives only on the C# host-to-sidecar-internal hop. `BuildSpeakRequest`
+  is the internal seam tested by `Utterheim.Tests`.
 - `SidecarHost` owns the `python.exe -m utterheim_sidecar serve --host 127.0.0.1
-  --port 0` process (per ADR 0015 — the wrapper module imports pocket_tts's FastAPI
-  app and mounts `/export-voice` + `/tts-with-state` so cloning + cloned-voice
-  synthesis share the same resident `tts_model`): parses the assigned port from
+  --port 0 --language english --language german` process (per ADR 0015 — the wrapper
+  module imports pocket_tts's FastAPI app and mounts `/export-voice` +
+  `/tts-with-state` so cloning + cloned-voice synthesis share the same resident
+  `tts_model`; per ADR 0024 the `--language` flag is repeated to preload both
+  English and German models concurrently into `_RESIDENT_MODELS`): parses the
+  assigned port from
   Uvicorn's startup banner (unchanged regex — uvicorn logs the same line), polls
   `/health`, redirects stdout/stderr into Serilog under a `sidecar` source, terminates
   on host shutdown, and restarts on crash with capped exponential backoff (5 attempts).
