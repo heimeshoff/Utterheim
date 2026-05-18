@@ -141,8 +141,11 @@
                          English only — System Audio collapses it (user isn't
                          speaking), and the language gate added in main-041
                          collapses it when German is selected (the German
-                         equivalent ships in main-042). Both gates live behind
-                         IsRainbowPassageVisible so the XAML stays declarative.
+                         equivalent — Nordwind und Sonne, main-042 — sits
+                         directly below). Both gates live behind
+                         IsRainbowPassageVisible / IsGermanReadingPromptVisible
+                         on the cloning VM so the XAML stays declarative and
+                         exactly one prompt is shown at a time in Mic mode.
                          Display-only: no interactive elements, no focus trap. -->
                     <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}"
                             BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
@@ -162,6 +165,37 @@
                                        LineHeight="20"
                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                             <TextBlock Text="The Rainbow Passage — University of York"
+                                       FontSize="11"
+                                       Margin="0,8,0,0"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Nordwind und Sonne reading prompt (main-042). Mic mode
+                         + German only. Mirrors the Rainbow Passage block
+                         above; the two are mutually exclusive via the VM's
+                         IsRainbowPassageVisible / IsGermanReadingPromptVisible
+                         flags. Caption uses informal du ("Lies bitte vor:")
+                         per the main-042 tone decision — that du-form sets
+                         the convention for all later German UI copy. -->
+                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="12"
+                            Margin="0,0,0,12"
+                            Visibility="{Binding ViewModel.Cloning.IsGermanReadingPromptVisible, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}">
+                        <StackPanel>
+                            <TextBlock Text="{x:Static vm:NordwindUndSonne.Caption}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Margin="0,0,0,6" />
+                            <TextBlock Text="{x:Static vm:NordwindUndSonne.OpeningTwoSentences}"
+                                       TextWrapping="Wrap"
+                                       LineHeight="20"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <TextBlock Text="{x:Static vm:NordwindUndSonne.Attribution}"
                                        FontSize="11"
                                        Margin="0,8,0,0"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />

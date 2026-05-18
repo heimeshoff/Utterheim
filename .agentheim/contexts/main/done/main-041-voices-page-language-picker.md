@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-18
 completed: 2026-05-18
-commit:
+commit: 49928ff
 depends_on: [main-035, main-040]
 blocks: [main-042]
 tags: [multilingual, ui, voices-page, wpf]

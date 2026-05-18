@@ -92,6 +92,7 @@ public sealed partial class VoiceCloningViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsMicMode))]
     [NotifyPropertyChangedFor(nameof(IsSystemAudioMode))]
     [NotifyPropertyChangedFor(nameof(IsRainbowPassageVisible))]
+    [NotifyPropertyChangedFor(nameof(IsGermanReadingPromptVisible))]
     [NotifyPropertyChangedFor(nameof(TipText))]
     [NotifyCanExecuteChangedFor(nameof(StartCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
@@ -128,17 +129,29 @@ public sealed partial class VoiceCloningViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsRainbowPassageVisible))]
+    [NotifyPropertyChangedFor(nameof(IsGermanReadingPromptVisible))]
     private VoiceLanguage _language = VoiceLanguage.English;
 
     /// <summary>
     /// Drives the Rainbow Passage block's <c>Visibility</c> in XAML
     /// (main-041 task spec, point 2). The reading prompt is an English-only
-    /// artefact (main-034); German + Mic hides it pending the German reading
-    /// prompt landing in main-042. Visible only when (Mic mode) AND (English),
+    /// artefact (main-034). Visible only when (Mic mode) AND (English),
     /// matching the original main-034 gating expanded with the language
-    /// dimension.
+    /// dimension. Mutually exclusive with
+    /// <see cref="IsGermanReadingPromptVisible"/> — exactly one prompt is
+    /// shown in Mic mode, neither in System Audio mode.
     /// </summary>
     public bool IsRainbowPassageVisible => IsMicMode && Language == VoiceLanguage.English;
+
+    /// <summary>
+    /// Drives the German reading-prompt (Nordwind und Sonne) block's
+    /// <c>Visibility</c> in XAML (main-042). Parallel of
+    /// <see cref="IsRainbowPassageVisible"/>: visible only when (Mic mode)
+    /// AND (German). System Audio mode keeps the block collapsed (the user
+    /// isn't speaking, so a reading prompt is irrelevant — same rule
+    /// main-034 set for English).
+    /// </summary>
+    public bool IsGermanReadingPromptVisible => IsMicMode && Language == VoiceLanguage.German;
 
     [ObservableProperty]
     private AudioDeviceInfo? _selectedMicDevice;

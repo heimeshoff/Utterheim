@@ -5,13 +5,68 @@ Newest entries on top.
 
 ---
 
+## 2026-05-18 19:00 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 5 (first-try PASS: 5 [main-044, main-040, main-039, main-041, main-042], SKIPPED: 0, re-dispatched: 0)
+**Bounced:** 0
+**Failed:** 0
+**Escalated after verification:** 0
+**Commits:** 5 (110777d, 448fce6, 4934d1a, 49928ff, [main-042 SHA pending])
+
+**Done in this session — multilingual roll-up after the morning's German-support decisions:**
+- main-044 — Utterheim.Tests xUnit project (commit 110777d) — unblocks every future task with unit-test ACs.
+- main-040 — Voice library `VoiceLanguage` field + `juergen` built-in (commit 448fce6) — schema side of ADR 0023.
+- main-039 — Sidecar preloads en+de; routes by voice language via `X-Voice-Language` header; `PocketTtsEngine.BuildSpeakRequest` (commit 4934d1a) — runtime side of ADR 0024.
+- main-041 — Voices page language picker + per-row EN/DE chip; Rainbow Passage re-gated to English+Mic; `/export-voice` routed through the multi-model middleware (commit 49928ff) — UI side of ADR 0023.
+- main-042 — Nordwind und Sonne reading prompt for German clone flow ([SHA pending]) — copy side; sets the du-form convention for all later German UI.
+
+**Three sidecar version bumps:** 1.0.3 → 1.1.0 (main-039) → 1.2.0 (main-041) bundled inside the multi-language work, since each was tied to a behavioural change the bootstrapper's version-check must see.
+
+**Tests:** went from 0 → 26 facts across 4 test files in `src/Utterheim.Tests/Voices/` and `src/Utterheim.Tests/Tts/`. All pass under `dotnet test --configuration Release`. Test project itself (main-044) ships with 1 smoke `[Fact]`.
+
+**Still in todo — needs user input or is out-of-loop:**
+- **main-038** — listen-test german vs german_24l. Spike requires the user to listen to WAV pairs and judge; cannot be autonomously dispatched. Two paths: (a) run the comparison manually now that the full multilingual stack is shipped (`pocket-tts generate --language german[_24l] --voice juergen --text "<sample>" -o de[_24l].wav`), then write the verdict note per the task's AC; (b) close the spike with a one-line ADR 0025 addendum if the user has already formed an opinion from speak-testing during this session's runtime. Recommend (a) — empirical check is cheap and the spike's whole purpose is to validate the distilled default.
+
+**Concept candidates surfaced this session:**
+- **voice-language** (flagged by the main-040 worker) — converging on 5 artifacts: ADR-0023 (voice carries language), ADR-0024 (sidecar preload), ADR-0025 (distilled German default), main-035 (decision), main-040 (implementation). With main-039, main-041, main-042 now done, the topic spans 8 artifacts. Strong candidate for a concept synthesis page at `contexts/main/concepts/voice-language.md` per the work-skill template. User to decide whether to create it.
+
+**Surprises / observations:**
+- main-044's "no test project" gap was the single biggest unlock — main-040 had bounced on AC 5 previously, and once test infra existed every downstream task ran cleanly first-try.
+- main-041 turned out to require a sidecar middleware path-set extension (`/export-voice` added to `_route_paths_needing_model`) — initially looked like UI-only scope, but AC 3 ("the resulting .safetensors was exported against the correct pocket-tts language") forced the cross-stack change. Verifier judgement: in-scope, not creep.
+- Five-task PASS streak with no re-dispatches and no SKIP suggests the test-infra investment paid back inside the same session.
+
+---
+
+## 2026-05-18 18:55 -- Task verified and completed: main-042 - German reading prompt for the clone-a-new-voice flow
+
+**Type:** Work / Task completion
+**Task:** main-042 - German reading prompt for the clone-a-new-voice flow
+**Summary:** Added the German Nordwind und Sonne reading prompt block to the Voices page clone-flow card; visible only when language picker = German AND source = Microphone, mutually exclusive with the English Rainbow Passage block via the new `IsGermanReadingPromptVisible` flag on `VoiceCloningViewModel`. New `NordwindUndSonne` constants class mirrors the `RainbowPassage` pattern (canonical opening two sentences, caption "Lies bitte vor:", attribution "Nordwind und Sonne (Aesop, gemeinfrei)"). Sets the du-form convention for all later German UI copy.
+**Verification:** PASS (iteration 1) — `dotnet test --configuration Release` 26/26 pass (5 new); BC README updated with dual reading-prompt rule; AC 1–6 covered by the truth-table tests and the static-string assertions.
+**Commit:** <pending>
+**Files changed:** 5 (1 new constants class, 1 VM, 1 XAML, 1 test file modified, README)
+**Tests added:** 5 (truth-table coverage of IsGermanReadingPromptVisible × IsRainbowPassageVisible mutual exclusion + [NotifyPropertyChangedFor] wiring)
+**ADRs written:** none
+**Tone convention pinned:** du-form for all future German UI (per task spec).
+
+---
+
+## 2026-05-18 18:35 -- Batch started: [main-042]
+
+**Type:** Work / Batch start
+**Tasks:** main-042 - German reading prompt for the clone-a-new-voice flow
+**Parallel:** no (1 worker — last unblocked task; main-038 needs user listening)
+
+---
+
 ## 2026-05-18 18:30 -- Task verified and completed: main-041 - Voices page — language picker in clone flow + per-voice language column
 
 **Type:** Work / Task completion
 **Task:** main-041 - Voices page — language picker in clone flow + per-voice language column
 **Summary:** Voices page now declares target language at clone time (English default, German option, ComboBox above source toggle) and shows a compact EN/DE chip on every voice row (built-in + cloned templates). Chosen language flows to `VoiceLibraryService.AddAsync` for persistence AND rides the `X-Voice-Language` header on `/export-voice` so the sidecar encodes the .safetensors against the matching resident TTSModel. Rainbow Passage block now gated behind `IsRainbowPassageVisible = IsMicMode && IsEnglish` (German + Mic hides it pending main-042). Sidecar middleware extended to route `/export-voice` (previously only `/tts` and `/tts-with-state`).
 **Verification:** PASS (iteration 1) — `dotnet test --configuration Release` 21/21 pass (8 new); ADR 0023 (public speak body unchanged — header is on the C#→sidecar internal /export-voice hop only), ADR 0010 (MVVM via [ObservableProperty]/[NotifyPropertyChangedFor]), ADR 0009 (NavigationView shell untouched). AC 5 (Settings default-voice picker no regression) confirmed by code-reading SettingsPageViewModel — unchanged. AC 6 (manual smoke speaking a German clone) deferred to runtime per task-spec note (requires both EN+DE pocket-tts models downloaded).
-**Commit:** <pending>
+**Commit:** 49928ff
 **Files changed:** 9 (4 src/Utterheim/, 1 XAML, 2 sidecar, 2 new test files, README)
 **Tests added:** 8 (5 in VoiceCloningViewModelLanguageTests + 3 in VoiceRowLanguageTests)
 **ADRs written:** none

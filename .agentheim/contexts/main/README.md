@@ -157,6 +157,16 @@ src\
                                       prompt rendered above the audio level
                                       meter (main-034). x:Static-bound from
                                       VoicesPage.xaml; no localisation in v1.
+        NordwindUndSonne.cs           Static class holding the canonical first
+                                      two sentences of Nordwind und Sonne
+                                      (Aesop, gemeinfrei) plus its caption
+                                      ("Lies bitte vor:") and attribution —
+                                      the German Mic-mode reading prompt
+                                      rendered when the language picker is
+                                      set to German (main-042). x:Static-bound
+                                      from VoicesPage.xaml; parallel to
+                                      RainbowPassage, mutually exclusive via
+                                      the cloning VM's visibility flags.
         VoicesPageConverters.cs       CloningSourceToBoolConverter for the cloning
                                       panel (main-025). NullOrEmptyToVisibilityConverter
                                       moved to Views/Converters/SharedConverters.cs in
@@ -690,21 +700,31 @@ running (no collapse / expand in v1). Its view-model is
   at the native render-endpoint format, typically 48 kHz IEEE-float stereo).
   Capture writes a temp WAV under `%TEMP%\Utterheim\` for the duration of
   the session; the path is consumed by Save and deleted on success.
-- **Rainbow Passage prompt** (main-034, gated further in main-041) — Mic
-  mode AND English only: a subtle-fill `Border`
+- **Reading-prompt blocks** (main-034 + main-041 + main-042) — Mic mode
+  only: two parallel subtle-fill `Border` blocks
   (`SubtleFillColorSecondaryBrush`, 1-pt `ControlStrokeColorDefault`,
-  4-pt corner) sitting between the mic tip and the audio level meter shows a
-  "Read this aloud:" heading and the canonical first two sentences of the
-  Rainbow Passage (Fairbanks 1960, *Voice and Articulation Drillbook* —
-  public domain), captioned "The Rainbow Passage — University of York".
-  The text is a `const string` on `RainbowPassage` (`ViewModels/Pages/
-  RainbowPassage.cs`) bound via `{x:Static}` — no view-model property,
-  no localisation in v1. Visibility is keyed off
-  `Cloning.IsRainbowPassageVisible`, a single flag that ANDs `IsMicMode`
-  with `Language == English`: System Audio mode keeps the block collapsed
-  (the user isn't speaking) and German mode keeps it collapsed (the prompt
-  is English-only; the German equivalent is `main-042`'s job). Display-only:
-  no auto-scroll, no current-sentence highlight, no interactive elements.
+  4-pt corner) sit between the mic tip and the audio level meter, one per
+  language. Exactly one is visible at a time (or none, in System Audio
+  mode):
+  - **English** — Rainbow Passage (main-034). "Read this aloud:" heading,
+    the canonical first two sentences of the Rainbow Passage (Fairbanks
+    1960, *Voice and Articulation Drillbook* — public domain), captioned
+    "The Rainbow Passage — University of York". Text is a `const string`
+    on `RainbowPassage` (`ViewModels/Pages/RainbowPassage.cs`) bound via
+    `{x:Static}`. Visibility is keyed off
+    `Cloning.IsRainbowPassageVisible` (`IsMicMode && Language == English`).
+  - **German** — Nordwind und Sonne (main-042). "Lies bitte vor:" heading
+    (informal du-form — load-bearing convention for all later German UI
+    copy), the canonical first two sentences of Nordwind und Sonne (Aesop,
+    gemeinfrei), captioned "Nordwind und Sonne (Aesop, gemeinfrei)". Text,
+    caption, and attribution are `const string`s on `NordwindUndSonne`
+    (`ViewModels/Pages/NordwindUndSonne.cs`) bound via `{x:Static}`.
+    Visibility is keyed off `Cloning.IsGermanReadingPromptVisible`
+    (`IsMicMode && Language == German`).
+  No view-model property holds the passage text — the prompts are static
+  per-language constants with no localisation framework. Both blocks are
+  display-only: no auto-scroll, no current-sentence highlight, no
+  interactive elements.
 - **Recording controls** (shared, identical in both modes per styleguide
   Reusable component map):
   - Audio level meter — horizontal `ProgressBar` driven by the capture

@@ -106,6 +106,108 @@ public class VoiceCloningViewModelLanguageTests
     }
 
     // ------------------------------------------------------------------
+    // main-042 — German reading prompt (Nordwind und Sonne) gate
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// main-042 AC — when the picker is set to German AND the source is
+    /// Microphone, the German reading-prompt block is visible. This is the
+    /// parallel of <see cref="IsRainbowPassageVisible"/> from main-041, only
+    /// the language polarity is flipped. v1 ships with English + German, so
+    /// at any time exactly one prompt is shown in Mic mode (or none, in
+    /// System Audio mode).
+    /// </summary>
+    [Fact]
+    public void IsGermanReadingPromptVisible_TrueWhenGermanSelected_InMicMode()
+    {
+        var vm = NewCloningVm();
+        Assert.True(vm.IsMicMode);
+
+        vm.Language = VoiceLanguage.German;
+
+        Assert.True(vm.IsGermanReadingPromptVisible);
+    }
+
+    /// <summary>
+    /// main-042 AC — the English-Mic case keeps the German prompt collapsed.
+    /// English defaults; the user must opt into German for the German block
+    /// to appear. Guards the "exactly one prompt visible at a time in Mic
+    /// mode" invariant alongside <see cref="IsRainbowPassageVisible"/>.
+    /// </summary>
+    [Fact]
+    public void IsGermanReadingPromptVisible_HiddenWhenEnglishSelected_EvenInMicMode()
+    {
+        var vm = NewCloningVm();
+        Assert.Equal(VoiceLanguage.English, vm.Language);
+        Assert.True(vm.IsMicMode);
+
+        Assert.False(vm.IsGermanReadingPromptVisible);
+    }
+
+    /// <summary>
+    /// main-042 AC — toggling back to English collapses the German block.
+    /// Guards against an accidental one-way flag, mirrors the equivalent
+    /// test for <see cref="IsRainbowPassageVisible"/>.
+    /// </summary>
+    [Fact]
+    public void IsGermanReadingPromptVisible_CollapsedWhenSwitchedBackToEnglish()
+    {
+        var vm = NewCloningVm();
+        vm.Language = VoiceLanguage.German;
+        Assert.True(vm.IsGermanReadingPromptVisible);
+
+        vm.Language = VoiceLanguage.English;
+        Assert.False(vm.IsGermanReadingPromptVisible);
+    }
+
+    /// <summary>
+    /// main-042 AC — System Audio mode keeps the German prompt collapsed
+    /// regardless of language. The user is not speaking in System Audio, so
+    /// a reading prompt is irrelevant (matches the main-034 Mic-only rule).
+    /// </summary>
+    [Fact]
+    public void IsGermanReadingPromptVisible_CollapsedInSystemAudioMode_RegardlessOfLanguage()
+    {
+        var vm = NewCloningVm();
+        vm.Language = VoiceLanguage.German;
+        Assert.True(vm.IsGermanReadingPromptVisible);
+
+        vm.SelectedSource = CloningSource.SystemAudio;
+        Assert.False(vm.IsGermanReadingPromptVisible);
+    }
+
+    /// <summary>
+    /// main-042 AC 2 — both prompts are never visible simultaneously. In Mic
+    /// mode the language picker switches exactly one of them on; in System
+    /// Audio mode both stay collapsed. Pins the contract the XAML relies on
+    /// (two parallel Borders, gated on mutually-exclusive view-model flags).
+    /// </summary>
+    [Fact]
+    public void EnglishAndGermanPrompts_AreNeverBothVisible()
+    {
+        var vm = NewCloningVm();
+
+        // English + Mic → Rainbow only.
+        Assert.True(vm.IsRainbowPassageVisible);
+        Assert.False(vm.IsGermanReadingPromptVisible);
+
+        // German + Mic → Nordwind only.
+        vm.Language = VoiceLanguage.German;
+        Assert.False(vm.IsRainbowPassageVisible);
+        Assert.True(vm.IsGermanReadingPromptVisible);
+
+        // German + System Audio → neither.
+        vm.SelectedSource = CloningSource.SystemAudio;
+        Assert.False(vm.IsRainbowPassageVisible);
+        Assert.False(vm.IsGermanReadingPromptVisible);
+
+        // English + System Audio → neither.
+        vm.Language = VoiceLanguage.English;
+        Assert.False(vm.IsRainbowPassageVisible);
+        Assert.False(vm.IsGermanReadingPromptVisible);
+    }
+
+    // ------------------------------------------------------------------
     // helpers
     // ------------------------------------------------------------------
 

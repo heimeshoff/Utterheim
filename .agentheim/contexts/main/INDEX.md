@@ -11,14 +11,13 @@ research touching this BC, and concept synthesis pages.
 
 <!-- task-counts:start -->
 - **Backlog:** 0
-- **Todo:** 2
+- **Todo:** 1
 - **Doing:** 0
-- **Done:** 42
+- **Done:** 43
 <!-- task-counts:end -->
 
 ### Todo
 <!-- todo-list:start -->
-- **main-042** -- German reading prompt for the clone-a-new-voice flow -- 2026-05-18 -- `todo/main-042-german-reading-prompt.md`
 - **main-038** -- Listen-test german vs german_24l (spike) -- 2026-05-18 -- `todo/main-038-listen-test-german-vs-24l.md`
 <!-- todo-list:end -->
 
@@ -29,6 +28,7 @@ research touching this BC, and concept synthesis pages.
 
 ### Done (most recent first; older entries kept for prior-art search)
 <!-- done-list:start -->
+- **main-042** -- German reading prompt for the clone-a-new-voice flow -- 2026-05-18 -- `done/main-042-german-reading-prompt.md`
 - **main-041** -- Voices page — language picker in clone flow + per-voice language column -- 2026-05-18 -- `done/main-041-voices-page-language-picker.md`
 - **main-039** -- Sidecar — load English + German models concurrently and route by voice's language -- 2026-05-18 -- `done/main-039-sidecar-multi-model-serve.md`
 - **main-040** -- Voice library — add language field; populate built-ins including `juergen` -- 2026-05-18 -- `done/main-040-voice-library-language-field.md`
