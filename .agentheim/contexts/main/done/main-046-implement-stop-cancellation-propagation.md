@@ -1,11 +1,11 @@
 ---
 id: main-046
 title: Implement Stop cancellation propagation into the sidecar (≤2 s recovery)
-status: todo
+status: done
 type: bug
 context: main
 created: 2026-05-19
-completed:
+completed: 2026-05-19
 commit:
 depends_on: [main-045]
 blocks: []
@@ -218,3 +218,109 @@ source at sidecar 1.2.2) and:
     surface a regression.
   - Consumer-thread deadlock if sentinel push regresses → caught by
     the `test_sentinel_push.py` test required in the AC list.
+
+## Outcome
+
+Sidecar 1.3.0 ships ADR 0027 option (e) in production form: every `serve`
+startup unconditionally patches
+`pocket_tts.models.tts_model.TTSModel._autoregressive_generation` with a
+stop-event-aware reimplementation that inlines the for-loop body from
+pocket-tts 2.x's `tts_model.py:744-779` and adds an explicit
+`if stop_event.is_set(): break` between the `_run_flow_lm_and_increment_step`
+call and the `latents_queue.put(next_latent)`. The `sys.settrace`
+mechanism, the `_UtterheimStopRequested` exception type, the `_make_trace`
+helper, the `_read_cancel_mode` machinery, the `UTTERHEIM_CANCEL_PROTOTYPE`
+env var, `CANCEL_FLAG_ENV`, `CANCEL_MODES`, the `_push_stop_sentinels`
+helper, and every "mode=b" / "mode=e" branch are deleted. Both `/tts`
+(wrapped at `LanguageRoutingMiddleware`) and `/tts-with-state` (wrapped at
+the handler) always wrap with the disconnect-aware iterator.
+
+The spike-discovered fixes are retained as-is: sentinel push uses the
+`latents_queue` positional arg (not `self.` attrs); the disconnect-aware
+iterator's finally block sets the stop_event unconditionally and skips
+`source.close()`; startup messages use `print(..., flush=True)` so they
+survive the unconfigured-named-logger / WARNING-default pitfall.
+
+The startup sanity check (signature introspection → first param is `self`
++ patch-identity assertion via `is`) runs every boot and refuses to start
+on a pocket-tts internals mismatch.
+
+### Key files
+
+- `src/Utterheim/PythonSidecar/utterheim_sidecar/main.py` — production form,
+  trace-free; `_patch_autoregressive_generation` builds the patched body
+  inline (~30 LOC of pocket-tts-coupled code).
+- `src/Utterheim/PythonSidecar/utterheim_sidecar/__init__.py` — `__version__`
+  bumped 1.2.2 → 1.3.0; `PythonRuntimeBootstrapper` re-copies the wrapper on
+  every launch where bundled and installed versions differ (ADR 0011 /
+  main-027).
+- `src/Utterheim/PythonSidecar/tests/conftest.py` — stub of
+  `pocket_tts.{main, models.tts_model, utils.utils}` so tests run without
+  the real (heavy) pocket-tts.
+- `src/Utterheim/PythonSidecar/tests/test_cancel_patch.py` — asserts the
+  patch installs, breaks the loop within ≤200 ms of `stop_event.set()`,
+  and refuses a signature whose first param is not `self`.
+- `src/Utterheim/PythonSidecar/tests/test_sentinel_push.py` — asserts the
+  `None` sentinel is pushed to the `latents_queue` positional arg (NOT
+  to a non-existent `self.latents_queue`).
+- `src/Utterheim/PythonSidecar/tests/test_sanity_check.py` — asserts the
+  patch raises `RuntimeError` when `_autoregressive_generation` or `TTSModel`
+  is missing.
+- `.agentheim/contexts/main/README.md` — Stop signal glossary, Engine status
+  section updated; UTTERHEIM_CANCEL_PROTOTYPE references removed (single
+  surviving mention is the explicit "is gone" sentence).
+
+### Pytest results
+
+All 6 tests pass via the repo-root invocation:
+
+```
+pytest src/Utterheim/PythonSidecar/tests/ -v
+# 6 passed
+```
+
+The `dotnet build src/Utterheim/Utterheim.csproj` succeeds (0 warnings,
+0 errors) — confirms the C# side compiles unchanged, as expected (the
+task spec calls for "no code change" in `src/Utterheim/Services/Tts/`).
+
+### Deferred ACs (empirical / measurement, user-driven)
+
+Per the orchestrator's scope carve-out the AC 4/5/6/7/8 measurements
+and the manual `/export-voice` cancellation regression check require an
+interactive tray-app + Stop-hotkey session that cannot be driven
+headlessly — same situation main-045 hit. Run the same measurement
+campaign main-045 used:
+
+1. **Launch utterheim from the freshly-built install** so the
+   `PythonRuntimeBootstrapper`'s version-mismatch path re-copies the new
+   `utterheim_sidecar/main.py` (`__version__` 1.3.0) into
+   `%LOCALAPPDATA%\Utterheim\runtime\python\Lib\site-packages\utterheim_sidecar\`.
+   Confirm the new file is in place: `Get-Content
+   $env:LOCALAPPDATA\Utterheim\runtime\python\Lib\site-packages\utterheim_sidecar\__init__.py`
+   → `__version__ = "1.3.0"`. Also delete the installed `main.py` once and
+   relaunch — the bootstrapper must re-copy it (AC 3 verification).
+2. **Single-cycle Stop tests** (AC 4). Open Task Manager → Details → add
+   columns `CPU` and `Memory (private working set)`. Find the `python.exe`
+   under utterheim. Speak a medium input (~5-10 s of audio) and a long
+   input (~60+ s) on both English and German voices; hit Stop ~2 s into
+   playback each time. Observe CPU drops to <5 % within ≤2 s; record the
+   peak-to-post-stop RSS delta in this Outcome.
+3. **50-cycle stress** (AC 5/6). Use a rapid Play→Stop loop (the same
+   pocket-tts-leak-test rhythm main-045 used). Record post-first-speak
+   baseline RSS and the RSS after cycle 10 / 25 / 50. The hard target is
+   median per-cycle delta ≤25 MB and final RSS within ~500 MB of baseline.
+   The soft (best-effort) target is that direct method replacement closes
+   the ±50 MB form of the original ADR 0026 contract — record whether it
+   does.
+4. **Latency regression guard** (AC 7/8). Re-run
+   `examples/perf/measure-latency.ps1` on warm medium and warm long
+   inputs. ADR 0013's ≤2 s first-chunk budget must still hold. Compare to
+   main-024's baselines (`192 ms warm medium`, `193 ms warm long`).
+5. **`/export-voice` regression check** (AC bottom). Open the voice
+   cloning UI; start a clone; cancel before completion (close the dialog
+   / hit Stop / etc.). Confirm `%TEMP%\utterheim_clone_*` directories are
+   cleaned up and no orphan python work is left running.
+
+The implementation-side ACs (1, 2, 3, 9, 10, 11) are complete and
+auto-verifiable. The empirical ACs above are flagged for user measurement
+in the next session — same pattern main-045 closed under.

@@ -11,14 +11,14 @@ research touching this BC, and concept synthesis pages.
 
 <!-- task-counts:start -->
 - **Backlog:** 0
-- **Todo:** 1
+- **Todo:** 0
 - **Doing:** 0
-- **Done:** 45
+- **Done:** 46
 <!-- task-counts:end -->
 
 ### Todo
 <!-- todo-list:start -->
-- **main-046** -- Implement Stop cancellation propagation into the sidecar (≤2 s recovery) -- 2026-05-19 -- `todo/main-046-implement-stop-cancellation-propagation.md`
+<!-- no tasks in todo -->
 <!-- todo-list:end -->
 
 ### Doing
@@ -28,6 +28,7 @@ research touching this BC, and concept synthesis pages.
 
 ### Done (most recent first; older entries kept for prior-art search)
 <!-- done-list:start -->
+- **main-046** -- Implement Stop cancellation propagation into the sidecar (≤2 s recovery — implementation; empirical CPU/RSS/latency ACs deferred to user) -- 2026-05-19 -- `done/main-046-implement-stop-cancellation-propagation.md`
 - **main-045** -- Diagnose pocket-tts cancellation surface and prototype Stop propagation (spike, partial — prototype delivered, empirical measurement deferred to user) -- 2026-05-19 -- `done/main-045-sidecar-leak-on-stop-cycle.md`
 - **main-038** -- Listen-test german vs german_24l (spike) -- 2026-05-18 -- `done/main-038-listen-test-german-vs-24l.md`
 - **main-042** -- German reading prompt for the clone-a-new-voice flow -- 2026-05-18 -- `done/main-042-german-reading-prompt.md`

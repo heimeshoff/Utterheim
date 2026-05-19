@@ -30,7 +30,7 @@ From the vision's seed glossary, plus terms that surfaced during boundary analys
 | **Multi-model sidecar** | The python sidecar holds one `TTSModel` per preloaded language in a `_RESIDENT_MODELS` dict (main-039 / ADR 0024). `serve --language english --language german` preloads both concurrently at startup; per-request routing swaps `pocket_tts.main.tts_model` to the matching entry before pocket-tts's `/tts` handler runs. Adding a third language is a config change (extend `--language` flags, restart sidecar), not a code change. |
 | **Speak request** | An incoming call carrying `{text, voice ID}`. The unit of work the BC queues, synthesizes, and plays. |
 | **Speak queue** | FIFO of pending speak requests. Head plays; tail is appended. Advances on completion or stop. |
-| **Stop signal** | A user action (double-tap RCtrl) that halts current playback. Drain-vs-keep semantics is an open question (see vision). |
+| **Stop signal** | A user action (double-tap RCtrl) that halts current playback. Drain-vs-keep semantics is an open question (see vision). Cancellation honours the ≤2 s ADR 0026 CPU-drop budget; the sidecar wrapper monkey-patches `_autoregressive_generation` at boot to observe a `threading.Event` in the inference loop (ADR 0027). |
 | **Loopback capture** | Recording the system output device via WASAPI loopback. The "record what I'm hearing" source for voice cloning. |
 | **First-chunk latency** | Time from speak request to first audio sample at the speakers. Target ≤2 s; measured ~190 ms warm / ~320 ms cold (median, alba) and input-length-independent after main-024 / ADR 0013. |
 | **Streaming synthesis** | Producing audio in chunks during generation so playback starts before the full utterance is rendered. |
@@ -484,20 +484,26 @@ As of main-011 the **real pocket-tts engine is wired in**:
   delete affordance ships with main-026.
 - `GET /status` reports `sidecar.state` (notstarted / starting / running / restarting
   / failed / stopping), `sidecar.healthy`, `sidecar.port`, and `sidecar.lastError`.
-- **Stop-cancellation prototype (main-045, sidecar 1.2.1, opt-in, OFF by default).**
-  The sidecar wrapper carries a measurement-only cancellation path behind the
-  `UTTERHEIM_CANCEL_PROTOTYPE` env var. Modes: `off` (default — production
-  behaviour unchanged), `b` (wrapper-only disconnect — predicted insufficient
-  per main-045 H1), `e` (hybrid wrapper + monkey-patch of
-  `pocket_tts.models.tts_model.TTSModel._autoregressive_generation` — the
-  ADR 0027 recommendation). The flag exists so the user can run the
-  measurement campaign that confirms or unseats option (e); the production
-  fix lands in main-046, which will flip the default to `e` (or remove the
-  flag entirely) once measurements are in. Until then **`/tts` and
-  `/tts-with-state` behave exactly as in 1.2.0 when the flag is unset.**
-  See ADR 0027 § "Implementation specifics" for the patched method, the
-  per-model `threading.Event`, the H4 sentinel push, and the startup sanity
-  check.
+- **Stop cancellation propagation (main-046, sidecar 1.3.0, always on).** Every
+  `serve` startup patches `pocket_tts.models.tts_model.TTSModel._autoregressive_generation`
+  with a stop-event-aware reimplementation that inlines the for-loop body from
+  pocket-tts 2.x's `tts_model.py:744-779` with an explicit
+  `if stop_event.is_set(): break` between the per-step inference call and the
+  `latents_queue.put`. Both `/tts` (wrapped at `LanguageRoutingMiddleware`) and
+  `/tts-with-state` (wrapped at the handler) poll `request.is_disconnected()`
+  every ~200 ms; on disconnect the per-model `threading.Event` is set and the
+  patched method breaks out within one inference step, pushing the `None`
+  sentinel to the `latents_queue` positional arg so the decoder thread unwinds
+  cleanly. ADR 0026 budget: CPU <5 % within ≤2 s; median per-cycle RSS delta
+  ≤25 MB across 50-cycle stress. The startup sanity check (signature
+  introspection + patch-identity assertion) runs every boot and refuses to
+  start on a pocket-tts internals mismatch. The opt-in `UTTERHEIM_CANCEL_PROTOTYPE`
+  env var from sidecar 1.2.x is gone — cancellation is unconditional in 1.3.0.
+  Direct method-body replacement was chosen over `sys.settrace` (main-045's
+  prototype mechanism) to eliminate the ~10-20 MB/cycle frame-retention residual
+  the trace-callback machinery contributed. See ADR 0027 § "Mechanism" for the
+  patched method body and § "Startup sanity check" for the refuse-to-start
+  guards.
 
 The "stub-engine plays a 440 Hz tone" note from the skeleton is now superseded.
 

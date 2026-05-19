@@ -5,6 +5,27 @@ Newest entries on top.
 
 ---
 
+## 2026-05-19 16:35 -- Task verified and completed: main-046 - Implement Stop cancellation propagation into the sidecar (≤2 s recovery)
+
+**Type:** Work / Task completion
+**Task:** main-046 - Implement Stop cancellation propagation into the sidecar (≤2 s recovery)
+**Summary:** Sidecar 1.3.0 ships ADR 0027 option (e) in production form: `_autoregressive_generation` is unconditionally replaced at boot with a stop-event-aware reimplementation (direct method-body replacement, no `sys.settrace`); the `UTTERHEIM_CANCEL_PROTOTYPE` opt-in machinery is deleted; three pytest files cover patch installation, sentinel push, and startup sanity check. Implementation ACs (1, 2, 3, 9, 10, 11) auto-verified; empirical ACs (4, 5, 6, 7, 8 and `/export-voice` regression) deferred to user-measurement runbook captured in the task's Outcome.
+**Verification:** PASS (iteration 1) — direct method-body replacement confirmed (no `sys.settrace`); explicit `if stop_event.is_set(): break` between `_run_flow_lm_and_increment_step` and `latents_queue.put`; sentinel push uses the call arg not `self`; both `/tts` and `/tts-with-state` paths wrap; sanity check unconditional; 6/6 pytest pass.
+**Commit:** (pending)
+**Files changed:** 7 (worker FILE_LIST) + task file move + INDEX + protocol entry
+**Tests added:** 3 pytest files (test_cancel_patch.py, test_sentinel_push.py, test_sanity_check.py) + conftest.py
+**ADRs written:** none
+
+---
+
+## 2026-05-19 16:05 -- Batch started: [main-046]
+
+**Type:** Work / Batch start
+**Tasks:** main-046 - Implement Stop cancellation propagation into the sidecar (≤2 s recovery)
+**Parallel:** no (1 worker)
+
+---
+
 ## 2026-05-19 15:29 -- Work session ended (main-045 closure + main-046 promotion)
 
 **Type:** Work / Session end
