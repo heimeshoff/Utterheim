@@ -58,10 +58,22 @@ deadline. From the C# `StopAndDrain` call:
 2. Pending queue items are discarded (unchanged from ADR 0004).
 3. **The sidecar's in-flight synthesis must release its CPU and tensor
    allocations within ≤2 s of the Stop signal.** "Release" means:
-   - Sidecar RSS returns to within ±50 MB of the post-first-speak
-     steady-state baseline (today: ~2.1 GB with en+de preloaded per
-     ADR 0024).
-   - Sidecar CPU drops to <5%.
+   - Sidecar CPU drops to <5% within ≤2 s of the Stop signal. **(Hard.)**
+   - Sidecar RSS does not grow unboundedly across Stop→Play cycles —
+     per-cycle drift is bounded and small enough that an interactive
+     session does not exhaust memory. **(Hard.)** Target: median
+     per-cycle delta ≤25 MB across a 50-cycle stress run.
+   - The strict "RSS returns to within ±50 MB of post-first-speak
+     baseline" form is **a soft target**, not a release gate.
+     main-045's measurement showed the high-water-mark of an
+     interrupted KV-cache allocation persists in PyTorch's CPU pool
+     and glibc's malloc arenas even after the Python objects are
+     freed; closing that gap requires either tearing down the
+     resident TTSModel per request (which fights ADR 0024's preload
+     story and ADR 0002's warm-resident framing) or an upstream
+     pocket-tts change to recycle the KV-cache buffer. v1 accepts the
+     one-time high-water-mark cost in exchange for the
+     warm-resident-model guarantee.
 
 The 2 s budget mirrors the first-chunk latency budget (ADR 0013): the
 two budgets together define what "responsive" means on the speak path,

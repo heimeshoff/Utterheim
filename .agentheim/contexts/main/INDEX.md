@@ -10,15 +10,15 @@ research touching this BC, and concept synthesis pages.
 ## Tasks by status
 
 <!-- task-counts:start -->
-- **Backlog:** 1
-- **Todo:** 0
+- **Backlog:** 0
+- **Todo:** 1
 - **Doing:** 0
 - **Done:** 45
 <!-- task-counts:end -->
 
 ### Todo
 <!-- todo-list:start -->
-<!-- no tasks in todo -->
+- **main-046** -- Implement Stop cancellation propagation into the sidecar (≤2 s recovery) -- 2026-05-19 -- `todo/main-046-implement-stop-cancellation-propagation.md`
 <!-- todo-list:end -->
 
 ### Doing
@@ -77,7 +77,7 @@ research touching this BC, and concept synthesis pages.
 
 ### Backlog
 <!-- backlog-list:start -->
-- **main-046** -- Implement Stop cancellation propagation into the sidecar (<=2 s recovery) -- 2026-05-19 -- `backlog/main-046-implement-stop-cancellation-propagation.md`
+<!-- no tasks in backlog -->
 <!-- backlog-list:end -->
 
 ## ADRs scoped to this BC

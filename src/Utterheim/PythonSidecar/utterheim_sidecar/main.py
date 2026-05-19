@@ -312,11 +312,39 @@ def _patch_autoregressive_generation() -> str:
 
     def patched(self, *args, **kwargs):
         stop_event = _get_or_create_stop_event(self)
+        # main-045 H4 (corrected 2026-05-19 during prototype measurement):
+        # pocket-tts does NOT store latents_queue / result_queue as attrs on
+        # self — they are locals in `_generate_audio_stream_short_text`
+        # (tts_model.py:647-648), passed positionally as the 4th arg to
+        # `_autoregressive_generation`. Pull it from our call args. Pushing
+        # None to latents_queue unblocks the decoder thread
+        # (`_decode_audio_worker` at tts_model.py:436), which itself pushes
+        # ("done", None) to result_queue (tts_model.py:470), which unblocks
+        # the consumer in `_generate_audio_stream_short_text`. The whole
+        # chain unwinds without further intervention. main-046 will replace
+        # this trace-based approach with direct method-body replacement to
+        # also eliminate the residual ~10-20 MB/cycle drift from trace-frame
+        # retention.
+        latents_queue = kwargs.get("latents_queue")
+        if latents_queue is None and len(args) >= 4:
+            latents_queue = args[3]
+
+        def _push_latents_sentinel():
+            if latents_queue is None:
+                return
+            try:
+                latents_queue.put(None)
+            except Exception:  # pragma: no cover - best-effort sentinel
+                logger.exception(
+                    "main-045: latents_queue sentinel push failed"
+                )
+
         # Fast path: no Stop in flight. Run unmodified — trace overhead is
         # zero when settrace is never called.
         if not stop_event.is_set():
             # Arm a trace that raises if the event fires mid-loop.
             import sys as _sys
+            import gc as _gc
 
             _trace = _make_trace(stop_event)
             previous_trace = _sys.gettrace()
@@ -324,19 +352,18 @@ def _patch_autoregressive_generation() -> str:
             try:
                 return original(self, *args, **kwargs)
             except _UtterheimStopRequested:
-                # Sentinel push (main-045 H4): unblock the consumer thread in
-                # `_generate_audio_stream_short_text` (tts_model.py:633) that
-                # reads `result_queue.get()` waiting for a ("done", ...) tuple.
-                # Without this, the consumer hangs and the leak reappears with
-                # a different signature (refinement note H4).
-                _push_stop_sentinels(self)
+                _push_latents_sentinel()
+                # Force GC so the tracebacks (which capture frame locals
+                # including the KV cache tensors) get released promptly
+                # rather than waiting on the generational collector.
+                _gc.collect()
                 return None
             finally:
                 _sys.settrace(previous_trace)
         else:
             # Event was already set before we entered — treat as immediate
             # cancellation. Caller doesn't need a result.
-            _push_stop_sentinels(self)
+            _push_latents_sentinel()
             return None
 
     # Preserve the function metadata so introspection-driven code (e.g.
@@ -462,24 +489,25 @@ async def _disconnect_aware_iterator(request: Request, source, model):
                     if stop_event is not None:
                         stop_event.set()
                     break
+        # main-045 fix (2026-05-19 during prototype measurement):
+        # unconditionally set the stop_event in finally — whether we got here
+        # via disconnect-poll OR via Starlette cancelling our to_thread
+        # chunk-pull. The cancellation path was the bug: CancelledError fires
+        # before the disconnect-poll has a chance to run, so without this
+        # line the stop_event was never set and the producer thread ran to
+        # completion. Also: do NOT call source.close() — when
+        # to_thread(next, iterator) is mid-execution on a worker thread,
+        # close() from this thread raises "generator already executing". The
+        # patched _autoregressive_generation sees stop_event.is_set() on its
+        # next line trace, breaks the loop, pushes the H4 sentinels, the
+        # producer thread exits, the consumer drains, the source generator
+        # unwinds naturally.
     finally:
-        # Close the underlying generator if it supports it. pocket-tts's
-        # `generate_data_with_state` yields from a thread-fed queue and the
-        # generator's close() raises GeneratorExit into the generator body,
-        # which in pocket-tts 2.x triggers the cleanup path that drains the
-        # consumer threads. This is the H4 path — without sentinel pushes the
-        # close() can hang.
-        close = getattr(source, "close", None)
-        if callable(close):
-            try:
-                close()
-            except Exception:  # pragma: no cover - best-effort cleanup
-                logger.exception(
-                    "main-045 prototype: source generator close() raised"
-                )
-        # Always clear the event on exit so a future request starts clean.
         if stop_event is not None:
-            stop_event.clear()
+            stop_event.set()
+            # Do NOT clear() here — the patched generation loop may still be
+            # observing it on another thread. The next request's wrapper
+            # entry clears the event before kicking off synthesis.
 
 
 class LanguageRoutingMiddleware(BaseHTTPMiddleware):

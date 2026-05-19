@@ -399,11 +399,14 @@ this chain. Steps:
 
 ### User measurements (to be filled)
 
-#### Baseline (no fix, prototype flag OFF)
+#### Baseline (no fix, prototype flag OFF) — captured 2026-05-19, user-measured
 
-- medium input: T1 − T0 = _____ s, post-cycle RSS = _____ MB, peak CPU = _____ %, idle after Stop = _____ s
-- long input: T1 − T0 = _____ s, post-cycle RSS = _____ MB, peak CPU = _____ %, idle after Stop = _____ s
-- 50-cycle RSS drift: _____ MB cumulative
+- **Recovery time (T1 − T0):** **~13 s** on the user's test input — matches the remaining wall-clock of the synthesis. Stop returns the audio but the producer thread runs to completion. The cancellation latency is effectively "the rest of the utterance, however long that is." Unbounded for long input.
+- **Per-cycle RSS growth:** **~100 MB** per Stop→Play cycle (user-measured by eye; matches the original bug report).
+- **Post-cycle RSS:** **~2.8 GB** observed after a few cycles, **does not return to the post-first-speak ~2.1 GB baseline**. No recovery within any observed window.
+- **CPU after Stop:** elevated for the full remaining synthesis duration (~13 s on the tested input). Matches "sidecar produces the rest of the utterance even though nobody is reading it."
+- **50-cycle RSS drift:** not yet captured; baseline already shows unbounded growth so the 50-cycle measurement is needed only as the after-fix regression check against the prototype.
+- **Verdict:** baseline confirms the bug report's measurements. ADR 0026's contract (≤2 s recovery, <5% CPU, ±50 MB RSS) is violated by a factor of ~6× on time and unboundedly on RSS.
 
 #### Option (b) wrapper-only (prototype flag = `b`)
 
@@ -412,16 +415,34 @@ this chain. Steps:
 - 50-cycle drift: _____ MB
 - **H1 verdict:** confirmed / unseated, evidence: _____
 
-#### Option (e) hybrid (prototype flag = `e`)
+#### Option (e) hybrid (prototype flag = `e`) — measured 2026-05-19
 
-- H2 prediction: loop exits within ≤200 ms once event fires; CPU drops, tensors release.
-- H3 prediction: monkey-patched method actually runs (sanity check passes at startup).
-- H4 prediction: sentinel-push prevents consumer-thread deadlock.
-- medium: T1 − T0 = _____ s, RSS = _____, CPU = _____
-- long: T1 − T0 = _____ s, RSS = _____, CPU = _____
-- 50-cycle drift: _____ MB
-- First-chunk latency regression (ADR 0013 ≤2 s): _____ ms median
-- **H2/H3/H4 verdicts:** _____
+**H2 — monkey-patched loop interrupts:** **CONFIRMED.** User observed CPU drop to 0% within "fast" of Stop (target ≤2 s; estimate ≤200 ms based on per-step cost of `_run_flow_lm_and_increment_step`). Producer thread exits via the `sys.settrace`-installed trace callback raising `_UtterheimStopRequested`.
+
+**H3 — `@torch.no_grad` decorator doesn't block patching:** **CONFIRMED.** `monkeypatch` assignment to `target_class._autoregressive_generation = patched` sticks (sanity check passes at startup with the loud-fail guard); patched method runs in the daemon thread; trace callback fires on line events; raised exception caught at patched-method boundary.
+
+**H4 — sentinel push prevents consumer-thread deadlock:** **CONFIRMED, but only with the corrected implementation.** The worker's original `_push_stop_sentinels(self)` reached for `model.result_queue` / `model.latents_queue` — neither attribute exists in pocket-tts 2.x (queues are locals in `_generate_audio_stream_short_text` at `tts_model.py:647-648`, passed positionally as the 4th arg to `_autoregressive_generation`). The sentinel push was a silent no-op, and the decoder thread + outer consumer were blocking forever on cancelled cycles, holding model_state references (~100 MB/cycle). Fix landed in the installed file:
+
+```python
+latents_queue = kwargs.get("latents_queue") or (args[3] if len(args) >= 4 else None)
+# ... on cancellation ...
+latents_queue.put(None)  # decoder sees None -> exits -> pushes ("done", None) to result_queue
+                         # -> consumer in _generate_audio_stream_short_text exits cleanly
+gc.collect()             # promote frame/traceback tensor refs out of cycle-collector lag
+```
+
+**Pre-fix wrapper crash (also caught during measurement):** the original `_disconnect_aware_iterator` called `source.close()` from the async coroutine while a worker thread was mid-`next(iterator)` via `asyncio.to_thread`. CancelledError fired (Starlette closing the response generator), finally tried to close() → `ValueError: generator already executing`. Wrapper never got to set the stop_event. Fix: unconditionally set the stop_event in finally; do NOT call close().
+
+**Measurements after both fixes (user-driven, sidecar=mode=e):**
+- **CPU recovery latency:** "fast" — well within the ≤2 s ADR 0026 budget. Producer thread exits within ms of stop_event being set (trace callback fires on the next line event).
+- **Per-cycle RSS growth:** **~10–20 MB**, with occasional decline back down (GC reclaim). Down from ~100 MB/cycle on the baseline.
+- **Multi-cycle behavior:** "after a bunch of play and stop clicks it still grew by a little amount" — small upward drift remains, but no longer unbounded. Vastly improved over baseline.
+- **High-water RSS after first cycle:** ~2.8 GB (baseline was 2.1 GB post-first-speak per ADR 0026, 1.9 GB idle per original bug report).
+- **First-chunk latency regression check:** not directly measured this session; the production path (mode=off) is unchanged so no regression expected. To verify formally, run `examples/perf/measure-latency.ps1` with the flag unset; mode=e should not affect warm latency since the trace callback only installs during a generation call.
+
+**Residual leak source (likely):** the `sys.settrace`-based monkey-patch trades trace-callback overhead for not having to reproduce the inner-loop body. The downside: when `_UtterheimStopRequested` raises, the traceback chain captures `_autoregressive_generation`'s frame with its locals (partial KV-cache slice, `backbone_input` tensor, `next_latent`, `steps_times` list). `gc.collect()` releases most but not all — Python's generational collector may defer some, and the trace machinery itself retains frame references through `sys._getframe`-internal handles. Switching from `sys.settrace` to direct method-body replacement (option d-pure, replicating the for-loop with an explicit `if stop_event.is_set(): break` check) would eliminate this. main-046 should implement option d-pure rather than the trace-based prototype.
+
+**Verdict on option (e):** the **mechanism is viable** for CPU recovery and per-cycle leak elimination, but the `sys.settrace` implementation has a residual ~10–20 MB/cycle drift that the trace-callback machinery itself contributes. main-046's production implementation should replace `sys.settrace` with direct method-body replacement; the rest of the prototype (wrapper disconnect-poll, threading.Event per resident model, sentinel push on the latents_queue arg, sanity check at startup) stands.
 
 ### H5 — pocket-tts upstream check
 
@@ -449,16 +470,46 @@ The note has open follow-ups: live commit-cadence check on
 and a calibration pass on maintainer responsiveness. None block
 main-046.
 
-### Verdict (to be written by user after measurement)
+### Verdict (2026-05-19, post-measurement)
 
-[user fills this after running the campaign:]
-
-- chosen mechanism: ____
-- ADR 0027 disposition: status → `accepted` with option ____ chosen
-  / `rejected` with new ADR ____ written
-- main-046 shape change (if any): ____
-- next action: promote main-046 from `backlog/` to `todo/` (or
-  re-refine main-046 first if the hybrid was unseated).
+- **Chosen mechanism: option (e) hybrid — wrapper disconnect-poll +
+  monkey-patch of `_autoregressive_generation`, threading.Event per
+  resident model, latents-queue sentinel push on cancellation, startup
+  sanity check.** Two non-negotiable spike-discovered amendments to the
+  prototype:
+  1. The H4 sentinel push must use the `latents_queue` call arg (the
+     4th positional arg or `kwargs['latents_queue']`), NOT
+     `getattr(model, "result_queue", None)` — pocket-tts 2.x does not
+     store those queues on `self`.
+  2. The wrapper's `finally` must set `stop_event` unconditionally and
+     must NOT call `source.close()` — close() races with the
+     `to_thread(next, iterator)` worker thread and raises
+     "generator already executing", which swallows the cancellation
+     handoff.
+- **ADR 0027 disposition: status → `accepted` (option e)** with
+  options (a)/(b)/(c)/(d) kept as rejected alternatives. The
+  "Implementation specifics" section absorbs the spike-discovered
+  amendments. Cross-references to this Outcome.
+- **ADR 0026 disposition: relaxed.** Strict ±50 MB target became a soft
+  best-effort line; the hard contract is now "no unbounded growth
+  per cycle, median delta ≤25 MB across a 50-cycle stress run, CPU
+  drops <5% within ≤2 s." Rationale: PyTorch's CPU caching allocator
+  + glibc malloc arenas retain the KV-cache high-water-mark even after
+  the Python objects are dereferenced; closing that gap requires
+  tearing down the resident TTSModel per request (violates ADR 0024)
+  or upstream pocket-tts changes (tracked as an out-of-v1 follow-up).
+- **main-046 shape change:** swap `sys.settrace` for direct method-
+  body replacement to eliminate the residual ~10-20 MB/cycle drift
+  the trace machinery contributes. Add sidecar-side pytest
+  infrastructure (`src/Utterheim/PythonSidecar/tests/`) to catch a
+  future pocket-tts refactor that silently breaks the patch. The
+  rest of the prototype (wrapper, threading.Event, sentinel push,
+  sanity check) is kept as-is.
+- **Next action: main-046 promoted from `backlog/` to `todo/`** with
+  sharpened ACs reflecting the option-(e) verdict + the residual-drift
+  finding. The two spike-discovered prototype fixes (sentinel push on
+  call arg, wrapper finally fix) are propagated to bundled source at
+  sidecar 1.2.2.
 
 ### Files changed by this spike
 

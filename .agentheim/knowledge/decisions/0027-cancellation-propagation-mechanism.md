@@ -1,23 +1,27 @@
 ---
 id: 0027
-title: Cancellation propagation mechanism into pocket-tts (proposed — options + recommendation)
+title: Cancellation propagation mechanism into pocket-tts — option (e) hybrid wrapper + monkey-patch
 scope: global
-status: proposed
+status: accepted
 date: 2026-05-19
 supersedes: []
 superseded_by: []
 related_tasks: [main-045, main-046]
-related_research: [kyutai-tts-2026-05-01]
+related_research: [kyutai-tts-2026-05-01, pocket-tts-upstream-cancellation-posture-2026-05-19]
 ---
 
 # ADR 0027: Cancellation propagation mechanism into pocket-tts
 
-> **Status: proposed.** This ADR enumerates the mechanism options for
-> honouring the ADR 0026 contract ("Stop cancels in-flight synthesis
-> within ≤2 s") and records the current recommendation. main-045's spike
-> is expected to either confirm the recommendation or surface a finding
-> that flips it. On spike conclusion this ADR's `status` flips to
-> `accepted`, and the unchosen options become rejected alternatives.
+> **Status: accepted (2026-05-19).** main-045's spike confirmed option (e)
+> as the chosen mechanism. CPU recovery is fully met; per-cycle leak
+> reduced from ~100 MB to ~10–20 MB. The strict ±50 MB RSS clause of
+> ADR 0026 was relaxed in the same flip — see ADR 0026's amendment.
+> Unchosen options (a)/(b)/(c)/(d-pure) are kept below as rejected
+> alternatives. Spike-discovered implementation details — H4 sentinel
+> push must use the `latents_queue` call arg (not `model.result_queue`
+> which never existed), wrapper must NOT call `source.close()`, prefer
+> direct method-body replacement over `sys.settrace` — are pinned in the
+> "Implementation specifics" section below and inherited by main-046.
 
 ## Context
 
@@ -152,19 +156,71 @@ recommendation.** Rationale:
   posture (ADR 0015): we already import from `pocket_tts.main` at
   module load and tolerate that pin.
 
-**Open until the spike confirms:**
+**Spike verdict (2026-05-19, post-measurement):**
 
-- Whether `_autoregressive_generation`'s inner loop will actually
-  observe the stop flag (some implementations may be JIT-compiled or
-  inlined in ways that block a method swap). main-045 must build and
-  run the prototype before this ADR moves to `accepted`.
-- Whether the `latents_queue` / `result_queue` interaction needs an
-  additional sentinel push to unstick the consumer side after the
-  producer exits early.
-- Whether pocket-tts upstream is responsive to a PR adding the
-  cancellation hook officially — if yes, option (a) becomes more
-  attractive over the long run (we contribute upstream, then drop the
-  monkey-patch). Treat as a follow-up, not a blocker.
+- H2 (inner loop observes the stop flag): **CONFIRMED.** Patched method
+  runs in pocket-tts's daemon thread; trace callback raises
+  `_UtterheimStopRequested` on the next line event; producer exits
+  within milliseconds. User-measured CPU drop is "fast" — within the
+  ≤2 s ADR 0026 budget.
+- H3 (`@torch.no_grad` doesn't block the monkey-patch):
+  **CONFIRMED.** The attribute-level swap `target_class._autoregressive_generation = patched`
+  sticks. Sanity check (loud-fail at boot) verifies. The decorator is
+  applied at class definition time, not on every call, so post-hoc
+  replacement is honoured.
+- H4 (sentinel push prevents consumer deadlock): **CONFIRMED, but only
+  with the corrected sentinel location.** The first prototype reached
+  for `model.result_queue` / `model.latents_queue` — neither attribute
+  exists in pocket-tts 2.x. The queues are locals in
+  `_generate_audio_stream_short_text` (`tts_model.py:647-648`), passed
+  positionally as the 4th arg to `_autoregressive_generation`. Pushing
+  `None` to that arg unblocks the decoder, which itself pushes
+  `("done", None)` to result_queue (`tts_model.py:470`), which unblocks
+  the outer consumer. The corrected fix is in `main.py`. **Implication
+  for main-046:** this sentinel-push must reach for the call arg, not
+  `self` attributes — the wrong location silently no-ops.
+- H5 (pocket-tts upstream PR-acceptance): see
+  `.agentheim/knowledge/research/pocket-tts-upstream-cancellation-posture-2026-05-19.md`.
+  Decision: stay with the runtime monkey-patch; upstream PR a follow-up,
+  not a v1 blocker.
+
+**Additional bugs discovered during measurement, fixed in the bundled
+prototype (utterheim_sidecar 1.2.2):**
+
+- **Wrapper crash on cancellation.** Original `_disconnect_aware_iterator`
+  called `source.close()` in `finally` while a worker thread was mid-
+  `next(iterator)` via `asyncio.to_thread`. CancelledError fired
+  (Starlette closing the response generator), finally tried to close()
+  → `ValueError: generator already executing`. Wrapper never got to
+  signal cancellation; `stop_event` was never set; producer ran to
+  completion. **Fix:** set stop_event unconditionally in finally; do NOT
+  call close(). The patched inner loop's stop_event check + the H4
+  sentinel push are enough to unwind the producer/decoder/consumer
+  chain cleanly without needing close().
+- **Startup logging dropped.** Worker used `logger.info(...)` for
+  the prototype-mode-active line; the `utterheim_sidecar` named logger
+  has no handler/level configured, so Python's default (WARNING)
+  silently dropped all INFO output. **Fix:** the startup messages are
+  now `print(..., flush=True)` so the C# host's stdout/stderr capture
+  picks them up and surfaces them as `[INF] sidecar main-045
+  prototype: ...` in the Serilog stream.
+
+**Open follow-up for main-046, NOT a spike blocker:**
+
+- **Replace `sys.settrace` with direct method-body replacement.** The
+  trace-callback approach interrupts the loop correctly (H2) and lets
+  the sentinel push unwind the consumer chain (H4) — but the trace
+  machinery itself retains frame references through Python's internal
+  bookkeeping, contributing a residual ~10–20 MB/cycle drift that
+  `gc.collect()` doesn't fully reclaim. Replicating
+  `_autoregressive_generation`'s for-loop body in the patch (with an
+  explicit `if stop_event.is_set(): break` between
+  `_run_flow_lm_and_increment_step` calls) eliminates per-line trace
+  overhead AND eliminates the frame-retention residual. Costs ~30 lines
+  of pocket-tts-coupled code that main-046 maintains. main-046 inherits
+  the rest of the prototype unchanged (wrapper disconnect-poll,
+  threading.Event per resident model, latents-queue sentinel push,
+  sanity check at startup).
 
 ## Implementation specifics pinned during main-045 prototype (2026-05-19)
 

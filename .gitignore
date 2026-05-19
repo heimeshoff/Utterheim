@@ -18,5 +18,10 @@ Thumbs.db
 *.pdb
 dist
 
+## Python
+__pycache__/
+*.pyc
+*.pyo
+
 .fake
 .claude/utterheim-voice
