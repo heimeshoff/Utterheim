@@ -6,7 +6,7 @@ type: spike
 context: main
 created: 2026-05-19
 completed: 2026-05-19
-commit:
+commit: bde95c4
 depends_on: []
 blocks: [main-046]
 tags: [spike, sidecar, cancellation, stop-signal, memory-leak]

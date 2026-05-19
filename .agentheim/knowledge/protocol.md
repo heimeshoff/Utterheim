@@ -5,6 +5,40 @@ Newest entries on top.
 
 ---
 
+## 2026-05-19 13:05 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1 (first-try PASS: 0, verification SKIPPED: 1, re-dispatched: 0)
+**Bounced:** 0
+**Failed:** 0
+**Escalated after verification:** 0
+**Commits:** 1 (bde95c4)
+
+**Done in this session — single-task scoped spike:**
+- main-045 — pocket-tts Stop-cancellation prototype delivered as opt-in `UTTERHEIM_CANCEL_PROTOTYPE` env flag (commit bde95c4). Partial completion: prototype code, H4 sentinel push, startup sanity check, H5 upstream research, ADR-0027 implementation specifics, main-046 AC sharpening, BC README note, sidecar version bump 1.2.0 → 1.2.1. Empirical measurement campaign (ACs 1–6: baseline reproduction, H1/H2/H3/H4 verdicts, 50-cycle drift, cancellation latency, first-chunk regression check) deferred to user — runbook captured in the task's Outcome section with placeholder cells for the user's numbers.
+
+**Next steps for the user (load-bearing):**
+- Run the prototype against the existing repro recipe (Voices page → paste medium/long input → Play → Stop within ~1 s → repeat 10× then 50×) with `UTTERHEIM_CANCEL_PROTOTYPE=b` (wrapper-only) and `UTTERHEIM_CANCEL_PROTOTYPE=e` (hybrid). Sample RSS + CPU at 250 ms via `Get-Process python`. Fill the User-measurements section of main-045's Outcome. Once numbers exist, the verdict either flips ADR 0027 to `accepted` (option e) or unseats it — main-046 promotes to todo only after that flip.
+
+**Surprises / observations:**
+- Worker chose `sys.settrace`-based interception instead of full method-body replacement for the monkey-patch. Creative — avoids reproducing the inner-loop body — but adds a per-line trace-function overhead that the user's measurements will reveal as acceptable or not. If the overhead pushes first-chunk latency near the ADR 0013 budget when the flag is OFF (it shouldn't, the trace function isn't installed unless the flag is set), main-046 may want to ditch the trace approach in favour of method replacement.
+- ADRs 0026 + 0027 + the main-046 backlog file were authored by today's earlier model REFINE session but had not been committed; they landed in this commit alongside the prototype that tests them. Coherent bundle, not creep.
+
+**Verification gate skipped this dispatch.** User-approved scope carve-out: the spike's pass/fail criteria are empirical and unrunnable by the worker, so a verifier audit against ACs would have FAILed on items the worker was explicitly told not to attempt. The user is the verifier for this task.
+
+---
+
+## 2026-05-19 13:05 -- Task completed (verification skipped): main-045 - Diagnose pocket-tts cancellation surface and prototype Stop propagation
+
+**Type:** Work / Task completion
+**Task:** main-045 - Diagnose pocket-tts cancellation surface and prototype Stop propagation
+**Summary:** Shipped the option-(e) hybrid Stop-cancellation prototype as an opt-in `UTTERHEIM_CANCEL_PROTOTYPE` env flag on the sidecar (wrapper disconnect-poll + sys.settrace-based monkey-patch of `TTSModel._autoregressive_generation` + H4 sentinel push + startup sanity check); bumped sidecar 1.2.0 → 1.2.1; the empirical RSS/CPU measurement campaign is deferred to a user-driven runbook captured in the Outcome.
+**Verification:** SKIPPED — user-approved scope carve-out (empirical ACs unrunnable by the worker; user is the verifier for this task)
+**Commit:** bde95c4
+**Files changed:** 11 (6 worker FILE_LIST + 5 orchestrator/contract files bundled coherently)
+
+---
+
 ## 2026-05-19 12:49 -- Batch started: [main-045]
 
 **Type:** Work / Batch start
