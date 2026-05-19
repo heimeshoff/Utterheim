@@ -278,65 +278,75 @@ def _patch_autoregressive_generation() -> str:
                 )
             return
 
-        backbone_input = torch.full(
-            (1, 1, self.flow_lm.ldim),
-            fill_value=float("NaN"),
-            device=next(iter(self.flow_lm.parameters())).device,
-            dtype=self.flow_lm.dtype,
-        )
-        steps_times = []
-        eos_step = None
-        cancelled = False
-        for generation_step in range(max_gen_len):
-            with display_execution_time("Generating latent", print_output=False) as timer:
-                next_latent, is_eos = self._run_flow_lm_and_increment_step(
-                    model_state=model_state, backbone_input_latents=backbone_input
-                )
-
-                # --- main-046 cancellation hook (the one line that matters) ---
-                # Check the stop event between inference and the latent push.
-                # If set, push the None sentinel below in the cleanup branch
-                # and break out. The decoder thread (`_decode_audio_worker`)
-                # reads None as a poison pill and unwinds; that pushes
-                # ("done", None) onto its own result_queue which lets the
-                # consumer in `_generate_audio_stream_short_text` exit too.
-                if stop_event.is_set():
-                    cancelled = True
-                    break
-                # --------------------------------------------------------------
-
-                if is_eos.item() and eos_step is None:
-                    eos_step = generation_step
-                if eos_step is not None and generation_step >= eos_step + frames_after_eos:
-                    break
-
-                # Add generated latent to queue for immediate decoding
-                latents_queue.put(next_latent)
-                backbone_input = next_latent
-            steps_times.append(timer.elapsed_time_ms)
-        else:
-            if os.environ.get("KPOCKET_TTS_ERROR_WITHOUT_EOS", "0") == "1":
-                raise RuntimeError("Generation reached maximum length without EOS!")
-            logger.warning(
-                "Maximum generation length reached without EOS, this very often "
-                "indicates an error."
+        # The original pocket-tts `_autoregressive_generation` carries a
+        # `@torch.no_grad` decorator (tts_model.py:744). Replacing the method
+        # body bypasses that decorator, so without this `with` block every
+        # `_run_flow_lm_and_increment_step` call builds and retains an
+        # autograd graph for the full generation — roughly +500 MB per long
+        # utterance on top of the steady-state RSS, accumulating across Stop
+        # cycles. main-045's prototype called `original(...)` so it inherited
+        # the decorator for free; 1.3.0's direct method-body replacement
+        # has to restate it explicitly here.
+        with torch.no_grad():
+            backbone_input = torch.full(
+                (1, 1, self.flow_lm.ldim),
+                fill_value=float("NaN"),
+                device=next(iter(self.flow_lm.parameters())).device,
+                dtype=self.flow_lm.dtype,
             )
+            steps_times = []
+            eos_step = None
+            cancelled = False
+            for generation_step in range(max_gen_len):
+                with display_execution_time("Generating latent", print_output=False) as timer:
+                    next_latent, is_eos = self._run_flow_lm_and_increment_step(
+                        model_state=model_state, backbone_input_latents=backbone_input
+                    )
 
-        # Add sentinel value to signal end of generation. On the cancelled
-        # path this is the only thing the decoder thread needs to unwind.
-        try:
-            latents_queue.put(None)
-        except Exception:  # pragma: no cover - best-effort sentinel
-            logger.exception("main-046: terminal latents_queue sentinel push failed")
+                    # --- main-046 cancellation hook (the one line that matters) ---
+                    # Check the stop event between inference and the latent push.
+                    # If set, push the None sentinel below in the cleanup branch
+                    # and break out. The decoder thread (`_decode_audio_worker`)
+                    # reads None as a poison pill and unwinds; that pushes
+                    # ("done", None) onto its own result_queue which lets the
+                    # consumer in `_generate_audio_stream_short_text` exit too.
+                    if stop_event.is_set():
+                        cancelled = True
+                        break
+                    # --------------------------------------------------------------
 
-        if not cancelled and steps_times:
-            try:
-                logger.info(
-                    "Average generation step time: %d ms",
-                    int(statistics.mean(steps_times)),
+                    if is_eos.item() and eos_step is None:
+                        eos_step = generation_step
+                    if eos_step is not None and generation_step >= eos_step + frames_after_eos:
+                        break
+
+                    # Add generated latent to queue for immediate decoding
+                    latents_queue.put(next_latent)
+                    backbone_input = next_latent
+                steps_times.append(timer.elapsed_time_ms)
+            else:
+                if os.environ.get("KPOCKET_TTS_ERROR_WITHOUT_EOS", "0") == "1":
+                    raise RuntimeError("Generation reached maximum length without EOS!")
+                logger.warning(
+                    "Maximum generation length reached without EOS, this very often "
+                    "indicates an error."
                 )
-            except statistics.StatisticsError:  # pragma: no cover - defensive
-                pass
+
+            # Add sentinel value to signal end of generation. On the cancelled
+            # path this is the only thing the decoder thread needs to unwind.
+            try:
+                latents_queue.put(None)
+            except Exception:  # pragma: no cover - best-effort sentinel
+                logger.exception("main-046: terminal latents_queue sentinel push failed")
+
+            if not cancelled and steps_times:
+                try:
+                    logger.info(
+                        "Average generation step time: %d ms",
+                        int(statistics.mean(steps_times)),
+                    )
+                except statistics.StatisticsError:  # pragma: no cover - defensive
+                    pass
 
     # Preserve the function metadata so introspection-driven code (e.g.
     # tracebacks, debuggers) still names the original.

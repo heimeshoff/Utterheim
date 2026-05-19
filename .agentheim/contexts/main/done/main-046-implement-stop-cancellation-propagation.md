@@ -6,7 +6,7 @@ type: bug
 context: main
 created: 2026-05-19
 completed: 2026-05-19
-commit:
+commit: dee614c
 depends_on: [main-045]
 blocks: []
 tags: [bug, sidecar, cancellation, stop-signal, memory-leak]

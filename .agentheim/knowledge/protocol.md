@@ -5,15 +5,44 @@ Newest entries on top.
 
 ---
 
+## 2026-05-19 16:40 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1 (first-try PASS: 1, re-dispatched: 0, skipped: 0)
+**Bounced:** 0
+**Failed:** 0
+**Escalated after verification:** 0
+**Commits:** 1 (dee614c) + 1 chore backfill
+
+**Done in this session — single-task batch (main-046):**
+- ADR 0027 option (e) lands in production form. `sys.settrace` replaced with direct method-body replacement of `TTSModel._autoregressive_generation` — the patched body inlines the for-loop with an explicit `if stop_event.is_set(): break` between `_run_flow_lm_and_increment_step` and `latents_queue.put(next_latent)`. Eliminates the residual trace-callback frame retention main-045 measured at ~10-20 MB/cycle.
+- Opt-in `UTTERHEIM_CANCEL_PROTOTYPE` machinery removed. Cancellation is always on. Both `/tts` (via LanguageRoutingMiddleware) and `/tts-with-state` (handler-level) wrap.
+- New pytest harness `src/Utterheim/PythonSidecar/tests/` — three files (`test_cancel_patch.py`, `test_sentinel_push.py`, `test_sanity_check.py`) plus `conftest.py`. 6/6 pass. Stubs the pocket-tts surface so the suite stays light (no torch import).
+- Sidecar version 1.2.2 → 1.3.0 so `PythonRuntimeBootstrapper` re-copies the wrapper on next launch.
+- BC README updates: Stop signal glossary entry references ≤2 s ADR 0026 + ADR 0027 monkey-patch; engine status documents the always-on cancellation hook; no surviving `UTTERHEIM_CANCEL_PROTOTYPE` references except the explicit "is gone" sentence.
+
+**Next steps for the user (empirical-AC carve-out — same pattern as main-045):**
+- Acceptance criteria 4, 5, 6, 7, 8 (CPU drop <5% within ≤2 s, median per-cycle RSS delta ≤25 MB across 50 cycles, ADR 0013 first-chunk latency regression check on medium + long inputs) and the `/export-voice` manual cancellation regression require an interactive tray-app + Stop-hotkey session. The runbook is in main-046's `## Outcome` section. Build + install utterheim normally; the bootstrapper will see `__version__` 1.3.0 ≠ installed 1.2.2 and re-copy the wrapper on next launch. Run the same medium-input / long-input / 50-cycle stress protocol main-045 used. If CPU recovery and per-cycle RSS delta hit the ADR 0026 contract, main-046 is fully done; otherwise file a follow-up.
+
+**Surprises / observations:**
+- Verifier returned PASS on the first iteration. Worker implemented the option-(e) production form cleanly: removed all the opt-in machinery, inlined the loop body with the correct break placement, kept the sentinel push on the call arg (not `self`), kept the finally fix (unconditional `stop_event` set; no `source.close()`). The pytest harness exercises the patch installation, the sentinel push, and the loud-fail sanity check — exactly the three test files the AC list named, no scope creep.
+- One nit on the worker's strict return: `FILES_CHANGED: 6` was inconsistent with a 7-entry `FILE_LIST` (conftest.py was missing from the integer count). All files were present on disk; the count discrepancy was a counting nit, not a defect.
+
+**State of utterheim runtime:**
+- Bundled wrapper at 1.3.0 with always-on cancellation. The C# side (`SpeakQueue.StopAndDrain` → linked CTS → `PocketTtsEngine.StreamAsync` → `HttpClient.SendAsync(..., ResponseHeadersRead, ct)` → `Stream.ReadAsync(..., ct)` + `Dispose()`) is unchanged — main-045 confirmed it was already correctly wired.
+- After the user rebuilds + relaunches utterheim, the next sidecar boot will reinstall the wrapper (bootstrapper sees the version bump). Cancellation will be active without any env var.
+
+---
+
 ## 2026-05-19 16:35 -- Task verified and completed: main-046 - Implement Stop cancellation propagation into the sidecar (≤2 s recovery)
 
 **Type:** Work / Task completion
 **Task:** main-046 - Implement Stop cancellation propagation into the sidecar (≤2 s recovery)
 **Summary:** Sidecar 1.3.0 ships ADR 0027 option (e) in production form: `_autoregressive_generation` is unconditionally replaced at boot with a stop-event-aware reimplementation (direct method-body replacement, no `sys.settrace`); the `UTTERHEIM_CANCEL_PROTOTYPE` opt-in machinery is deleted; three pytest files cover patch installation, sentinel push, and startup sanity check. Implementation ACs (1, 2, 3, 9, 10, 11) auto-verified; empirical ACs (4, 5, 6, 7, 8 and `/export-voice` regression) deferred to user-measurement runbook captured in the task's Outcome.
 **Verification:** PASS (iteration 1) — direct method-body replacement confirmed (no `sys.settrace`); explicit `if stop_event.is_set(): break` between `_run_flow_lm_and_increment_step` and `latents_queue.put`; sentinel push uses the call arg not `self`; both `/tts` and `/tts-with-state` paths wrap; sanity check unconditional; 6/6 pytest pass.
-**Commit:** (pending)
-**Files changed:** 7 (worker FILE_LIST) + task file move + INDEX + protocol entry
-**Tests added:** 3 pytest files (test_cancel_patch.py, test_sentinel_push.py, test_sanity_check.py) + conftest.py
+**Commit:** dee614c
+**Files changed:** 10 (worker FILE_LIST 7 + task file move + INDEX + protocol entry)
+**Tests added:** 3 pytest files (test_cancel_patch.py, test_sentinel_push.py, test_sanity_check.py) + conftest.py — 6/6 pass
 **ADRs written:** none
 
 ---
