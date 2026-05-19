@@ -235,7 +235,12 @@ public sealed class PocketTtsEngine : ITtsEngine
     internal static string LanguageWireValue(VoiceLanguage language) => language switch
     {
         VoiceLanguage.English => "english",
-        VoiceLanguage.German => "german",
+        // TEMPORARY listen-test swap (main-038 round 2): routing key is
+        // "german_24l" so the sidecar serves the undistilled variant. Revert
+        // to "german" to restore the ADR 0025 production default. Library
+        // persistence still serialises "german" — only the wire/preload key
+        // moves, no library.json migration.
+        VoiceLanguage.German => "german_24l",
         _ => throw new ArgumentOutOfRangeException(nameof(language), language, null),
     };
 
