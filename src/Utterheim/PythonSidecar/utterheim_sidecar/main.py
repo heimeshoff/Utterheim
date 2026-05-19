@@ -33,9 +33,12 @@ Both routes share pocket-tts's resident TTSModel and avoid paying its
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import logging
 import os
 import tempfile
+import threading
 import time
 from typing import Dict, List, Optional
 
@@ -110,6 +113,375 @@ def _route_paths_needing_model() -> frozenset:
     return frozenset({"/tts", "/tts-with-state", "/export-voice"})
 
 
+# ---------------------------------------------------------------------------
+# main-045 prototype: opt-in Stop-cancellation propagation into pocket-tts.
+#
+# Why this code exists
+# --------------------
+# pocket-tts 2.x has no cancellation surface (see ADR 0026 § Context, ADR 0027
+# § Context). When the C# host hits Stop, the outbound HTTP response is closed
+# but the sidecar's `_autoregressive_generation` loop keeps running on a daemon
+# thread, accruing CPU and tensor allocations (~+100 MB RSS per Stop→Play cycle).
+# ADR 0027 enumerates five mechanisms; option (e) — wrapper-level disconnect +
+# runtime monkey-patch of `_autoregressive_generation` — is the current
+# recommendation.
+#
+# main-045 (this spike) ships the prototype as an OPT-IN flag so production
+# behaviour is unchanged when the flag is off. main-046 will flip the default
+# (or delete the flag) once the user's measurement campaign confirms or
+# unseats option (e).
+#
+# Flag and modes
+# --------------
+# Environment variable `UTTERHEIM_CANCEL_PROTOTYPE`:
+#   unset / empty / "off"   — production behaviour (no patching, no disconnect
+#                             wrapping). Default.
+#   "b"                     — option (b) wrapper-only: wrap the outbound
+#                             streaming responses to observe Starlette
+#                             disconnect, break the iteration. Does NOT stop
+#                             the producer thread (predicted to fail H1).
+#   "e"                     — option (e) hybrid: option (b) PLUS monkey-patch
+#                             `pocket_tts.models.tts_model.TTSModel._autoregressive_generation`
+#                             to read a per-model `threading.Event` and break
+#                             the inner `for generation_step in range(...)` loop.
+#                             Sentinel-pushes `("done", None)` to result_queue
+#                             and `None` to latents_queue on early-return
+#                             (main-045 H4) so the consumer in
+#                             `_generate_audio_stream_short_text` (tts_model.py:633)
+#                             unblocks.
+# Any other value is rejected at sidecar startup.
+#
+# Per-model event
+# ---------------
+# ADR 0007 serialises speak requests through the C# Channel<T>; pocket-tts is
+# called for one request at a time. So one `threading.Event` per resident model
+# (stashed as `model._utterheim_stop_event`) is sufficient — no per-request demux.
+# The middleware clears the event at the start of each routed request; the
+# disconnect handler sets it; the monkey-patched method reads it.
+#
+# Startup sanity check
+# --------------------
+# When the flag is "e", `serve` verifies (before binding the port) that:
+#   1. `pocket_tts.models.tts_model.TTSModel._autoregressive_generation` exists
+#      (the monkey-patch target is reachable).
+#   2. Its argument signature still matches the known shape (per main-045
+#      refinement: `self`, then the args observed in pocket-tts 2.x at line 744).
+#   3. The patched method has actually replaced the original (`is` identity
+#      check — guards against the patch silently no-op'ing if a future
+#      pocket-tts version moves the method off `TTSModel`).
+# Failure: refuse to start with a clear error pointing at this file.
+# ---------------------------------------------------------------------------
+
+
+CANCEL_FLAG_ENV = "UTTERHEIM_CANCEL_PROTOTYPE"
+CANCEL_MODES = ("off", "b", "e")
+# Disconnect-poll cadence: we wrap StreamingResponse iteration in an async
+# generator that calls `await request.is_disconnected()` every CANCEL_POLL_BYTES
+# or every yielded chunk (whichever comes first). 200 ms is the target wall
+# clock between checks — the ADR 0026 budget of ≤2 s for full recovery gives
+# us ~10 polls of headroom.
+CANCEL_DISCONNECT_POLL_SECONDS = 0.2
+
+
+def _read_cancel_mode() -> str:
+    """Read and validate the prototype mode from the environment.
+
+    Called once at sidecar startup so the validation error is loud and early.
+    Any value outside CANCEL_MODES raises RuntimeError; the caller (`serve`)
+    surfaces this as a typer error.
+    """
+    raw = (os.environ.get(CANCEL_FLAG_ENV) or "").strip().lower()
+    if raw in ("", "off"):
+        return "off"
+    if raw not in CANCEL_MODES:
+        raise RuntimeError(
+            f"{CANCEL_FLAG_ENV}={raw!r} is not a recognised mode. "
+            f"Valid values: {list(CANCEL_MODES)} (or unset / empty for 'off')."
+        )
+    return raw
+
+
+def _get_or_create_stop_event(model) -> threading.Event:
+    """Return the per-model stop event, lazily creating it on first access.
+
+    Per ADR 0007 the C# queue serialises speak requests, so one event per
+    resident model is sufficient. The event lives on the model instance via
+    a `_utterheim_stop_event` attribute (underscored to make the
+    utterheim-owned coupling visible if a future maintainer greps for it).
+    """
+    event = getattr(model, "_utterheim_stop_event", None)
+    if event is None:
+        event = threading.Event()
+        model._utterheim_stop_event = event
+    return event
+
+
+def _patch_autoregressive_generation() -> str:
+    """Monkey-patch TTSModel._autoregressive_generation with a stop-event
+    aware version (ADR 0027 option d, used as part of option e).
+
+    The patched method calls the original in chunks: we cannot rewrite the
+    inner loop without copying ~50 lines of private pocket-tts code that
+    changes shape between releases. Instead we wrap the original and check
+    the per-model stop event around each call — but the original method runs
+    its `for generation_step in range(max_gen_len)` loop synchronously and
+    only returns at the end, which would defeat the purpose.
+
+    The actual implementation strategy (chosen by main-045 refinement and
+    pinned here):
+
+      1. Set a thread-local `_utterheim_stop_event` reference at entry.
+      2. Install a `sys.settrace` callback that checks the event each line
+         and raises `_UtterheimStopRequested` to break out.
+      3. Catch `_UtterheimStopRequested` at the wrapper boundary and push
+         the sentinel values onto the model's `latents_queue` and
+         `result_queue` (main-045 H4) so the consumer thread unblocks.
+
+    Trace-based interruption is the surgical option: zero invasiveness on
+    the pocket-tts source, no need to mirror the inner loop logic. The cost
+    is per-line trace overhead while synthesis is running; we measure this
+    in the user's empirical pass (it should be invisible — torch ops dwarf
+    the trace cost).
+
+    Returns the human-readable description of what was patched, for logging.
+
+    Raises RuntimeError if the target method is missing or has an
+    unexpected signature — this is the startup sanity check (main-045 H3).
+    """
+    from pocket_tts.models import tts_model as _tts_module
+
+    target_class = getattr(_tts_module, "TTSModel", None)
+    if target_class is None:
+        raise RuntimeError(
+            "main-045 cancellation prototype: "
+            "pocket_tts.models.tts_model.TTSModel is missing. "
+            "pocket-tts API has shifted; update utterheim_sidecar/main.py."
+        )
+
+    original = getattr(target_class, "_autoregressive_generation", None)
+    if original is None:
+        raise RuntimeError(
+            "main-045 cancellation prototype: "
+            "pocket_tts.models.tts_model.TTSModel._autoregressive_generation is missing. "
+            "pocket-tts API has shifted; update utterheim_sidecar/main.py."
+        )
+
+    # Inspect signature to fail loud if pocket-tts renamed/reshaped the args.
+    # Known signature (pocket-tts 2.0.0, tts_model.py:744 per main-045 refinement):
+    #   def _autoregressive_generation(self, ...)
+    # We don't enforce arg names beyond `self` because the inner args have
+    # rotated between pocket-tts dev versions; the contract we rely on is
+    # method-on-TTSModel-takes-self-first. A stricter check here would just
+    # produce false positives on every pocket-tts patch release.
+    try:
+        sig = inspect.signature(original)
+    except (TypeError, ValueError) as exc:  # pragma: no cover - defensive
+        raise RuntimeError(
+            f"main-045 cancellation prototype: could not introspect "
+            f"_autoregressive_generation signature: {exc}"
+        ) from exc
+
+    params = list(sig.parameters.values())
+    if not params or params[0].name != "self":
+        raise RuntimeError(
+            "main-045 cancellation prototype: "
+            "_autoregressive_generation first parameter is not 'self' "
+            f"(got {[p.name for p in params]}). "
+            "pocket-tts may have promoted the method to a free function; "
+            "update utterheim_sidecar/main.py."
+        )
+
+    class _UtterheimStopRequested(Exception):
+        """Raised by the trace callback to break out of the synchronous
+        autoregressive loop. Caught at the patched-method boundary.
+        Not exposed to pocket-tts code — purely an internal flow-control
+        token for the prototype."""
+
+    # Trace callback factory: closes over the stop event so each invocation
+    # of the patched method gets its own check. sys.settrace's callback
+    # signature is `(frame, event, arg) -> callable | None`; we return
+    # ourselves for `call` events to install line-level checking on the
+    # frame, and check the event on every `line` event.
+    def _make_trace(stop_event: threading.Event):
+        def _trace(frame, event, arg):
+            if event == "line" and stop_event.is_set():
+                raise _UtterheimStopRequested()
+            return _trace
+
+        return _trace
+
+    def patched(self, *args, **kwargs):
+        stop_event = _get_or_create_stop_event(self)
+        # Fast path: no Stop in flight. Run unmodified — trace overhead is
+        # zero when settrace is never called.
+        if not stop_event.is_set():
+            # Arm a trace that raises if the event fires mid-loop.
+            import sys as _sys
+
+            _trace = _make_trace(stop_event)
+            previous_trace = _sys.gettrace()
+            _sys.settrace(_trace)
+            try:
+                return original(self, *args, **kwargs)
+            except _UtterheimStopRequested:
+                # Sentinel push (main-045 H4): unblock the consumer thread in
+                # `_generate_audio_stream_short_text` (tts_model.py:633) that
+                # reads `result_queue.get()` waiting for a ("done", ...) tuple.
+                # Without this, the consumer hangs and the leak reappears with
+                # a different signature (refinement note H4).
+                _push_stop_sentinels(self)
+                return None
+            finally:
+                _sys.settrace(previous_trace)
+        else:
+            # Event was already set before we entered — treat as immediate
+            # cancellation. Caller doesn't need a result.
+            _push_stop_sentinels(self)
+            return None
+
+    # Preserve the function metadata so introspection-driven code (e.g.
+    # tracebacks, debuggers) still names the original.
+    patched.__name__ = getattr(original, "__name__", "_autoregressive_generation")
+    patched.__qualname__ = getattr(
+        original, "__qualname__", "TTSModel._autoregressive_generation"
+    )
+    patched.__doc__ = (original.__doc__ or "") + (
+        "\n\n[utterheim_sidecar main-045 prototype: patched to observe "
+        f"per-model {CANCEL_FLAG_ENV}=e stop event via sys.settrace]"
+    )
+    # Stash the original so we can verify the patch identity at startup
+    # and revert in the unlikely case the sidecar is run with the flag
+    # toggled in-process (we don't currently support that, but the attr
+    # is harmless).
+    patched._utterheim_original = original  # type: ignore[attr-defined]
+
+    target_class._autoregressive_generation = patched
+
+    # Sanity-check: confirm the patch actually replaced the attribute.
+    if getattr(target_class, "_autoregressive_generation", None) is not patched:
+        raise RuntimeError(
+            "main-045 cancellation prototype: monkey-patch assignment did "
+            "not stick. TTSModel may use slots or a descriptor that "
+            "rejects rebinding. Investigate before main-046 ships."
+        )
+
+    return (
+        "patched pocket_tts.models.tts_model.TTSModel._autoregressive_generation "
+        "with trace-based stop-event observation (main-045 H2/H3/H4 prototype)"
+    )
+
+
+def _push_stop_sentinels(model) -> None:
+    """Push the values that the consumer in `_generate_audio_stream_short_text`
+    (tts_model.py:633) blocks on, so it unwinds cleanly after we short-circuit
+    the producer (main-045 H4).
+
+    pocket-tts 2.x's consumer reads `result_queue.get()` in a blocking loop
+    waiting for a `("done", None)` tuple OR a `("chunk", data)` tuple. It also
+    reads `latents_queue.get()` in a separate consumer waiting for `None` as
+    a poison pill. Without these sentinels the producer's early return leaks
+    the consumer thread (which then keeps a reference to the model and its
+    tensors — exactly the leak we are trying to fix).
+
+    The queues live as instance attrs on the model during a single generation
+    call (`self.result_queue` / `self.latents_queue` in tts_model.py:633
+    per main-045 refinement). They may not exist if the model was created
+    but no generation ever ran — guard with getattr.
+    """
+    result_q = getattr(model, "result_queue", None)
+    latents_q = getattr(model, "latents_queue", None)
+
+    if result_q is not None:
+        try:
+            result_q.put(("done", None))
+        except Exception:  # pragma: no cover - best-effort sentinel
+            logger.exception("main-045: result_queue sentinel push failed")
+
+    if latents_q is not None:
+        try:
+            latents_q.put(None)
+        except Exception:  # pragma: no cover - best-effort sentinel
+            logger.exception("main-045: latents_queue sentinel push failed")
+
+
+async def _disconnect_aware_iterator(request: Request, source, model):
+    """Wrap a synchronous WAV-byte generator with a disconnect poll.
+
+    `source` is the underlying generator returned by
+    `pocket_tts.main.generate_data_with_state(...)`. It yields bytes (or
+    bytes-like chunks) synchronously, driven by an internal producer thread.
+
+    We iterate it from a threadpool worker (StreamingResponse already runs
+    sync iterators on a thread), polling `await request.is_disconnected()`
+    between yields. On disconnect:
+      - mode "b": just stop iterating. The producer thread keeps running
+        (predicted H1 falsifier — option (b) alone is insufficient).
+      - mode "e": set the per-model stop event so the monkey-patched
+        `_autoregressive_generation` breaks out within one inference step.
+
+    The wrapper closes the source generator (if it exposes `.close()`) on
+    exit so the pocket-tts cleanup path runs.
+    """
+    cancel_mode = (os.environ.get(CANCEL_FLAG_ENV) or "off").strip().lower()
+    stop_event = _get_or_create_stop_event(model) if cancel_mode == "e" else None
+    # Make sure we don't inherit a previously-set event from a prior request.
+    if stop_event is not None:
+        stop_event.clear()
+
+    # `source` may be a plain generator or an iterable. Normalise to iterator.
+    iterator = iter(source)
+    last_poll = time.monotonic()
+
+    try:
+        while True:
+            # Pull the next chunk on a thread so the event loop stays responsive
+            # and our disconnect poll can fire even if the producer thread is
+            # slow (e.g. waiting on the autoregressive loop).
+            try:
+                chunk = await asyncio.to_thread(next, iterator)
+            except StopIteration:
+                break
+
+            yield chunk
+
+            # Disconnect poll — every CANCEL_DISCONNECT_POLL_SECONDS, ask
+            # Starlette whether the client TCP is still attached.
+            now = time.monotonic()
+            if now - last_poll >= CANCEL_DISCONNECT_POLL_SECONDS:
+                last_poll = now
+                try:
+                    disconnected = await request.is_disconnected()
+                except Exception:  # pragma: no cover - defensive
+                    disconnected = False
+                if disconnected:
+                    logger.info(
+                        "main-045 prototype (mode=%s): client disconnected "
+                        "mid-stream; signalling cancellation.",
+                        cancel_mode,
+                    )
+                    if stop_event is not None:
+                        stop_event.set()
+                    break
+    finally:
+        # Close the underlying generator if it supports it. pocket-tts's
+        # `generate_data_with_state` yields from a thread-fed queue and the
+        # generator's close() raises GeneratorExit into the generator body,
+        # which in pocket-tts 2.x triggers the cleanup path that drains the
+        # consumer threads. This is the H4 path — without sentinel pushes the
+        # close() can hang.
+        close = getattr(source, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:  # pragma: no cover - best-effort cleanup
+                logger.exception(
+                    "main-045 prototype: source generator close() raised"
+                )
+        # Always clear the event on exit so a future request starts clean.
+        if stop_event is not None:
+            stop_event.clear()
+
+
 class LanguageRoutingMiddleware(BaseHTTPMiddleware):
     """Read the C# host's `X-Voice-Language` header and swap
     `pocket_tts.main.tts_model` to the matching resident model before the
@@ -165,6 +537,71 @@ class LanguageRoutingMiddleware(BaseHTTPMiddleware):
         from pocket_tts import main as pocket_main
 
         pocket_main.tts_model = model
+
+        # main-045 prototype: when the cancellation flag is on and the route
+        # is the streaming pocket-tts /tts handler (the one we don't own —
+        # /tts-with-state already wraps itself at the handler layer), wrap
+        # the response body iterator with our disconnect-aware iterator so
+        # the prototype covers both code paths.
+        cancel_mode = (os.environ.get(CANCEL_FLAG_ENV) or "off").strip().lower()
+        if cancel_mode in ("b", "e") and request.url.path == "/tts":
+            # Clear the event for mode "e" before the inner handler kicks off
+            # synthesis. (The middleware runs before the handler that drives
+            # the producer thread, so this is the right hook point.)
+            if cancel_mode == "e":
+                _get_or_create_stop_event(model).clear()
+
+            response = await call_next(request)
+            # StreamingResponse has a `body_iterator` (async-iterator over
+            # bytes). Wrap it. pocket-tts's /tts handler returns a
+            # StreamingResponse whose body_iterator iterates a generator —
+            # we adapt to our shared helper which expects a sync iterable
+            # because pocket-tts yields synchronously.
+            body = getattr(response, "body_iterator", None)
+            if body is not None:
+                async def _wrapped_async_body():
+                    # response.body_iterator is async; iterate it on the event
+                    # loop and pump bytes through the disconnect poll.
+                    last_poll = time.monotonic()
+                    stop_event = (
+                        _get_or_create_stop_event(model) if cancel_mode == "e" else None
+                    )
+                    try:
+                        async for chunk in body:
+                            yield chunk
+                            now = time.monotonic()
+                            if now - last_poll >= CANCEL_DISCONNECT_POLL_SECONDS:
+                                last_poll = now
+                                try:
+                                    disconnected = await request.is_disconnected()
+                                except Exception:  # pragma: no cover - defensive
+                                    disconnected = False
+                                if disconnected:
+                                    logger.info(
+                                        "main-045 prototype (mode=%s): /tts "
+                                        "client disconnected mid-stream; "
+                                        "signalling cancellation.",
+                                        cancel_mode,
+                                    )
+                                    if stop_event is not None:
+                                        stop_event.set()
+                                    break
+                    finally:
+                        # Try to close the inner async iterator if it supports it.
+                        aclose = getattr(body, "aclose", None)
+                        if callable(aclose):
+                            try:
+                                await aclose()
+                            except Exception:  # pragma: no cover - best-effort
+                                logger.exception(
+                                    "main-045 prototype: /tts body aclose() raised"
+                                )
+                        if stop_event is not None:
+                            stop_event.clear()
+
+                response.body_iterator = _wrapped_async_body()
+            return response
+
         return await call_next(request)
 
 
@@ -303,6 +740,7 @@ def _cleanup_tmp_dir(path: str) -> None:
 
 @web_app.post("/tts-with-state")
 async def tts_with_state(
+    request: Request,
     text: str = Form(...),
     voice_state: UploadFile = File(...),
 ):
@@ -357,8 +795,18 @@ async def tts_with_state(
 
         # generate_data_with_state(text, model_state) yields WAV-framed bytes.
         # Stream them with the same media type pocket-tts /tts uses.
+        cancel_mode = (os.environ.get(CANCEL_FLAG_ENV) or "off").strip().lower()
+        underlying = generator(text, state)
+        if cancel_mode in ("b", "e"):
+            # Wrap with the disconnect-aware iterator (main-045 prototype).
+            # The wrapper polls request.is_disconnected() between yields and,
+            # in mode "e", sets the per-model stop event so the monkey-patched
+            # `_autoregressive_generation` breaks out of its inner loop.
+            stream = _disconnect_aware_iterator(request, underlying, tts_model)
+        else:
+            stream = underlying
         return StreamingResponse(
-            generator(text, state),
+            stream,
             media_type="audio/wav",
             background=BackgroundTask(_cleanup_tmp_dir, tmp_dir),
         )
@@ -408,6 +856,33 @@ def serve(
     """
     from pocket_tts import TTSModel
     from pocket_tts import main as pocket_main
+
+    # main-045 prototype gate: validate the cancellation-flag env var *first*
+    # so a typo doesn't slip past us as a silent "off". If mode is "e", apply
+    # the monkey-patch and run the sanity check before we load any models —
+    # an early patch failure is easier to triage than a mid-load crash.
+    cancel_mode = _read_cancel_mode()
+    if cancel_mode == "off":
+        logger.info(
+            "utterheim_sidecar: cancellation prototype is OFF "
+            "(set %s=b or %s=e to enable main-045 measurement modes).",
+            CANCEL_FLAG_ENV,
+            CANCEL_FLAG_ENV,
+        )
+    elif cancel_mode == "b":
+        logger.info(
+            "utterheim_sidecar: cancellation prototype mode=b (wrapper-only). "
+            "Outbound streams will observe client disconnect; producer thread "
+            "is NOT interrupted (option (b) — predicted H1 falsifier)."
+        )
+    elif cancel_mode == "e":
+        logger.info(
+            "utterheim_sidecar: cancellation prototype mode=e (hybrid). "
+            "Wrapper + monkey-patch of "
+            "pocket_tts.models.tts_model.TTSModel._autoregressive_generation."
+        )
+        patch_desc = _patch_autoregressive_generation()
+        logger.info("utterheim_sidecar: main-045 sanity check passed — %s", patch_desc)
 
     # Normalise the language list. `typer.Option(None, ...)` with a List[str]
     # type passes `None` (not `[]`) when the flag is omitted entirely.

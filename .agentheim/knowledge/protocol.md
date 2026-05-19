@@ -5,6 +5,49 @@ Newest entries on top.
 
 ---
 
+## 2026-05-19 12:49 -- Batch started: [main-045]
+
+**Type:** Work / Batch start
+**Tasks:** main-045 - Diagnose pocket-tts cancellation surface and prototype Stop propagation (spike)
+**Parallel:** no (1 worker)
+**Scope carve-out:** user approved partial completion — worker builds prototype code, H5 upstream check, Outcome template, ADR-0027 update, main-046 AC sharpening; empirical-measurement ACs (1, 2, 3, 4, 5, 6) deferred to user-driven measurement campaign. Verification gate will be skipped on this dispatch (effectively `--no-verify`) because the spike's pass/fail criteria are empirical and unrunnable by the worker.
+
+---
+
+## 2026-05-19 -- Model / Promoted: main-045 - Diagnose pocket-tts cancellation surface and prototype Stop propagation
+
+**Type:** Model / Promote
+**BC:** main
+**From -> To:** backlog -> todo
+**Readiness check:** 10 concrete ACs, dependency-free (`depends_on: []`), deterministic repro recipe, file:line map pre-loaded for the worker. `main-046` stays in backlog blocked on this spike's verdict per `blocks: [main-046]`.
+
+---
+
+## 2026-05-19 -- Model / Refined: main-045 + split into main-046; ADRs 0026 + 0027 written
+
+**Type:** Model / Refine
+**BC:** main
+**Status after:** main-045 backlog (now a spike), main-046 backlog (new fix task, depends_on main-045)
+**Summary:** Interrogator-mode refine on the leak bug. User confirmed Q1 = true cancellation (sidecar drops generator within <=2 s, not just leak containment) and Q2 = split into spike + fix following the main-023/main-024 precedent. Orchestrator routed to in-context researcher (read the bundled pocket-tts 2.x package; confirmed zero cancellation surface anywhere, hot loop is `TTSModel._autoregressive_generation` at `models/tts_model.py:744`) and architect (weighed five mechanism options against ADR 0013 / ADR 0024 / ADR 0015; recommended hybrid wrapper + runtime monkey-patch). C# side is already correctly wired end-to-end -- gap is entirely on the Python side.
+**Split into:** main-045 restructured as a spike (diagnose + prototype, H1-H5 hypotheses, falsifier-driven); main-046 created as the dependent fix task (ACs pinned now, sharpen on spike close).
+**ADRs written:**
+- **0026** (status: accepted) -- Stop cancels in-flight synthesis within <=2 s (amends ADR 0004). Pins the contract; mechanism in ADR 0027.
+- **0027** (status: proposed) -- Cancellation propagation mechanism into pocket-tts. Enumerates five options (upstream patch / wrapper-only / subprocess-per-request / monkey-patch / hybrid); recommends hybrid (e). Flips to accepted on main-045's verdict.
+**Open questions surfaced for the user:**
+- Whether to attempt an upstream PR to `kyutai-labs/pocket-tts` in parallel with the local monkey-patch (not blocking).
+- The `PocketTtsEngine.cs:243` `german_24l` wire mapping vs the 2026-05-18 protocol entry vs commit `c0a111c` -- inconsistency; needs the user to confirm which is the current truth and file a doc-hygiene task.
+
+---
+
+## 2026-05-19 -- Model / Captured: main-045 - Sidecar leaks ~100 MB per cancellation on rapid Stop->Play cycles
+
+**Type:** Model / Capture
+**BC:** main
+**Filed to:** backlog
+**Summary:** User observed python.exe RSS climbing ~100 MB per Stop->Play cycle on the Voices page. Idle 1.9 GB, steady-state speak 2.1 GB (fine), but each Stop+Play adds ~100 MB with no ceiling; CPU also lingers for minutes after Stop. Hypothesis: C# Stop closes the HTTP response but doesn't propagate cancellation into pocket-tts's running generator, so abandoned syntheses stack up holding tensors. Captured as backlog bug with diagnose+fix ACs bundled; split into spike+fix may happen during REFINE following the main-023/main-024 precedent.
+
+---
+
 ## 2026-05-18 19:30 -- Task closed (listen-test verdict): main-038 - Listen-test german vs german_24l (spike)
 
 **Type:** Work / Task closure (spike verdict)

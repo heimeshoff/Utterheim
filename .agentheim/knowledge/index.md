@@ -26,6 +26,8 @@ For BC-scoped artifacts, see each BC's `INDEX.md`.
 - **0007** -- Speak queue lives in the C# host as a Channel<T> -- 2026-05-01 -- `knowledge/decisions/0007-queue-channel-in-host.md`
 - **0008** -- Cross-cutting — logging, errors, model bootstrap, distribution -- 2026-05-01 -- `knowledge/decisions/0008-cross-cutting-concerns.md`
 - **0015** -- Utterheim-owned Python sidecar wrapper for /export-voice -- 2026-05-04 -- `knowledge/decisions/0015-utterheim-sidecar-wrapper.md`
+- **0026** -- Stop cancels in-flight synthesis within <=2 s (amends ADR 0004) -- 2026-05-19 -- `knowledge/decisions/0026-stop-cancels-in-flight-synthesis.md`
+- **0027** -- Cancellation propagation mechanism into pocket-tts (proposed; hybrid wrapper + monkey-patch recommended) -- 2026-05-19 -- `knowledge/decisions/0027-cancellation-propagation-mechanism.md`
 <!-- adr-global:end -->
 
 ## Cross-BC research

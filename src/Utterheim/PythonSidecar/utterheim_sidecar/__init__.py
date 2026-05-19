@@ -18,4 +18,4 @@
 # changes behaviourally — the C# bootstrapper compares bundled vs installed
 # __version__ at launch and forces a re-install on mismatch (main-027).
 # The string is opaque equality; no semver constraint solver involved.
-__version__ = "1.2.0"
+__version__ = "1.2.1"

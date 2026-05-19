@@ -484,6 +484,20 @@ As of main-011 the **real pocket-tts engine is wired in**:
   delete affordance ships with main-026.
 - `GET /status` reports `sidecar.state` (notstarted / starting / running / restarting
   / failed / stopping), `sidecar.healthy`, `sidecar.port`, and `sidecar.lastError`.
+- **Stop-cancellation prototype (main-045, sidecar 1.2.1, opt-in, OFF by default).**
+  The sidecar wrapper carries a measurement-only cancellation path behind the
+  `UTTERHEIM_CANCEL_PROTOTYPE` env var. Modes: `off` (default — production
+  behaviour unchanged), `b` (wrapper-only disconnect — predicted insufficient
+  per main-045 H1), `e` (hybrid wrapper + monkey-patch of
+  `pocket_tts.models.tts_model.TTSModel._autoregressive_generation` — the
+  ADR 0027 recommendation). The flag exists so the user can run the
+  measurement campaign that confirms or unseats option (e); the production
+  fix lands in main-046, which will flip the default to `e` (or remove the
+  flag entirely) once measurements are in. Until then **`/tts` and
+  `/tts-with-state` behave exactly as in 1.2.0 when the flag is unset.**
+  See ADR 0027 § "Implementation specifics" for the patched method, the
+  per-model `threading.Event`, the H4 sentinel push, and the startup sanity
+  check.
 
 The "stub-engine plays a 440 Hz tone" note from the skeleton is now superseded.
 
