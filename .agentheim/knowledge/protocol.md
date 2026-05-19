@@ -5,6 +5,42 @@ Newest entries on top.
 
 ---
 
+## 2026-05-19 15:29 -- Work session ended (main-045 closure + main-046 promotion)
+
+**Type:** Work / Session end
+**Completed:** 1 spike closure (main-045 user-measured + verdict written)
+**Promoted:** 1 (main-046 backlog -> todo)
+**Commits:** 1 (5b76566)
+
+**Done in this session:**
+- User ran the measurement campaign on the main-045 prototype (sidecar mode=e). Two prototype bugs surfaced during measurement; both fixed live in the installed runtime, then propagated to bundled source at sidecar 1.2.2:
+  - H4 sentinel push reached for `model.result_queue` which never exists; corrected to use the `latents_queue` arg passed positionally to `_autoregressive_generation`. Producer thread now actually exits cleanly; decoder + outer consumer unwind via the natural `("done", None)` propagation in tts_model.py.
+  - `_disconnect_aware_iterator` finally tried to `source.close()` while `to_thread(next, iterator)` was mid-execution, raising `ValueError: generator already executing` and swallowing cancellation. Fixed by setting `stop_event` unconditionally in finally and skipping close() entirely.
+  - Bonus: prototype startup messages used `logger.info()` against an unconfigured named logger (default level WARNING) — silently dropped. Switched to `print(flush=True)`.
+- **Spike verdict captured in main-045 Outcome:**
+  - CPU recovery: fully confirmed (drops fast on Stop).
+  - Per-cycle RSS growth: 100 MB -> 10-20 MB. Small upward drift remains, no longer unbounded.
+  - Residual attributed to `sys.settrace` frame retention; main-046 switches to direct method-body replacement.
+- **ADR 0027 flipped to `accepted`** (option e, hybrid wrapper + monkey-patch). Implementation specifics absorbed the three measurement-driven fixes.
+- **ADR 0026 relaxed**: strict +-50 MB RSS clause demoted to soft target; hard contract is now "no unbounded growth, median per-cycle delta <=25 MB across 50-cycle stress, CPU <5% within <=2 s." Rationale: PyTorch CPU caching allocator + glibc malloc retain the KV-cache high-water-mark even after Python objects are freed; closing that gap requires tearing down the resident TTSModel per request (violates ADR 0024) or upstream pocket-tts changes.
+- **main-046 promoted backlog -> todo** with sharpened ACs: switches from `sys.settrace` to direct method-body replacement, removes the opt-in env var, adds sidecar-side pytest infrastructure under `src/Utterheim/PythonSidecar/tests/`.
+- `.gitignore` updated to exclude `__pycache__/` + `*.pyc` (small hygiene fix — .pyc files had crept into staging from sidecar imports during the session).
+
+**Surprises:**
+- Worker's `_push_stop_sentinels` pointed at the wrong API surface (`model.result_queue` / `model.latents_queue` — neither exists in pocket-tts 2.x). Caught only when the user observed "same baseline behavior" with mode=e. A pre-commit check that exercises the patched method against a fake pocket-tts module would have caught this — main-046's AC list now requires that pytest.
+- Original wrapper crashed on the very FIRST cancellation due to `to_thread`/`close()` thread-safety bug. Caught immediately in the user's first test run. The exception in finally swallowed the cancellation, mimicking a "no fix" baseline.
+- The residual ~10-20 MB/cycle drift was unexpected at first — gc.collect() didn't fully reclaim. Hypothesized as `sys.settrace` frame retention; main-046 will verify by switching the mechanism.
+
+**State of utterheim runtime:**
+- Bundled wrapper at 1.2.2 with all three fixes.
+- Installed runtime currently has the same code (I edited the installed file directly during measurement; the bundled fixes are now also in source, so a re-deploy + restart picks them up via the bootstrapper version check).
+- The opt-in `UTTERHEIM_CANCEL_PROTOTYPE` env var remains. To return to production behaviour (no cancellation), restart utterheim without setting it. To keep using the prototype, set `=e`.
+
+**Next:**
+- main-046 ready for work. Picks up the prototype, swaps `sys.settrace` for direct method-body replacement, removes the opt-in flag, adds the pytest harness, bumps sidecar 1.2.2 -> 1.3.0.
+
+---
+
 ## 2026-05-19 13:05 -- Work session ended
 
 **Type:** Work / Session end
