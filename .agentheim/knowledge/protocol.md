@@ -5,6 +5,16 @@ Newest entries on top.
 
 ---
 
+## 2026-05-24 -- Model / Captured: main-047 - Language-aware narration — detect EN/DE and speak in a matching voice
+
+**Type:** Model / Capture
+**BC:** main
+**Filed to:** todo
+**Summary:** The `utterheim-narrator` Claude Code plugin gains a lightweight, dependency-free PowerShell heuristic that classifies Claude's spoken text as German or English, then speaks it in a language-matching voice. Each repo configures an EN+DE voice pair (preserving per-session distinct-by-ear identity); detected language picks within the pair. No server change — the sidecar already routes by the voice's declared language (ADR 0023). Orchestrator routed the one open decision (voice-pair on-disk format + back-compat) to **ADR 0028** (accepted, scope main): legacy `./.claude/utterheim-voice` = English/default slot, new `utterheim-voice-de` + `$env:UTTERHEIM_VOICE_DE` = German slot, German-with-no-DE-slot falls back to the configured English voice (not `juergen`), mute evaluated post-resolution. Filed directly to todo — TDD-ready, pure-function detection + resolution, no remaining unknowns.
+**ADRs written:** 0028
+
+---
+
 ## 2026-05-19 16:40 -- Work session ended
 
 **Type:** Work / Session end

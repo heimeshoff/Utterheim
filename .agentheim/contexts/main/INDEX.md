@@ -11,14 +11,14 @@ research touching this BC, and concept synthesis pages.
 
 <!-- task-counts:start -->
 - **Backlog:** 0
-- **Todo:** 0
+- **Todo:** 1
 - **Doing:** 0
 - **Done:** 46
 <!-- task-counts:end -->
 
 ### Todo
 <!-- todo-list:start -->
-<!-- no tasks in todo -->
+- **main-047** -- Language-aware narration — detect EN/DE and speak in a matching voice -- 2026-05-24 -- `todo/main-047-language-aware-narration.md`
 <!-- todo-list:end -->
 
 ### Doing
@@ -94,6 +94,7 @@ research touching this BC, and concept synthesis pages.
 - **0025** -- Production German is distilled `german`, not `german_24l` (match English's variant) -- 2026-05-18 -- `../../knowledge/decisions/0025-german-distilled-default.md`
 - **0026** -- Stop cancels in-flight synthesis within <=2 s (amends ADR 0004) -- 2026-05-19 -- `../../knowledge/decisions/0026-stop-cancels-in-flight-synthesis.md`
 - **0027** -- Cancellation propagation mechanism into pocket-tts (proposed; hybrid wrapper + monkey-patch recommended) -- 2026-05-19 -- `../../knowledge/decisions/0027-cancellation-propagation-mechanism.md`
+- **0028** -- Narrator stores the EN+DE voice pair as two sibling files; legacy single file is the English/default slot -- 2026-05-24 -- `../../knowledge/decisions/0028-narrator-voice-pair-config.md`
 <!-- adr-local:end -->
 
 ## Research touching this BC
