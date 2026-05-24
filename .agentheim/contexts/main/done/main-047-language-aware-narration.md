@@ -1,11 +1,11 @@
 ---
 id: main-047
 title: Language-aware narration — detect EN/DE and speak in a matching voice
-status: todo
+status: done
 type: feature
 context: main
 created: 2026-05-24
-completed:
+completed: 2026-05-24
 commit:
 depends_on: []
 blocks: []
@@ -150,3 +150,48 @@ Integration & packaging:
 - **Ubiquitous language:** "narrator," "voice," "slot" (English slot / German
   slot), "the resolved voice," "mute," "the sidecar routes by language." Avoid
   "locale"/"i18n" framing — this is voice selection, not localization.
+
+## Outcome
+
+The `utterheim-narrator` plugin (`claude-code-plugin/`) now narrates in a
+language-matching voice. Implementation is **client-side only** — the speak
+wire body stays `{text, voice}` and the sidecar routes by the voice's declared
+language (ADR 0023). No server / C# / Python-sidecar change.
+
+Key files:
+- `scripts/narrator-lib.ps1` (new) — pure, dependency-free helpers, dot-sourced
+  by the shim and the spec:
+  - `Get-NarratorLanguage` — offline EN/DE detection. `germanScore = (umlaut/ß
+    present ? 2 : 0) + distinctGermanStopwordHits`; classify `german` when
+    `score >= 2`. Stopword matching is whole-word, case-insensitive (`\b…\b`),
+    so `diet`/`order`/`IST-state` don't false-positive. Empty / whitespace /
+    sub-2-word text and genuine ties default to `english`.
+  - `Resolve-Voice` — two-slot resolution per ADR 0028 (English/default slot =
+    legacy `utterheim-voice` → `$env:UTTERHEIM_VOICE` → `alba`; German slot =
+    `utterheim-voice-de` → `$env:UTTERHEIM_VOICE_DE` → fall back to the resolved
+    English voice, NOT a hard-coded `juergen`); explicit `-Voice` overrides and
+    bypasses detection.
+  - `Test-VoiceMuted` — `off`/`none`/`-` marker check, evaluated on the
+    finally-resolved voice.
+- `scripts/utterheim-speak.ps1` — dot-sources the lib; gained a `-Language`
+  param; auto-detects when omitted; resolves the slot; mutes on the resolved
+  voice before any HTTP POST. Hooks still always exit 0; `-Silent` unchanged.
+- `scripts/utterheim-stop.ps1`, `scripts/utterheim-notification.ps1` — run
+  detection on the final, markdown-stripped spoken string (never the raw
+  transcript) and pass `-Language` through.
+- `commands/narrator.md` — `/narrator` now sets/shows both slots (`/narrator
+  <id>` = English, `/narrator de <id>` = German), shows each voice's `language`,
+  and warns on a slot/language mismatch while still persisting. `/narrator off`
+  mutes via the English/default slot as before. Files written plain UTF-8.
+- `.claude-plugin/plugin.json` — version `0.1.0` → `0.2.0` (consumer-update
+  trigger).
+- `tests/narrator-lib.Tests.ps1` (new) — Pester spec, 21 tests covering every
+  detection / resolution / mute AC. **All 21 pass** (Pester 3.4.0 on Windows
+  PowerShell 5.1). Integration smoke also confirmed: a German summary in a repo
+  whose English slot = `off` and no DE slot resolves through to the muted slot
+  and exits 0 before any HTTP call.
+
+Decision of record is ADR 0028 (config format, fallback, mute semantics). The
+concrete heuristic weight/threshold/word-floor (2/2/2) are within the spec's
+stated latitude, so no new ADR was warranted. No `examples/claude-hooks/`,
+server, or sidecar changes.

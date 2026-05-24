@@ -28,8 +28,13 @@ try {
 
     if ($message -match '(?i)waiting for your input') { exit 0 }
 
+    # Detect the language of the notification message so the speak shim resolves
+    # a language-matching voice (ADR 0028).
+    . (Join-Path $PSScriptRoot 'narrator-lib.ps1')
+    $language = Get-NarratorLanguage -Text $message
+
     $speak = Join-Path $PSScriptRoot 'utterheim-speak.ps1'
-    & $speak -Text $message -Silent | Out-Null
+    & $speak -Text $message -Language $language -Silent | Out-Null
     exit 0
 }
 catch {

@@ -1219,6 +1219,44 @@ session id, and per-session voice is purely an env-var contract between
 the user's shell and the hook script. Server-mediated routing would be
 a separate decision task.
 
+### The productized plugin (`claude-code-plugin/`, language-aware)
+
+The shipping artifact is the `utterheim-narrator` Claude Code plugin under
+`claude-code-plugin/` (a marketplace + hooks + the `/narrator` slash command),
+not the older `examples/claude-hooks/` sample above. As of main-047 it is
+**language-aware** (ADR 0028): each spoken string is classified English or
+German by an offline, dependency-free PowerShell heuristic
+(`Get-NarratorLanguage` in `scripts/narrator-lib.ps1` — umlaut/ß signal plus
+whole-word German stopword scoring; English is the safe default for empty /
+tie / sub-floor input), then a voice is resolved for the detected language. The
+sidecar routes by the named voice's declared language (ADR 0023), so the wire
+body stays `{text, voice}` — this change is **client-side only**, no server work.
+
+Each repo configures a **pair of voice slots** (ADR 0028):
+
+- **English / default slot** — `./.claude/utterheim-voice` (the legacy file,
+  unchanged meaning) → `$env:UTTERHEIM_VOICE` → `alba`.
+- **German slot** — `./.claude/utterheim-voice-de` → `$env:UTTERHEIM_VOICE_DE`
+  → fall back to the resolved English/default slot (never a hard-coded
+  `juergen`). There is no `utterheim-voice-en` file; the English slot *is* the
+  legacy file.
+
+`Resolve-Voice` (same lib) implements that chain; an explicit `-Voice`
+parameter overrides everything and bypasses detection. The `off`/`none`/`-`
+mute marker is evaluated on the **finally-resolved** voice for the detected
+language: an English slot of `off` mutes English while a real German slot still
+speaks German, and a repo with only `utterheim-voice` = `off` is fully muted.
+The `/narrator` command sets/shows both slots and warns (but still persists)
+when a voice's `language` from `GET /voices` doesn't match the slot it's written
+to. Built-in voices: 8 English (`alba, marius, javert, jean, fantine, cosette,
+eponine, azelma`) + 1 German (`juergen`); more German voices require cloning.
+
+Ubiquitous language: *English slot* / *German slot*, *the resolved voice*,
+*mute*, *the sidecar routes by language*. (Not "locale" / "i18n" — this is voice
+selection, not localization.) The pure helpers are unit-tested with Pester in
+`claude-code-plugin/tests/narrator-lib.Tests.ps1`; the C# host's
+`Utterheim.Tests` xUnit project is not the home for plugin PowerShell.
+
 ## Notes for the architect
 
 ADRs 0001–0008 are committed. The walking skeleton (main-009) materialised them as

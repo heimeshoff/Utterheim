@@ -1,7 +1,7 @@
 {
   "name": "utterheim-narrator",
-  "version": "0.1.0",
-  "description": "Speak Claude Code's end-of-turn summaries and attention prompts through Utterheim (Windows TTS sidecar)",
+  "version": "0.2.0",
+  "description": "Speak Claude Code's end-of-turn summaries and attention prompts through Utterheim (Windows TTS sidecar), in a language-matching voice (EN/DE)",
   "author": {
     "name": "Marco Heimeshoff"
   },

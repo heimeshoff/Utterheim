@@ -4,14 +4,27 @@
 # (default http://127.0.0.1:7223/speak). Bundled inside the utterheim-narrator
 # plugin so consumers don't need a path to the utterheim repo.
 #
-# Voice resolution order (first hit wins):
-#   1. -Voice parameter
-#   2. ./.claude/utterheim-voice             (project-local, written by /narrator)
-#   3. $env:UTTERHEIM_VOICE
-#   4. "alba"                                (pocket-tts default)
+# Language-aware (ADR 0028): the spoken text is classified EN/DE and a voice is
+# resolved from the matching slot. The sidecar then routes by the voice's
+# declared language (ADR 0023) — the wire body stays {text, voice}.
+#
+# Voice resolution (first hit wins), per detected/-Language slot:
+#   English/default slot:
+#     1. -Voice parameter (explicit override; bypasses detection)
+#     2. ./.claude/utterheim-voice          (project-local, written by /narrator)
+#     3. $env:UTTERHEIM_VOICE
+#     4. "alba"                             (pocket-tts default)
+#   German slot (only when language is german):
+#     1. -Voice parameter
+#     2. ./.claude/utterheim-voice-de
+#     3. $env:UTTERHEIM_VOICE_DE
+#     4. fall back to the resolved English/default slot
+#
+# -Language: 'german' | 'english'. When omitted, the text is auto-detected via
+# Get-NarratorLanguage. Hooks pass their already markdown-stripped final string.
 #
 # Exit codes:
-#   0  speak request accepted, or -Silent swallowed an error
+#   0  speak request accepted, -Silent swallowed an error, or voice is muted
 #   2  HTTP error from utterheim (validation / server error)
 #   3  cannot reach utterheim (sidecar not running, port in use, etc.)
 #
@@ -24,6 +37,8 @@ param(
 
     [string]$Voice,
 
+    [string]$Language,
+
     [string]$Endpoint,
 
     [switch]$Silent,
@@ -33,32 +48,20 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-function Resolve-Voice {
-    param([string]$Explicit)
+. (Join-Path $PSScriptRoot 'narrator-lib.ps1')
 
-    if (-not [string]::IsNullOrWhiteSpace($Explicit)) { return $Explicit }
-
-    $projectFile = Join-Path (Get-Location).Path '.claude\utterheim-voice'
-    if (Test-Path -LiteralPath $projectFile) {
-        $v = (Get-Content -LiteralPath $projectFile -Raw -ErrorAction SilentlyContinue)
-        if ($v) {
-            $v = $v.Trim()
-            if (-not [string]::IsNullOrWhiteSpace($v)) { return $v }
-        }
-    }
-
-    if ($env:UTTERHEIM_VOICE) { return $env:UTTERHEIM_VOICE }
-
-    return 'alba'
+# Detect the language of the spoken text unless an explicit voice override is
+# in play (an override bypasses detection entirely) or -Language was supplied.
+if ([string]::IsNullOrWhiteSpace($Language)) {
+    $Language = Get-NarratorLanguage -Text $Text
 }
 
-$Voice = Resolve-Voice -Explicit $Voice
+$Voice = Resolve-Voice -Explicit $Voice -Language $Language
 
-# Per-repo opt-out: `./.claude/utterheim-voice` containing "off" / "none" / "-"
-# tells us to skip the call entirely. Used on machines without Utterheim
-# (e.g. macOS, where PowerShell isn't installed and these scripts can't even
-# run — but the marker is the documented disable signal).
-if ($Voice -match '^(off|none|-)$') { exit 0 }
+# Mute is evaluated on the FINALLY-resolved voice for the detected language
+# (ADR 0028): `off`/`none`/`-` in the resolved slot skips the call entirely.
+# A repo's English slot = `off` mutes English while a real DE slot still speaks.
+if (Test-VoiceMuted $Voice) { exit 0 }
 
 if ([string]::IsNullOrWhiteSpace($Endpoint)) {
     if ($env:UTTERHEIM_ENDPOINT) { $Endpoint = $env:UTTERHEIM_ENDPOINT }

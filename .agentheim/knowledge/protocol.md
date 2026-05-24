@@ -5,6 +5,27 @@ Newest entries on top.
 
 ---
 
+## 2026-05-24 -- Task verified and completed: main-047 - Language-aware narration — detect EN/DE and speak in a matching voice
+
+**Type:** Work / Task completion
+**Task:** main-047 - Language-aware narration — detect EN/DE and speak in a matching voice
+**Summary:** The `utterheim-narrator` plugin now narrates in a language-matching voice — each spoken string is classified English or German by an offline PowerShell heuristic (`Get-NarratorLanguage` in `scripts/narrator-lib.ps1`), then a voice is resolved from the repo's two-slot EN/DE config per ADR 0028. Client-side only; the sidecar still routes by the voice's declared language. Plugin bumped 0.1.0 → 0.2.0.
+**Verification:** PASS (iteration 1) — 21/21 Pester tests green (Pester 3.4.0 / WinPS 5.1); every AC mapped to evidence (detection rules, voice-pair resolution incl. German→English fallback not hard-coded `juergen`, per-language mute, `/narrator` two-slot set + language-mismatch warning, version bump, hooks still exit 0, no new runtime dependency, detection on resolved text not raw transcript). Scope confined to `claude-code-plugin/*` + main BC README; no server/C#/Python edits.
+**Commit:** PENDING
+**Files changed:** 9 (worker FILE_LIST) + task move + INDEX + protocol
+**Tests added:** 1 Pester spec (`claude-code-plugin/tests/narrator-lib.Tests.ps1`) — 21 cases
+**ADRs written:** none (ADR 0028 pre-existed as the decision of record)
+
+---
+
+## 2026-05-24 -- Batch started: [main-047]
+
+**Type:** Work / Batch start
+**Tasks:** main-047 - Language-aware narration — detect EN/DE and speak in a matching voice
+**Parallel:** no (1 worker)
+
+---
+
 ## 2026-05-24 -- Model / Captured: main-047 - Language-aware narration — detect EN/DE and speak in a matching voice
 
 **Type:** Model / Capture

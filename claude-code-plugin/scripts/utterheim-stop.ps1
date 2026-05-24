@@ -71,8 +71,14 @@ try {
         $summary = $summary.Substring(0, 1000)
     }
 
+    # Detect the language of the final, markdown-stripped summary so the speak
+    # shim resolves a language-matching voice (ADR 0028). Detection runs on this
+    # finished string, never on the raw transcript JSON.
+    . (Join-Path $PSScriptRoot 'narrator-lib.ps1')
+    $language = Get-NarratorLanguage -Text $summary
+
     $speak = Join-Path $PSScriptRoot 'utterheim-speak.ps1'
-    & $speak -Text $summary -Silent | Out-Null
+    & $speak -Text $summary -Language $language -Silent | Out-Null
     exit 0
 }
 catch {
