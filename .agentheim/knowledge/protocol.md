@@ -5,13 +5,37 @@ Newest entries on top.
 
 ---
 
+## 2026-05-24 -- Work session ended
+
+**Type:** Work / Session end
+**Completed:** 1 (first-try PASS: 1, re-dispatched: 0, skipped: 0)
+**Bounced:** 0
+**Failed:** 0
+**Escalated after verification:** 0
+**Commits:** 1 (ee3b310) + capture commit aa1c012 + 1 chore backfill
+
+**Done in this session — single-task batch (main-047):**
+- The `utterheim-narrator` Claude Code plugin (`claude-code-plugin/`) is now language-aware. New `scripts/narrator-lib.ps1` holds two pure functions: `Get-NarratorLanguage` (offline heuristic — umlaut/ß signal + whole-word German stopword scoring; English the safe default for empty/tie/sub-floor text) and an extended `Resolve-Voice` (two-slot EN/DE config per ADR 0028) plus `Test-VoiceMuted`.
+- `utterheim-speak.ps1` resolves a voice for the detected language; `utterheim-stop.ps1` and `utterheim-notification.ps1` classify their final spoken text (summary / message — not the raw transcript) and pass the language through.
+- `/narrator` (`commands/narrator.md`) now sets/shows both slots, prints the catalog grouped by language, and warns on slot/language mismatch while still persisting.
+- Config per ADR 0028: legacy `./.claude/utterheim-voice` = English/default slot; new `./.claude/utterheim-voice-de` + `$env:UTTERHEIM_VOICE_DE` = German slot; German-with-no-DE-slot falls back to the configured English voice (not `juergen`); mute evaluated post-resolution. Zero migration for existing single-voice repos.
+- Plugin version 0.1.0 → 0.2.0 (consumer-update trigger). No server / C# / Python-sidecar change — the `{text, voice}` contract is untouched; the sidecar already routes by the voice's declared language (ADR 0023).
+- Tests: new Pester spec `claude-code-plugin/tests/narrator-lib.Tests.ps1`, 21 cases, all green under Pester 3.4.0 / Windows PowerShell 5.1.
+
+**Verification:** PASS on iteration 1. Verifier ran the Pester suite (21/21) and mapped every acceptance criterion to evidence. One harmless nit: worker's `FILES_CHANGED: 7` undercounted its 9-entry `FILE_LIST` (all files in-scope and present).
+
+**Next steps for the user:**
+- Re-install / reload the plugin to pick up 0.2.0 (`/plugin marketplace update utterheim-narrator` → `/plugin update` → `/reload-plugins`), then set a German voice per repo with the new `/narrator de <voice>` form (e.g. `/narrator de juergen`). With Utterheim running, a German end-of-turn summary should now speak in the German-slot voice; English in the English slot. Audible confirmation is the user's call — the logic + unit tests are green.
+
+---
+
 ## 2026-05-24 -- Task verified and completed: main-047 - Language-aware narration — detect EN/DE and speak in a matching voice
 
 **Type:** Work / Task completion
 **Task:** main-047 - Language-aware narration — detect EN/DE and speak in a matching voice
 **Summary:** The `utterheim-narrator` plugin now narrates in a language-matching voice — each spoken string is classified English or German by an offline PowerShell heuristic (`Get-NarratorLanguage` in `scripts/narrator-lib.ps1`), then a voice is resolved from the repo's two-slot EN/DE config per ADR 0028. Client-side only; the sidecar still routes by the voice's declared language. Plugin bumped 0.1.0 → 0.2.0.
 **Verification:** PASS (iteration 1) — 21/21 Pester tests green (Pester 3.4.0 / WinPS 5.1); every AC mapped to evidence (detection rules, voice-pair resolution incl. German→English fallback not hard-coded `juergen`, per-language mute, `/narrator` two-slot set + language-mismatch warning, version bump, hooks still exit 0, no new runtime dependency, detection on resolved text not raw transcript). Scope confined to `claude-code-plugin/*` + main BC README; no server/C#/Python edits.
-**Commit:** PENDING
+**Commit:** ee3b310
 **Files changed:** 9 (worker FILE_LIST) + task move + INDEX + protocol
 **Tests added:** 1 Pester spec (`claude-code-plugin/tests/narrator-lib.Tests.ps1`) — 21 cases
 **ADRs written:** none (ADR 0028 pre-existed as the decision of record)

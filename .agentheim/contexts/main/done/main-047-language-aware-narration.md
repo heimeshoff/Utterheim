@@ -6,7 +6,7 @@ type: feature
 context: main
 created: 2026-05-24
 completed: 2026-05-24
-commit:
+commit: ee3b310
 depends_on: []
 blocks: []
 tags: [integration, claude, plugin, narrator, language]
